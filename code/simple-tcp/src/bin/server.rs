@@ -1,9 +1,12 @@
 //! Simple non-blocking TCP server using IPv6 link-local addresses
 //! (based on Saleem's Java version)
 
-use std::io::{Read, Write};
-use std::net::{TcpListener, SocketAddr, IpAddr, Ipv6Addr};
-use std::time::Duration;
+use std::{
+    io::{Read, Write},
+    net::{TcpListener, SocketAddr, IpAddr, Ipv6Addr},
+    thread,
+    time::Duration,
+};
 use log::{info, error};
 
 const SLEEP_TIME_MS: u64 = 1000;
@@ -49,7 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
             }
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 // No incoming connection, keep trying
-                std::thread::sleep(Duration::from_millis(SO_TIMEOUT_MS));
+                thread::sleep(Duration::from_millis(SO_TIMEOUT_MS));
             }
             Err(e) => {
                 error!("Error accepting connection: {}", e);
@@ -96,7 +99,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
             }
         }
         
-        std::thread::sleep(Duration::from_millis(SLEEP_TIME_MS));
+        thread::sleep(Duration::from_millis(SLEEP_TIME_MS));
     }
     
     info!("<Closing connection>");
