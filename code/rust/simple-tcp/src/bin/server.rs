@@ -10,7 +10,8 @@ const SLEEP_TIME_MS: u64 = 1000;
 const BUFFER_SIZE: usize = 80;
 const SO_TIMEOUT_MS: u64 = 10;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> 
+{
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()
         .init();
@@ -29,7 +30,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     listener.set_nonblocking(true)?;
     
     // Log the actual link-local address for reference
-    if let Ok((ipv6_addr, interface)) = simple_tcp::get_link_local_ipv6() {
+    if let Ok((ipv6_addr, interface)) = simple_tcp::get_link_local_ipv6() 
+    {
         info!("Link-local IPv6 available: {} on interface {}", ipv6_addr, interface);
         info!("Clients should connect to: [{}%{}]:{}", ipv6_addr, interface, port);
     }
@@ -37,8 +39,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Waiting for connection...");
     
     // Wait for a connection
-    let mut stream = loop {
-        match listener.accept() {
+    let mut stream = loop 
+    {
+        match listener.accept() 
+        {
             Ok((stream, addr)) => {
                 info!("New connection from: {}", addr);
                 break stream;
@@ -63,8 +67,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut buffer = vec![0u8; BUFFER_SIZE];
     
     // Echo server loop
-    loop {
-        match stream.read(&mut buffer) {
+    loop 
+    {
+        match stream.read(&mut buffer)
+        {
             Ok(0) => {
                 info!("<Connection closed by client>");
                 break;
@@ -74,7 +80,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 info!("Received {} bytes --> {}", bytes_read, received.trim());
                 
                 info!("Sending back {} bytes", bytes_read);
-                if let Err(e) = stream.write_all(&buffer[..bytes_read]) {
+                if let Err(e) = stream.write_all(&buffer[..bytes_read])
+                {
                     error!("Error writing to client: {}", e);
                     break;
                 }

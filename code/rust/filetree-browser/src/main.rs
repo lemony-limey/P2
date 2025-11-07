@@ -3,32 +3,37 @@
 
 mod configuration;
 
+use log::{debug, info, warn};
 use std::fs;
-use std::io::{self, Write, BufRead};
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
-use log::{info, warn, debug};
 
 use configuration::Configuration;
 
-pub struct FileTreeBrowser {
+pub struct FileTreeBrowser
+{
     pub this_dir: PathBuf,
     root_path: PathBuf,
     pub config: Configuration,
 }
 
-impl FileTreeBrowser {
-    pub fn new(path: impl AsRef<Path>, root_path: PathBuf, config: Configuration) -> Self {
+impl FileTreeBrowser 
+{
+    pub fn new(path: impl AsRef<Path>, root_path: PathBuf, config: Configuration) -> Self 
+    {
         debug!("Creating FileTreeBrowser for path: {:?}", path.as_ref());
-        FileTreeBrowser {
+        FileTreeBrowser
+        {
             this_dir: path.as_ref().to_path_buf(),
             root_path,
             config,
         }
     }
-    
-    pub fn logical_path_name(&self, path: &Path) -> String {
+
+    pub fn logical_path_name(&self, path: &Path) -> String 
+    {
         path.strip_prefix(&self.root_path)
             .ok()
             .and_then(|p| p.to_str())
@@ -36,43 +41,49 @@ impl FileTreeBrowser {
             .unwrap_or("/")
             .to_string()
     }
-    
+
     /// print a formatted list of files and directories.
-    pub fn print_list(&self) -> io::Result<()> {
+    pub fn print_list(&self) -> io::Result<()> 
+    {
         let entries = fs::read_dir(&self.this_dir)?;
-        
+
         println!("\n+++  id: {}", self.config.id);
         println!("+++ dir: {}", self.logical_path_name(&self.this_dir));
         println!("+++\tfilename:");
-        
+
         let mut count = 0;
-        for (i, entry) in entries.enumerate() {
-            if let Ok(entry) = entry {
+        for (i, entry) in entries.enumerate() 
+        {
+            if let Ok(entry) = entry 
+            {
                 let path = entry.path();
-                let mut name = entry.file_name()
-                    .to_string_lossy()
-                    .to_string();
-                
-                if path.is_dir() {
+                let mut name = entry.file_name().to_string_lossy().to_string();
+
+                if path.is_dir()
+                {
                     name.push(std::path::MAIN_SEPARATOR);
                 }
-                
+
                 println!("{}\t{}", i, name);
                 count += 1;
             }
         }
-        
+
         println!("+++");
         debug!("Listed {} entries in directory", count);
         Ok(())
     }
-    
+
     /// search for a file or directory by name in the current directory.
-    pub fn search_list(&self, name: &str) -> Option<PathBuf> {
+    pub fn search_list(&self, name: &str) -> Option<PathBuf>
+    {
         debug!("Searching for: {}", name);
-        if let Ok(entries) = fs::read_dir(&self.this_dir) {
-            for entry in entries.flatten() {
-                if entry.file_name().to_string_lossy() == name {
+        if let Ok(entries) = fs::read_dir(&self.this_dir) 
+        {
+            for entry in entries.flatten()
+            {
+                if entry.file_name().to_string_lossy() == name 
+                {
                     debug!("Found: {:?}", entry.path());
                     return Some(entry.path());
                 }
@@ -81,7 +92,7 @@ impl FileTreeBrowser {
         warn!("Not found: {}", name);
         None
     }
-    
+
     pub fn get_parent(&self) -> Option<PathBuf> {
         self.this_dir.parent().map(|p| p.to_path_buf())
     }
@@ -91,14 +102,18 @@ fn timestamp() -> String {
     chrono::Local::now().format("%Y%m%d-%H%M%S%.3f").to_string()
 }
 
-fn display_help() {
+fn display_help()
+{
     let lines = [
         "--* Welcome to the simple FileTreeBrowser. *--",
         "* The display consists of:",
         "\t- The name of the current directory",
         "\t- The list of files (the numbers for the files are of no",
         "\t  significance, but may help you with debugging).",
-        &format!("* Files that are directories have trailing '{}'.", std::path::MAIN_SEPARATOR),
+        &format!(
+            "* Files that are directories have trailing '{}'.",
+            std::path::MAIN_SEPARATOR
+        ),
         "* Use text entry to navigate the directory tree.",
         "\t.\t\tTo refresh the view of the current directory.",
         "\t..\t\tTo move up a directory level.",
@@ -110,14 +125,17 @@ fn display_help() {
         "\t:quit\t\tTo quit the program.",
         "\t:help\t\tTo print this message.",
     ];
-    
-    for line in &lines {
+
+    for line in &lines 
+    {
         println!("{}", line);
     }
 }
 
-fn display_services(config: &Configuration) {
-    println!(":id={}:timestamp={}:search={},download={}:",
+fn display_services(config: &Configuration) 
+{
+    println!(
+        ":id={}:timestamp={}:search={},download={}:",
         config.id,
         timestamp(),
         config.search,
@@ -137,97 +155,121 @@ fn download() {
     println!("\n * download: to do :-)");
 }
 
-fn read_line() -> io::Result<String> {
+fn read_line() -> io::Result<String> 
+{
     let stdin = io::stdin();
     let mut line = String::new();
     stdin.lock().read_line(&mut line)?;
     Ok(line.trim().to_string())
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> 
+{
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()
         .init();
-    
+
     let properties_file = "filetreebrowser.properties";
     let config = Configuration::load(properties_file)?;
-    
+
     info!("Starting FileTreeBrowser");
-    info!("Configuration loaded: id={}, root_dir={}", config.id, config.root_dir);
+    info!(
+        "Configuration loaded: id={}, root_dir={}",
+        config.id, config.root_dir
+    );
     debug!("Full config: {:?}", config);
-    
+
     let root_path = fs::canonicalize(&config.root_dir)?;
     let mut ftb = FileTreeBrowser::new(&root_path, root_path.clone(), config.clone());
-    
+
     ftb.print_list()?;
-    
+
     let mut quit_browser = false;
-    
-    while !quit_browser {
+
+    while !quit_browser 
+    {
         print!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
         io::stdout().flush()?;
-        
-        let user_cmd = loop {
-            if let Ok(line) = read_line() {
-                if !line.is_empty() {
+
+        let user_cmd = loop
+        {
+            if let Ok(line) = read_line() 
+            {
+                if !line.is_empty() 
+                {
                     break line;
                 }
             }
             thread::sleep(Duration::from_millis(ftb.config.sleep_time));
         };
-        
+
         debug!("User command: {}", user_cmd);
-        
-        match user_cmd.to_lowercase().as_str() {
+
+        match user_cmd.to_lowercase().as_str() 
+        {
             ":quit" => {
                 info!("Quitting application");
                 quit_browser = true;
             }
-            
+
             ":help" => display_help(),
-            
+
             ":services" => display_services(&ftb.config),
-            
+
             "." => ftb.print_list()?,
-            
+
             ".." => {
-                if ftb.this_dir == root_path {
+                if ftb.this_dir == root_path 
+                {
                     println!("At root : cannot move up.\n");
                     warn!("Attempt to move above root directory");
-                } else if let Some(parent) = ftb.get_parent() {
+                } 
+                else if let Some(parent) = ftb.get_parent() 
+                {
                     println!("<<< {}\n", ftb.logical_path_name(&parent));
                     info!("Moving up to: {}", ftb.logical_path_name(&parent));
                     ftb = FileTreeBrowser::new(parent, root_path.clone(), ftb.config.clone());
                 }
             }
-            
+
             ":nodes" => nodes(),
-            
+
             ":search" => search(),
-            
+
             ":download" => download(),
-            
+
             _ => {
-                if let Some(path) = ftb.search_list(&user_cmd) {
-                    if path.is_file() {
+                if let Some(path) = ftb.search_list(&user_cmd) 
+                {
+                    if path.is_file() 
+                    {
                         println!("file: {}", ftb.logical_path_name(&path));
-                        if let Ok(metadata) = fs::metadata(&path) {
+                        if let Ok(metadata) = fs::metadata(&path) 
+                        {
                             println!("size: {}", metadata.len());
-                            info!("File accessed: {} (size: {})", ftb.logical_path_name(&path), metadata.len());
+                            info!(
+                                "File accessed: {} (size: {})",
+                                ftb.logical_path_name(&path),
+                                metadata.len()
+                            );
                         }
-                    } else if path.is_dir() {
+                    } 
+                    else if path.is_dir() 
+                    {
                         println!(">>> {}", ftb.logical_path_name(&path));
                         info!("Entering directory: {}", ftb.logical_path_name(&path));
                         ftb = FileTreeBrowser::new(path, root_path.clone(), ftb.config.clone());
                     }
-                } else {
+                } 
+                else 
+                {
                     println!("Unknown command or filename: '{}'", user_cmd);
                     warn!("Unknown command or filename: '{}'", user_cmd);
                 }
             }
         }
     }
-    
+
     info!("FileTreeBrowser terminated");
     Ok(())
 }

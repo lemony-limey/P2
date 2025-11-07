@@ -2,7 +2,8 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
-pub struct Configuration {
+pub struct Configuration
+{
     pub log_file: String,
     pub id: String,
     pub root_dir: String,
@@ -19,18 +20,21 @@ pub struct Configuration {
     pub download: bool,
 }
 
-impl Default for Configuration {
-    fn default() -> Self {
+impl Default for Configuration 
+{
+    fn default() -> Self 
+    {
         let hostname = hostname::get()
             .ok()
             .and_then(|h| h.into_string().ok())
             .unwrap_or_else(|| "FileTreeBrowser-host".to_string());
-        
+
         let username = std::env::var("USER")
             .or_else(|_| std::env::var("USERNAME"))
             .unwrap_or_else(|_| "user".to_string());
-        
-        Configuration {
+
+        Self 
+        {
             log_file: "filetreebrowser.log".to_string(),
             id: format!("{}@{}", username, hostname),
             root_dir: "root_dir".to_string(),
@@ -49,26 +53,28 @@ impl Default for Configuration {
     }
 }
 
-impl Configuration {
-    pub fn load(properties_file: &str) -> Result<Self, Box<dyn std::error::Error>> {
+impl Configuration 
+{
+    pub fn load(properties_file: &str) -> Result<Self, Box<dyn std::error::Error>> 
+    {
         let settings = config::Config::builder()
             .add_source(config::File::with_name(properties_file).required(false))
             .build()?;
-        
-        let mut config: Configuration = settings.try_deserialize()
-            .unwrap_or_else(|_| {
-                log::info!("Using default configuration");
-                Configuration::default()
-            });
-        
+
+        let mut config: Configuration = settings.try_deserialize().unwrap_or_else(|_| {
+            log::info!("Using default configuration");
+            Configuration::default()
+        });
+
         // update log file with id if using default
-        if config.log_file == "filetreebrowser.log" {
+        if config.log_file == "filetreebrowser.log"
+        {
             config.log_file = format!("{}-log.log", config.id);
         }
-        
+
         log::info!("Configuration loaded from {}", properties_file);
         log::debug!("Config details: {:?}", config);
-        
+
         Ok(config)
     }
 }
