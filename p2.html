@@ -1,0 +1,174 @@
+<h1>Advanced Communication Networks and Systems (CS4105) - Practical 2: Discover and Download</h1>
+
+<table>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Assignment:</strong></td>
+<td style="text-align: left;">P2: Discover and Download</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Deadline:</strong></td>
+<td style="text-align: left;">9pm on Friday 21st November; note that MMS
+is the definitive source of deadline information.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Weighting:</strong></td>
+<td style="text-align: left;">50% of the coursework component of the
+module (30% of the overall module assessment)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="overview-and-learning-objectives">Overview and learning
+objectives</h2>
+<p>In this practical, you will build a distributed file transfer
+application, paying particular attention to the design and
+implementation of its multicast control plane protocol, and how this
+protocol interacts with user commands. In undertaking this practical,
+you will:</p>
+<ul>
+<li><p>gain <em>depth</em> and <em>breadth</em> in your understanding of
+the design and operation of protocols;</p></li>
+<li><p>gain some <em>practical insight</em> into and <em>experience</em>
+with the key challenges in designing, building, and testing
+protocols;</p></li>
+<li><p>gain some <em>practical experience</em> with using multicast and
+IPv6 in a local network; and</p></li>
+<li><p>perform a <em>critical analysis</em> of your design and
+implementation, with paying particular attention to scalability,
+performance, security, and privacy.</p></li>
+</ul>
+<h2 id="description">Description</h2>
+<p>The basic scenario for your application is as shown in Figure <a
+href="#fig:scenario" data-reference-type="ref"
+data-reference="fig:scenario">1</a>. In this setup, multiple users run a
+file sharing application. This advertises their presence on the School
+of Computer Science lab network, and all other nodes will automatically
+detect their presence. The user can then use the application to search
+for and download files from the other users that are present on the
+network.</p>
+<figure id="fig:scenario">
+<img src="p2.png" style="width:50.0%" />
+<figcaption>Overview of the Discover and Download
+application.</figcaption>
+</figure>
+<p>To enable this functionality, you must use IPv6 multicast to create a
+control plane for (i) discovering other nodes; (ii) searching for files;
+and (iii) signalling file download. The file transfers will use TCP,
+also over IPv6.</p>
+<p>A simple local file system browser is provided as starter code, in
+both Java and Rust. You may modify and extend this in order to complete
+the coursework. In addition, other helper code has been provided on
+StudRes, and you may make use of this, or any other code made available
+to you in previous years (e.g., on CS2003 or CS3102). In addition, you
+may make use of any third-party code or libraries as you see fit. Note
+that the Good Academic Policy applies (as detailed below), and therefore
+you must attribute any code that you use appropriately.</p>
+<p>Your implementation must provide a simple text-based UI to the user
+to provide the required functionality. The implementation will then map
+the user’s input to the necessary control and data plane message(s).</p>
+<h2 id="ipv6-in-the-lab">IPv6 in the lab</h2>
+<p>Each lab machine has an IPv6 link-local address. However, fully
+qualified domain names (FQDNs) will not resolve to IPv6 link-local
+addresses within the School’s network.</p>
+<h2 id="the-control-plane-protocol">The control plane protocol</h2>
+<p>The control plane protocol is specified in <code>protocol.txt</code>
+as provided on StudRes. This definition is not designed to be complete
+or efficient; a significant part of the work required on this practical
+will be to implement and enhance this protocol as necessary.</p>
+<h2 id="tasks">Tasks</h2>
+<p>This practical is split into four main tasks: discovery (§<a
+href="#sec:discovery" data-reference-type="ref"
+data-reference="sec:discovery">5.1</a>), search (§<a href="#sec:search"
+data-reference-type="ref" data-reference="sec:search">5.2</a>), download
+(§<a href="#sec:download" data-reference-type="ref"
+data-reference="sec:download">5.3</a>), and analysis (§<a
+href="#sec:analysis" data-reference-type="ref"
+data-reference="sec:analysis">5.4</a>).</p>
+<h2 id="sec:discovery">Discovery (<code>:nodes</code>)</h2>
+<p>Your application must implement a discovery mechanism using IPv6
+multicast, and the <code>advertisement</code> message defined in the
+protocol specification. This discovery mechanism allows your application
+to find other nodes that are running the same application on other hosts
+in the School lab. Your application must allow the user to list the
+discovered nodes using the <code>:nodes</code> command.</p>
+<h2 id="sec:search">File search (<code>:search</code>)</h2>
+<p>Your application must allow the user to search for available files
+using the <code>:search</code> command. This should be implemented using
+the <code>search-request</code>, <code>search-response</code>, and
+<code>search-error</code> messages defined in the protocol
+specification. The search capability must allow for searching based on a
+sub-string match for a full logical path name (i.e., the path name using
+the logical root directory of your file space). The
+<code>advertisement</code> message must signal that search is
+possible.</p>
+<h2 id="sec:download">File download (<code>:download</code>)</h2>
+<p>Your application must allow the user to download files using the
+<code>:download</code> command. The download itself must take place over
+TCP (over IPv6). The download capability must be signalled in the
+<code>advertisement</code> message, but the download signalling itself
+will require you to extend the protocol specification as you see fit.
+Stubs for <code>download-request</code>, <code>download-response</code>,
+and <code>download-error</code> messages are provided.</p>
+<h2 id="sec:analysis">Critical analysis</h2>
+<p>You must critically evaluate the control plane protocol design as
+provided, your extensions to it, your implementation of it, and how it
+operates in practice. Your discussion must consider scalability,
+performance, security, and privacy.</p>
+<h2 id="submission">Submission</h2>
+<p>Your MMS submission should be a single zip file that contains two
+items: a report (as a PDF) and a <code>code/</code> sub-directory.
+Anything that you submit must be able to be viewed, executed, or
+processed using the Linux lab machines without any additional third
+party tools or libraries.</p>
+<h2 id="report">Report</h2>
+<p>A clear, well-written report, of around 5-7 pages is what is
+expected. Your report should be a single PDF file, detailing your
+design, implementation, and critical analysis, with the following
+sections:</p>
+<ul>
+<li><p>Introduction</p></li>
+<li><p>Discovery, including a description of the operation and testing
+of the discovery functionality;</p></li>
+<li><p>File search, including discussion of the design, operation, and
+testing of the search functionality;</p></li>
+<li><p>File download, including the protocol specification, design,
+operation, and testing of the download functionality;</p></li>
+<li><p>Analysis, presenting your critical evaluation of the protocol as
+described above;</p></li>
+<li><p>Conclusion</p></li>
+</ul>
+<h2 id="code-directory"><code>code/</code> directory</h2>
+<p>You should include a separate sub-directory named <code>code/</code>,
+which should contain the source files of your implementation. This must
+include your modified <code>protocol.txt</code> and configuration files,
+alongside a <code>code/logs/</code> sub-directory to accompany the
+discussion of your testing.</p>
+<h2 id="marking">Marking</h2>
+<p>Your mark will depend on the overall quality and completeness of your
+submission with respect to the tasks listed, including what you write in
+your report. The submission will be marked on the University’s common
+reporting scale, according to the mark descriptors given in the CS
+Student Handbook (at <a
+href="https://info.cs.st-andrews.ac.uk/student-handbook/learning-teaching/feedback.html#Mark_Descriptors"
+class="uri">https://info.cs.st-andrews.ac.uk/student-handbook/learning-teaching/feedback.html#Mark_Descriptors</a>).</p>
+<h2 id="policies-and-guidance">Policies and guidance</h2>
+<table>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Lateness penalties:</strong></td>
+<td style="text-align: left;">The standard penalty for late submission –
+Scheme A: 1 mark per 24-hour period, or part thereof – will be applied
+automatically by MMS. (see: <a
+href="https://info.cs.st-andrews.ac.uk/student-handbook/learning-teaching/assessment.html#lateness-penalties"
+class="uri">https://info.cs.st-andrews.ac.uk/student-handbook/learning-teaching/assessment.html#lateness-penalties</a>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Good Academic
+Practice:</strong></td>
+<td style="text-align: left;">The University’s policies on Good Academic
+Practice apply to this assessment (see: <a
+href="https://info.cs.st-andrews.ac.uk/student-handbook/academic/gap.html"
+class="uri">https://info.cs.st-andrews.ac.uk/student-handbook/academic/gap.html</a>).</td>
+</tr>
+</tbody>
+</table>
