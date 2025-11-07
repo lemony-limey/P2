@@ -10,3 +10,4 @@ members = ["beacon", "filetree-browser", "simple-tcp"]
 [dependencies]
 anyhow = "1.0.100"
 clap = "4.5.51"
+serde = "1.0.228"
