@@ -36,7 +36,7 @@ impl MulticastEndpoint
     /// * `config` - Application configuration
     pub fn new(config: &Configuration) -> Result<Self, Box<dyn std::error::Error>>
     {
-        let mut endpoint = MulticastEndpoint {
+        let mut endpoint = Self {
             socket_v4: None,
             socket_v6: None,
             mcast_addr_v4: None,

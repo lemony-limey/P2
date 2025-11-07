@@ -24,7 +24,7 @@ impl FileTreeBrowser
     pub fn new(path: impl AsRef<Path>, root_path: PathBuf, config: Configuration) -> Self 
     {
         debug!("Creating FileTreeBrowser for path: {:?}", path.as_ref());
-        FileTreeBrowser
+        Self
         {
             this_dir: path.as_ref().to_path_buf(),
             root_path,
