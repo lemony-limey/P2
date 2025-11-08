@@ -25,6 +25,8 @@ impl fmt::Display for DownloadMessage
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
+        write!(f, "download:")?;
+
         match self
         {
             DownloadMessage::DownloadRequest { .. } => {

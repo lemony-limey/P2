@@ -1,4 +1,4 @@
-mod protocol;
+pub mod protocol;
 
 use protocol::{
     discovery::AdvertisementMessage,
@@ -12,8 +12,11 @@ use protocol::{
 };
 use std::{
     fmt::{self, Formatter},
+    num::ParseIntError,
+    str::FromStr,
 };
-
+use std::marker::PhantomData;
+use std::num::NonZeroU64;
 
 // General Message Format
 #[derive(Clone, Debug)]
@@ -50,7 +53,7 @@ impl fmt::Display for Header
 #[derive(Clone, Debug)]
 pub struct Identifier
 {
-    pub uid:  u32,
+    pub uid:  String,
     pub fqdn: String,
 }
 
@@ -63,13 +66,24 @@ impl fmt::Display for Identifier
 }
 
 #[derive(Clone, Debug)]
-pub struct SerialNumber(u64);
+pub struct SerialNumber(pub NonZeroU64);
 
 impl fmt::Display for SerialNumber
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
         write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for SerialNumber
+{
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err>
+    {
+        let result = str::parse(s)?;
+        Ok(Self(result))
     }
 }
 
@@ -84,6 +98,34 @@ pub struct Timestamp
     pub minutes:      TwoDigitNumber,
     pub seconds:      TwoDigitNumber,
     pub milliseconds: ThreeDigitNumber,
+    // PhantomData doesn't actually use up any space, it just acts as a private
+    // member in the struct. Thus, since not every struct member is public, the default
+    // constructor cannot be freely used, and the new() function must be used instead.
+    _boo: PhantomData<usize>,
+}
+
+impl Timestamp
+{
+    pub fn try_new(
+        year: u16,
+        month: u8,
+        day: u8,
+        hours: u8,
+        minutes: u8,
+        seconds: u8,
+        milliseconds: u16,
+    ) -> Result<Self, String>
+    {
+        let year = FourDigitNumber::new(year)?;
+        let month = TwoDigitNumber::new(month)?;
+        let day = TwoDigitNumber::new(day)?;
+        let hours = TwoDigitNumber::new(hours)?;
+        let minutes = TwoDigitNumber::new(minutes)?;
+        let seconds = TwoDigitNumber::new(seconds)?;
+        let milliseconds = ThreeDigitNumber::new(milliseconds)?;
+
+        Ok(Self { year, month, day, hours, minutes, seconds, milliseconds, _boo: Default::default() })
+    }
 }
 
 impl fmt::Display for Timestamp

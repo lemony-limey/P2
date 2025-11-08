@@ -17,12 +17,12 @@ impl fmt::Display for AdvertisementMessage
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
-        write!(f, "advertisement:{}:{}", self.server_port, self.services)
+        write!(f, "discovery:{}:{}", self.server_port, self.services)
     }
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Services
 {
     search:   bool,
