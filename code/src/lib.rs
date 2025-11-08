@@ -19,8 +19,8 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct Message
 {
-    header:  Header,
-    payload: Payload,
+    pub header:  Header,
+    pub payload: Payload,
 }
 
 impl fmt::Display for Message
@@ -34,9 +34,9 @@ impl fmt::Display for Message
 #[derive(Clone, Debug)]
 pub struct Header
 {
-    identifier:    Identifier,
-    serial_number: SerialNumber,
-    timestamp:     Timestamp,
+    pub identifier:    Identifier,
+    pub serial_number: SerialNumber,
+    pub timestamp:     Timestamp,
 }
 
 impl fmt::Display for Header
@@ -50,8 +50,8 @@ impl fmt::Display for Header
 #[derive(Clone, Debug)]
 pub struct Identifier
 {
-    uid:  u32,
-    fqdn: String,
+    pub uid:  u32,
+    pub fqdn: String,
 }
 
 impl fmt::Display for Identifier
@@ -77,13 +77,13 @@ impl fmt::Display for SerialNumber
 #[derive(Clone, Debug)]
 pub struct Timestamp
 {
-    year:         FourDigitNumber,
-    month:        TwoDigitNumber,
-    day:          TwoDigitNumber,
-    hours:        TwoDigitNumber,
-    minutes:      TwoDigitNumber,
-    seconds:      TwoDigitNumber,
-    milliseconds: ThreeDigitNumber,
+    pub year:         FourDigitNumber,
+    pub month:        TwoDigitNumber,
+    pub day:          TwoDigitNumber,
+    pub hours:        TwoDigitNumber,
+    pub minutes:      TwoDigitNumber,
+    pub seconds:      TwoDigitNumber,
+    pub milliseconds: ThreeDigitNumber,
 }
 
 impl fmt::Display for Timestamp
@@ -136,8 +136,8 @@ impl fmt::Display for Payload
 #[derive(Clone, Debug)]
 pub struct ResponseID
 {
-    identifier:    Identifier,
-    serial_number: SerialNumber,
+    pub identifier:    Identifier,
+    pub serial_number: SerialNumber,
 }
 
 impl fmt::Display for ResponseID
