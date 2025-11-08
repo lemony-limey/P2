@@ -9,8 +9,8 @@ use std::{
 #[derive(Clone, Debug)]
 pub struct AdvertisementMessage
 {
-    server_port: NonZeroU16,
-    services:    Services,
+    pub server_port: NonZeroU16,
+    pub services:    Services,
 }
 
 impl fmt::Display for AdvertisementMessage
@@ -25,8 +25,8 @@ impl fmt::Display for AdvertisementMessage
 #[derive(Clone, Debug, Default)]
 pub struct Services
 {
-    search:   bool,
-    download: bool,
+    pub search:   bool,
+    pub download: bool,
 }
 
 impl fmt::Display for Services

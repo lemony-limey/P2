@@ -1,7 +1,5 @@
 pub mod constants;
 
-use std::num::NonZeroU16;
-use nom::bytes::complete::tag;
 use anyhow::anyhow;
 use bytes::Bytes;
 use code::{
@@ -17,11 +15,25 @@ use code::{
     SerialNumber,
     Timestamp,
 };
-use crate::constants::{DISCOVERY, DOWNLOAD, FOUR_DIGITS, IDENTIFIER_DELIMITER_CHAR, IDENTIFIER_DELIMITER_STR, NUMBER_OF_SERVICES, PROTOCOL_DELIMITER_CHAR, PROTOCOL_DELIMITER_STR, SEARCH, THREE_DIGITS, TIMESTAMP_DELIMITER_1, TIMESTAMP_DELIMITER_2, TWO_DIGITS};
+use crate::constants::{
+    DISCOVERY,
+    DOWNLOAD,
+    FOUR_DIGITS,
+    IDENTIFIER_DELIMITER_CHAR,
+    IDENTIFIER_DELIMITER_STR,
+    NUMBER_OF_SERVICES,
+    PROTOCOL_DELIMITER_CHAR,
+    PROTOCOL_DELIMITER_STR,
+    SEARCH,
+    THREE_DIGITS,
+    TIMESTAMP_DELIMITER_1,
+    TIMESTAMP_DELIMITER_2,
+    TWO_DIGITS
+};
 use nom::{
     bytes::complete::{
         take,
-        take_until,
+        take_until1,
     },
     character::complete::{
         char,
@@ -34,7 +46,10 @@ use nom::{
     IResult,
     Parser,
 };
-use nom::bytes::take_until1;
+use std::num::NonZeroU16;
+use nom::branch::alt;
+use nom::bytes::complete::tag;
+use code::protocol::discovery::Services;
 
 // Methods
 pub fn parse_message(input: Bytes) -> anyhow::Result<Message>
@@ -101,12 +116,12 @@ fn parse_header(input: &str) -> IResult<&str, Header>
 fn parse_identifier(input: &str) -> IResult<&str, Identifier>
 {
     // Get the identifier, then consume the delimiter "@".
-    let (remaining_input, uid) = take_until(IDENTIFIER_DELIMITER_STR).parse(input)?;
+    let (remaining_input, uid) = take_until1(IDENTIFIER_DELIMITER_STR).parse(input)?;
     let (remaining_input, _delimiter) = char(IDENTIFIER_DELIMITER_CHAR).parse(remaining_input)?;
 
     // Get the FQDN, but don't consume the following delimiter. That is out of the scope of
     // this combinator, and will be handled by the caller (most likely parse_header()).
-    let (remaining_input, fqdn) = take_until(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
+    let (remaining_input, fqdn) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
 
     Ok((
         remaining_input,
@@ -176,7 +191,7 @@ fn parse_delimiter(input: &str) -> IResult<&str, char>
 fn parse_payload(input: &str) -> IResult<&str, Payload>
 {
     // Get the type of the payload: "discovery", "download" or "search", then consume a delimiter
-    let (remaining_input, payload_type) = take_until(PROTOCOL_DELIMITER_STR).parse(input)?;
+    let (remaining_input, payload_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     let result: (&str, Payload);
@@ -206,16 +221,59 @@ fn parse_discovery_message(input: &str) -> IResult<&str, AdvertisementMessage>
     let (remaining_input, server_port) = map_res(digit1, str::parse::<NonZeroU16>).parse(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
-    // Get the services. Their order does not matter.
-    for i in 0..NUMBER_OF_SERVICES
+    // Parse the services
+    let (remaining_input, services) = parse_services(remaining_input)?;
+
+    Ok((
+        remaining_input,
+        AdvertisementMessage { server_port, services }
+    ))
+}
+
+fn parse_services(input: &str) -> IResult<&str, Services>
+{
+    // Create arrays to
+    // let mut service_names: Vec<&str> = Vec::with_capacity(NUMBER_OF_SERVICES);
+    // let mut service_statuses: [bool; NUMBER_OF_SERVICES] = [false; NUMBER_OF_SERVICES];
+
+    // Get the name of the first service and its status.
+    let (remaining_input, service_1_name) = take_until1("=").parse(input)?;
+    let (remaining_input, _delimiter) = char('=').parse(remaining_input)?;
+
+    // Get the status of the first service.
+    let (remaining_input, service_1_status) = map_res(
+        take_until1(","),
+        str::parse::<bool>
+    ).parse(remaining_input)?;
+    let (remaining_input, _delimiter) = char(',').parse(remaining_input)?;
+
+    // Get the name of the second service and its status.
+    let (remaining_input, service_2_name) = take_until1("=").parse(remaining_input)?;
+    let (remaining_input, _delimiter) = char('=').parse(remaining_input)?;
+    let (remaining_input, service_2_status) = map_res(
+        take_until1(PROTOCOL_DELIMITER_STR),
+        str::parse::<bool>
+    ).parse(remaining_input)?;
+
+    let mut services = Services::default();
+
+    match (service_1_name, service_2_name)
     {
-
+        ("search", "download") => {
+            services.search = service_1_status;
+            services.download = service_2_status;
+        },
+        ("download", "search") => {
+            services.search = service_2_status;
+            services.download = service_1_status;
+        },
+        _ => return Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
     }
-    // TODO: If this is the last service, there will be a trailing colon instead.
-    let (remaining_input, service_1) = take_until1(",").parse(remaining_input)?;
 
-
-    todo!()
+    Ok((
+        remaining_input,
+        services
+    ))
 }
 
 fn parse_download_message(input: &str) -> IResult<&str, DownloadMessage>
