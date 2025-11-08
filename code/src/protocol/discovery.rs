@@ -17,7 +17,7 @@ impl fmt::Display for AdvertisementMessage
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
-        write!(f, "discovery:{}:{}", self.server_port, self.services)
+        write!(f, "advertisement:{}:{}", self.server_port, self.services)
     }
 }
 

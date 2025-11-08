@@ -11,7 +11,7 @@ use code::{
     }
 };
 use crate::constants::{
-    DISCOVERY,
+    ADVERTISEMENT,
     DOWNLOAD,
     ERROR,
     FOUR_DIGITS,
@@ -204,9 +204,9 @@ fn parse_payload(input: &str) -> IResult<&str, Payload>
 
     match payload_type.to_lowercase().as_str()
     {
-        DISCOVERY => {
-            let (remaining_input, advertisement_message) = parse_discovery_message(remaining_input)?;
-            Ok((remaining_input, Payload::Discovery(advertisement_message)))
+        ADVERTISEMENT => {
+            let (remaining_input, advertisement_message) = parse_advertisement_message(remaining_input)?;
+            Ok((remaining_input, Payload::Advertisement(advertisement_message)))
         },
         DOWNLOAD => {
             let (remaining_input, download_message) = parse_download_message(remaining_input)?;
@@ -222,7 +222,7 @@ fn parse_payload(input: &str) -> IResult<&str, Payload>
 
 
 /// Parser for the Requirement 1 messages.
-fn parse_discovery_message(input: &str) -> IResult<&str, AdvertisementMessage>
+fn parse_advertisement_message(input: &str) -> IResult<&str, AdvertisementMessage>
 {
     // Get the server port number
     let (remaining_input, server_port) = map_res(digit1, str::parse::<NonZeroU16>).parse(input)?;
@@ -344,5 +344,56 @@ fn parse_search_error_message(input: &str) -> IResult<&str, SearchMessage>
 /// Parser for the Requirement 3 messages.
 fn parse_download_message(input: &str) -> IResult<&str, DownloadMessage>
 {
+    let (remaining_input, message_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+
+    match message_type.to_lowercase().as_str()
+    {
+        REQUEST => {
+            Ok(parse_download_request_message(remaining_input)?)
+        },
+        RESULT => {
+            Ok(parse_download_result_message(remaining_input)?)
+        },
+        ERROR => {
+            Ok(parse_download_error_message(remaining_input)?)
+        },
+        _ => Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
+    }
+}
+
+fn parse_download_request_message(input: &str) -> IResult<&str, DownloadMessage>
+{
+    let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
+
+    Ok((
+        remaining_input,
+        DownloadMessage::Request { file_string: file_string.to_string() },
+    ))
+}
+
+fn parse_download_result_message(input: &str) -> IResult<&str, DownloadMessage>
+{
+    let (remaining_input, response_id) = parse_response_id(input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+
+    // Get the file string, but don't consume the delimiter after it.
+    let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
+
     todo!()
+    // Ok((
+    //     remaining_input,
+    //
+    //     ))
+}
+
+fn parse_download_error_message(input: &str) -> IResult<&str, DownloadMessage>
+{
+    let (remaining_input, response_id) = parse_response_id(input)?;
+
+    todo!()
+    // Ok((
+    //     remaining_input,
+    //
+    // ))
 }

@@ -1,5 +1,5 @@
 // Relevant constants
-pub const DISCOVERY: &str = "discovery";
+pub const ADVERTISEMENT: &str = "advertisement";
 pub const DOWNLOAD: &str = "download";
 pub const ERROR: &str = "error";
 pub const FOUR_DIGITS: usize = 4;

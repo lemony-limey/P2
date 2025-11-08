@@ -1,5 +1,4 @@
-use std::fmt;
-use std::fmt::Formatter;
+use std::fmt::{self, Formatter};
 use crate::protocol::message::ResponseID;
 
 // R2 - Search

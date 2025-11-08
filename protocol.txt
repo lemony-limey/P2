@@ -84,7 +84,7 @@
 #### ####
 ## R1: Discover -- Advertisement message
 
-  <advertisement-message> := "discovery" ":" <server-port> : <services>
+  <advertisement-message> := "advertisement" ":" <server-port> : <services>
     # Example of a complete advertisement message, with header:
     #
     #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:10123:search=true,download=false:
@@ -164,6 +164,6 @@
 <download-response> := <download-result> / <download-error>
 
   # <download-request> := "request" ":" <file-string>
-  # <download-result> := "result" ":" ...
+  # <download-result> := "result" ":" <response-id> ...
   # <download-error> := "error" ":" <response-id> ...
 

@@ -151,7 +151,7 @@ impl fmt::Display for Timestamp
 #[derive(Clone, Debug)]
 pub enum Payload
 {
-    Discovery(AdvertisementMessage),
+    Advertisement(AdvertisementMessage),
     Search(SearchMessage),
     Download(DownloadMessage),
 }
@@ -162,7 +162,7 @@ impl fmt::Display for Payload
     {
         match self
         {
-            Payload::Discovery(message) => {
+            Payload::Advertisement(message) => {
                 write!(f, "{}", message)
             }
             Payload::Search(message) => {
