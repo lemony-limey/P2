@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
-// #[serde(default)]
+#[serde(default)]
 pub struct Configuration
 {
     pub log_file: String,

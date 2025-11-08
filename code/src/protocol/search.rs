@@ -29,8 +29,8 @@ impl fmt::Display for SearchMessage
 
         match self
         {
-            SearchMessage::Request(request) => {
-                write!(f, "request:{}", request)
+            SearchMessage::Request{ search_string } => {
+                write!(f, "request:{}", search_string)
             }
             SearchMessage::Result { response_id, file_string } => {
                 write!(f, "result:{}:{}", response_id, file_string)

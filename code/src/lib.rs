@@ -18,7 +18,8 @@ use std::{
 use std::marker::PhantomData;
 use std::num::NonZeroU64;
 
-// General Message Format
+
+/// General Message Format
 #[derive(Clone, Debug)]
 pub struct Message
 {
@@ -33,6 +34,7 @@ impl fmt::Display for Message
         write!(f, ":{}:{}:", self.header, self.payload)
     }
 }
+
 
 #[derive(Clone, Debug)]
 pub struct Header
@@ -50,6 +52,7 @@ impl fmt::Display for Header
     }
 }
 
+
 #[derive(Clone, Debug)]
 pub struct Identifier
 {
@@ -64,6 +67,7 @@ impl fmt::Display for Identifier
         write!(f, "{}@{}", self.uid, self.fqdn)
     }
 }
+
 
 #[derive(Clone, Debug)]
 pub struct SerialNumber(pub NonZeroU64);

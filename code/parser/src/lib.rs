@@ -190,6 +190,8 @@ fn parse_delimiter(input: &str) -> IResult<&str, char>
     char(PROTOCOL_DELIMITER_CHAR).parse(input)
 }
 
+
+/// Parses a payload from the input string.
 fn parse_payload(input: &str) -> IResult<&str, Payload>
 {
     // Get the type of the payload: "discovery", "download" or "search", then consume a delimiter
