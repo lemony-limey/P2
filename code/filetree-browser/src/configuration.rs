@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
-#[serde(default)]
+// #[serde(default)]
 pub struct Configuration
 {
     pub log_file: String,
@@ -33,6 +33,8 @@ impl Default for Configuration
             .or_else(|_| std::env::var("USERNAME"))
             .unwrap_or_else(|_| "user".to_string());
 
+        eprintln!("hostname: {}, username: {}", hostname, username);
+
         Self 
         {
             log_file: "filetreebrowser.log".to_string(),
@@ -61,10 +63,14 @@ impl Configuration
             .add_source(config::File::with_name(properties_file).required(false))
             .build()?;
 
-        let mut config: Configuration = settings.try_deserialize().unwrap_or_else(|_| {
-            log::info!("Using default configuration");
+        println!("{:#?}", settings);
+
+        let mut config = settings.try_deserialize().unwrap_or_else(|_| {
+            log::error!("Using default configuration");
             Configuration::default()
         });
+
+        println!("{:#?}", config);
 
         // update log file with id if using default
         if config.log_file == "filetreebrowser.log"

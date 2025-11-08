@@ -7,15 +7,15 @@ use std::fmt::{
 #[derive(Clone, Debug)]
 pub enum DownloadMessage
 {
-    DownloadRequest
+    Request
     {
 
     },
-    DownloadResult
+    Result
     {
 
     },
-    DownloadError
+    Error
     {
 
     },
@@ -29,13 +29,13 @@ impl fmt::Display for DownloadMessage
 
         match self
         {
-            DownloadMessage::DownloadRequest { .. } => {
+            DownloadMessage::Request { .. } => {
                 todo!()
             }
-            DownloadMessage::DownloadResult { .. } => {
+            DownloadMessage::Result { .. } => {
                 todo!()
             }
-            DownloadMessage::DownloadError { .. } => {
+            DownloadMessage::Error { .. } => {
                 todo!()
             }
         }

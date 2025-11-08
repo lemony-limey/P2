@@ -143,15 +143,21 @@ fn display_services(config: &Configuration)
     );
 }
 
-fn nodes() {
+/// TODO: Requirement 1
+fn nodes()
+{
     println!("\n * nodes: to do :-)");
 }
 
-fn search() {
+/// TODO: Requirement 2
+fn search()
+{
     println!("\n * search: to do :-)");
 }
 
-fn download() {
+/// TODO: Requirement 3
+fn download()
+{
     println!("\n * download: to do :-)");
 }
 
@@ -165,12 +171,14 @@ fn read_line() -> io::Result<String>
 
 fn main() -> Result<(), Box<dyn std::error::Error>> 
 {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
         .format_timestamp_millis()
         .init();
 
     let properties_file = "filetreebrowser.properties";
     let config = Configuration::load(properties_file)?;
+
+    println!("port: {}, ipv6 addr: {}", config.m_port, config.m_addr6);
 
     info!("Starting FileTreeBrowser");
     info!(

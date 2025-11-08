@@ -2,26 +2,20 @@ pub mod constants;
 
 use anyhow::anyhow;
 use bytes::Bytes;
-use code::{
-    Header,
-    Identifier,
-    Message,
-    Payload,
-    protocol::{
-        discovery::AdvertisementMessage,
-        download::DownloadMessage,
-        search::SearchMessage,
-    },
-    SerialNumber,
-    Timestamp,
-};
+use code::{Header, Identifier, Message, Payload, protocol::{
+    discovery::{AdvertisementMessage, Services},
+    download::DownloadMessage,
+    search::SearchMessage,
+}, SerialNumber, Timestamp, ResponseID};
 use crate::constants::{
     DISCOVERY,
     DOWNLOAD,
+    ERROR,
     FOUR_DIGITS,
     IDENTIFIER_DELIMITER_CHAR,
     IDENTIFIER_DELIMITER_STR,
-    NUMBER_OF_SERVICES,
+    REQUEST,
+    RESULT,
     PROTOCOL_DELIMITER_CHAR,
     PROTOCOL_DELIMITER_STR,
     SEARCH,
@@ -47,9 +41,6 @@ use nom::{
     Parser,
 };
 use std::num::NonZeroU16;
-use nom::branch::alt;
-use nom::bytes::complete::tag;
-use code::protocol::discovery::Services;
 
 // Methods
 pub fn parse_message(input: Bytes) -> anyhow::Result<Message>
@@ -92,14 +83,8 @@ fn parse_general_message(input: &str) -> IResult<&str, Message>
 
 fn parse_header(input: &str) -> IResult<&str, Header>
 {
-    // Parse the identifier
-    let (remaining_input, identifier) = parse_identifier(input)?;
-
-    // Parse the delimiter
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
-
-    // Parse the serial number
-    let (remaining_input, serial_number) = parse_serial_number(remaining_input)?;
+    // Parse the identifier and serial number
+    let (remaining_input, response_id) = parse_response_id(input)?;
 
     // Parse the delimiter
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
@@ -109,7 +94,24 @@ fn parse_header(input: &str) -> IResult<&str, Header>
 
     Ok((
         remaining_input,
-        Header { identifier, serial_number, timestamp }
+        Header
+        {
+            identifier: response_id.identifier,
+            serial_number: response_id.serial_number,
+            timestamp
+        }
+    ))
+}
+
+fn parse_response_id(input: &str) -> IResult<&str, ResponseID>
+{
+    let (remaining_input, identifier) = parse_identifier(input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+    let (remaining_input, serial_number) = parse_serial_number(remaining_input)?;
+
+    Ok((
+        remaining_input,
+        ResponseID { identifier, serial_number }
     ))
 }
 
@@ -194,27 +196,26 @@ fn parse_payload(input: &str) -> IResult<&str, Payload>
     let (remaining_input, payload_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
-    let result: (&str, Payload);
     match payload_type.to_lowercase().as_str()
     {
         DISCOVERY => {
             let (remaining_input, advertisement_message) = parse_discovery_message(remaining_input)?;
-            result = (remaining_input, Payload::Discovery(advertisement_message))
+            Ok((remaining_input, Payload::Discovery(advertisement_message)))
         },
         DOWNLOAD => {
             let (remaining_input, download_message) = parse_download_message(remaining_input)?;
-            result = (remaining_input, Payload::Download(download_message))
+            Ok((remaining_input, Payload::Download(download_message)))
         },
         SEARCH => {
             let (remaining_input, search_message) = parse_search_message(remaining_input)?;
-            result = (remaining_input, Payload::Search(search_message))
+            Ok((remaining_input, Payload::Search(search_message)))
         }
-        _ => return Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
+        _ => Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
     }
-
-    Ok(result)
 }
 
+
+/// Parser for the Requirement 1 messages.
 fn parse_discovery_message(input: &str) -> IResult<&str, AdvertisementMessage>
 {
     // Get the server port number
@@ -276,12 +277,66 @@ fn parse_services(input: &str) -> IResult<&str, Services>
     ))
 }
 
-fn parse_download_message(input: &str) -> IResult<&str, DownloadMessage>
+
+/// Parser for the Requirement 2 messages.
+fn parse_search_message(input: &str) -> IResult<&str, SearchMessage>
 {
-    todo!()
+    let (remaining_input, message_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+
+    match message_type.to_lowercase().as_str()
+    {
+        REQUEST => {
+            Ok(parse_search_request_message(remaining_input)?)
+        },
+        RESULT => {
+            Ok(parse_search_result_message(remaining_input)?)
+        },
+        ERROR => {
+            Ok(parse_search_error_message(remaining_input)?)
+        },
+        _ => Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
+    }
 }
 
-fn parse_search_message(input: &str) -> IResult<&str, SearchMessage>
+fn parse_search_request_message(input: &str) -> IResult<&str, SearchMessage>
+{
+    let (remaining_input, search_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
+
+    Ok((
+        remaining_input,
+        SearchMessage::Request { search_string: search_string.to_string() },
+    ))
+}
+
+fn parse_search_result_message(input: &str) -> IResult<&str, SearchMessage>
+{
+    // Get the Response ID and consume the following delimiter.
+    let (remaining_input, response_id) = parse_response_id(input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+
+    // Get the file string, but don't consume the delimiter after it.
+    let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
+
+    Ok((
+        remaining_input,
+        SearchMessage::Result { response_id, file_string: file_string.to_string() }
+    ))
+}
+
+fn parse_search_error_message(input: &str) -> IResult<&str, SearchMessage>
+{
+    let (remaining_input, response_id) = parse_response_id(input)?;
+
+    Ok((
+        remaining_input,
+        SearchMessage::Error { response_id }
+    ))
+}
+
+
+/// Parser for the Requirement 3 messages.
+fn parse_download_message(input: &str) -> IResult<&str, DownloadMessage>
 {
     todo!()
 }
