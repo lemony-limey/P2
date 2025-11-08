@@ -1,14 +1,19 @@
 mod protocol;
 
-use protocol::n_digit_number::{
-    FourDigitNumber,
-    ThreeDigitNumber,
-    TwoDigitNumber,
+use protocol::{
+    discovery::AdvertisementMessage,
+    download::DownloadMessage,
+    n_digit_number::{
+        FourDigitNumber,
+        ThreeDigitNumber,
+        TwoDigitNumber,
+    },
+    search::SearchMessage,
 };
 use std::{
     fmt::{self, Formatter},
-    num::NonZeroU16,
 };
+
 
 // General Message Format
 #[derive(Clone, Debug)]
@@ -140,111 +145,5 @@ impl fmt::Display for ResponseID
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
         write!(f, "{}:{}", self.identifier, self.serial_number)
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct AdvertisementMessage
-{
-    server_port: NonZeroU16,
-    services:    Services,
-}
-
-impl fmt::Display for AdvertisementMessage
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
-    {
-        write!(f, "advertisement:{}:{}", self.server_port, self.services)
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct Services
-{
-    search:   bool,
-    download: bool,
-}
-
-impl fmt::Display for Services
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
-    {
-        write!(f, "search={},download={}", self.search, self.download)
-    }
-}
-
-
-// R2 - Search
-#[derive(Clone, Debug)]
-pub enum SearchMessage
-{
-    SearchRequest(String),
-    SearchResult
-    {
-        response_id: ResponseID,
-        file_string: String,
-    },
-    SearchError
-    {
-        response_id: ResponseID,
-    },
-}
-
-impl fmt::Display for SearchMessage
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
-    {
-        match self
-        {
-            SearchMessage::SearchRequest(request) => {
-                write!(f, "search-request:{}", request)
-            }
-            SearchMessage::SearchResult { response_id, file_string } => {
-                write!(f, "search-result:{}:{}", response_id, file_string)
-            }
-            SearchMessage::SearchError { response_id } => {
-                write!(f, "search-error:{}", response_id)
-            }
-        }
-    }
-}
-
-
-// R3 - Download
-#[derive(Clone, Debug)]
-pub enum DownloadMessage
-{
-    DownloadRequest
-    {
-
-    },
-    DownloadResult
-    {
-
-    },
-    DownloadError
-    {
-
-    },
-}
-
-impl fmt::Display for DownloadMessage
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
-    {
-        match self
-        {
-            DownloadMessage::DownloadRequest { .. } => {
-                todo!()
-            }
-            DownloadMessage::DownloadResult { .. } => {
-                todo!()
-            }
-            DownloadMessage::DownloadError { .. } => {
-                todo!()
-            }
-        }
     }
 }
