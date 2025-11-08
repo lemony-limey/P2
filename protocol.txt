@@ -139,7 +139,7 @@
     #   :srv@my.host3.net:1111:20240912-170112.123:search-result:sjm55@my.host1.net:1001:/dir1/dir2/hello_world.txt:
     #
     # Note that the root, "/", here is the root_dir of the logical filespace
-    # exposed via the application, and not the local unix root directory!
+    # TODO: exposed via the application, and not the local unix root directory!
     #
     # Searches could generate multiple results, and these should be sent
     # in separate messages, but using the same response-id so they can be
@@ -163,7 +163,7 @@
 
 <download-response> := <download-result> / <download-error>
 
-  # <download-request> := ...
-  # <download-result> := ...
-  # <download-error> := ...
+  # <download-request> := "download-request" ":" <file-string>
+  # <download-result> := "download-result" ":" ...
+  # <download-error> := "download-error" ":" <response-id> ...
 

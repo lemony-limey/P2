@@ -85,10 +85,14 @@ fn main() -> io::Result<()>
     println!("connecting to {}...", addr);
 
     let mut stream = TcpStream::connect(addr)?;
+    let mut total_bytes_sent: usize = 0;
+    let mut total_bytes_received: usize = 0;
 
     println!("connected! sending hello...\n");
 
-    stream.write_all(b"hello\n")?;
+    let message = b"hello\n";
+    stream.write_all(message)?;
+    total_bytes_sent += message.len();
 
     // read response
     let mut buf = [0u8; 1024];
@@ -96,6 +100,7 @@ fn main() -> io::Result<()>
     {
         Ok(n) if n > 0 => {
             println!("received ({} bytes):\n{}", n, String::from_utf8_lossy(&buf[..n]));
+            total_bytes_received += n;
         }
         Ok(_) => println!("connection closed by peer with no data"),
         Err(e) => eprintln!("read error: {}", e),

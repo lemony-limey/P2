@@ -1,9 +1,9 @@
-mod n_digit_number;
+mod protocol;
 
-use crate::n_digit_number::{
-    TwoDigitNumber,
-    ThreeDigitNumber,
+use protocol::n_digit_number::{
     FourDigitNumber,
+    ThreeDigitNumber,
+    TwoDigitNumber,
 };
 use std::{
     fmt::{self, Formatter},
@@ -11,7 +11,7 @@ use std::{
 };
 
 // General Message Format
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Message
 {
     header:  Header,
@@ -26,7 +26,7 @@ impl fmt::Display for Message
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Header
 {
     identifier:    Identifier,
@@ -42,7 +42,7 @@ impl fmt::Display for Header
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Identifier
 {
     uid:  u32,
@@ -51,12 +51,13 @@ pub struct Identifier
 
 impl fmt::Display for Identifier
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "{}@{}", self.uid, self.fqdn)
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SerialNumber(u64);
 
 impl fmt::Display for SerialNumber
@@ -68,7 +69,7 @@ impl fmt::Display for SerialNumber
 }
 
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Timestamp
 {
     year:         FourDigitNumber,
@@ -99,7 +100,7 @@ impl fmt::Display for Timestamp
 }
 
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Payload
 {
     Discovery(AdvertisementMessage),
@@ -111,29 +112,72 @@ impl fmt::Display for Payload
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
-        todo!()
+        match self
+        {
+            Payload::Discovery(message) => {
+                write!(f, "{}", message)
+            }
+            Payload::Search(message) => {
+                write!(f, "{}", message)
+            }
+            Payload::Download(message) => {
+                write!(f, "{}", message)
+            }
+        }
     }
 }
 
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ResponseID
 {
     identifier:    Identifier,
     serial_number: SerialNumber,
 }
 
+impl fmt::Display for ResponseID
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "{}:{}", self.identifier, self.serial_number)
+    }
+}
 
-#[derive(Debug)]
+
+#[derive(Clone, Debug)]
 pub struct AdvertisementMessage
 {
     server_port: NonZeroU16,
-    services:    String,
+    services:    Services,
+}
+
+impl fmt::Display for AdvertisementMessage
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "advertisement:{}:{}", self.server_port, self.services)
+    }
+}
+
+
+#[derive(Clone, Debug)]
+pub struct Services
+{
+    search:   bool,
+    download: bool,
+}
+
+impl fmt::Display for Services
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "search={},download={}", self.search, self.download)
+    }
 }
 
 
 // R2 - Search
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum SearchMessage
 {
     SearchRequest(String),
@@ -148,7 +192,28 @@ pub enum SearchMessage
     },
 }
 
-#[derive(Debug)]
+impl fmt::Display for SearchMessage
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        match self
+        {
+            SearchMessage::SearchRequest(request) => {
+                write!(f, "search-request:{}", request)
+            }
+            SearchMessage::SearchResult { response_id, file_string } => {
+                write!(f, "search-result:{}:{}", response_id, file_string)
+            }
+            SearchMessage::SearchError { response_id } => {
+                write!(f, "search-error:{}", response_id)
+            }
+        }
+    }
+}
+
+
+// R3 - Download
+#[derive(Clone, Debug)]
 pub enum DownloadMessage
 {
     DownloadRequest
@@ -163,4 +228,23 @@ pub enum DownloadMessage
     {
 
     },
+}
+
+impl fmt::Display for DownloadMessage
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        match self
+        {
+            DownloadMessage::DownloadRequest { .. } => {
+                todo!()
+            }
+            DownloadMessage::DownloadResult { .. } => {
+                todo!()
+            }
+            DownloadMessage::DownloadError { .. } => {
+                todo!()
+            }
+        }
+    }
 }

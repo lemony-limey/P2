@@ -1,3 +1,7 @@
+use std::{
+    fmt::{self, Formatter},
+};
+
 const TWO_DIGIT_NUMBER_MAX: u8 = 99;
 const THREE_DIGIT_NUMBER_MAX: u16 = 999;
 const FOUR_DIGIT_NUMBER_MAX: u16 = 9999;
@@ -26,6 +30,14 @@ impl TwoDigitNumber
     }
 }
 
+impl fmt::Display for TwoDigitNumber
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "{:02}", self.value)
+    }
+}
+
 
 impl ThreeDigitNumber
 {
@@ -42,6 +54,14 @@ impl ThreeDigitNumber
     }
 }
 
+impl fmt::Display for ThreeDigitNumber
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "{:03}", self.value)
+    }
+}
+
 
 impl FourDigitNumber
 {
@@ -55,5 +75,13 @@ impl FourDigitNumber
         {
             Err(format!("Cannot convert \"{value}\" into a FourDigitNumber"))
         }
+    }
+}
+
+impl fmt::Display for FourDigitNumber
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "{:04}", self.value)
     }
 }
