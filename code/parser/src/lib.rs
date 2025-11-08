@@ -1,24 +1,28 @@
 pub mod constants;
+pub mod parser_implementation
+{
+    pub mod discovery;
+    pub mod download;
+    pub mod search;
+}
+pub mod protocol
+{
+    pub mod discovery;
+    pub mod download;
+    pub mod message;
+    pub mod n_digit_number;
+    pub mod search;
+}
+
 
 use anyhow::anyhow;
 use bytes::Bytes;
-use code::{
-    protocol::{
-        discovery::{AdvertisementMessage, Services},
-        download::DownloadMessage,
-        message::{Header, Identifier, Message, Payload, SerialNumber, Timestamp, ResponseID},
-        search::SearchMessage,
-    }
-};
-use crate::constants::{
+use constants::{
     ADVERTISEMENT,
     DOWNLOAD,
-    ERROR,
     FOUR_DIGITS,
     IDENTIFIER_DELIMITER_CHAR,
     IDENTIFIER_DELIMITER_STR,
-    REQUEST,
-    RESULT,
     PROTOCOL_DELIMITER_CHAR,
     PROTOCOL_DELIMITER_STR,
     SEARCH,
@@ -28,14 +32,8 @@ use crate::constants::{
     TWO_DIGITS
 };
 use nom::{
-    bytes::complete::{
-        take,
-        take_until1,
-    },
-    character::complete::{
-        char,
-        digit1,
-    },
+    bytes::complete::{take, take_until1},
+    character::complete::{char, digit1},
     combinator::map_res,
     error::ErrorKind,
     Err,
@@ -43,13 +41,21 @@ use nom::{
     IResult,
     Parser,
 };
-use std::num::NonZeroU16;
+use parser_implementation::{
+    search::parse_search_message,
+    download::parse_download_message,
+    discovery::parse_advertisement_message,
+};
+use protocol::{
+    message::{Header, Identifier, Message, Payload, ResponseID, SerialNumber, Timestamp}
+};
 
 
 // Methods
+/// This is the public method that will be called from the other crates.
 pub fn parse_message(input: Bytes) -> anyhow::Result<Message>
 {
-    let result = parse_general_message(str::from_utf8(&input)?)
+    let result = parse_message_inner(str::from_utf8(&input)?)
         .finish();
 
     if let Ok((_remaining_input, message)) = result
@@ -62,7 +68,7 @@ pub fn parse_message(input: Bytes) -> anyhow::Result<Message>
     }
 }
 
-fn parse_general_message(input: &str) -> IResult<&str, Message>
+fn parse_message_inner(input: &str) -> IResult<&str, Message>
 {
     // Parse the first ":" character
     let (remaining_input, _delimiter) = parse_delimiter(input)?;
@@ -218,182 +224,4 @@ fn parse_payload(input: &str) -> IResult<&str, Payload>
         }
         _ => Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
     }
-}
-
-
-/// Parser for the Requirement 1 messages.
-fn parse_advertisement_message(input: &str) -> IResult<&str, AdvertisementMessage>
-{
-    // Get the server port number
-    let (remaining_input, server_port) = map_res(digit1, str::parse::<NonZeroU16>).parse(input)?;
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
-
-    // Parse the services
-    let (remaining_input, services) = parse_services(remaining_input)?;
-
-    Ok((
-        remaining_input,
-        AdvertisementMessage { server_port, services }
-    ))
-}
-
-fn parse_services(input: &str) -> IResult<&str, Services>
-{
-    // Create arrays to
-    // let mut service_names: Vec<&str> = Vec::with_capacity(NUMBER_OF_SERVICES);
-    // let mut service_statuses: [bool; NUMBER_OF_SERVICES] = [false; NUMBER_OF_SERVICES];
-
-    // Get the name of the first service and its status.
-    let (remaining_input, service_1_name) = take_until1("=").parse(input)?;
-    let (remaining_input, _delimiter) = char('=').parse(remaining_input)?;
-
-    // Get the status of the first service.
-    let (remaining_input, service_1_status) = map_res(
-        take_until1(","),
-        str::parse::<bool>
-    ).parse(remaining_input)?;
-    let (remaining_input, _delimiter) = char(',').parse(remaining_input)?;
-
-    // Get the name of the second service and its status.
-    let (remaining_input, service_2_name) = take_until1("=").parse(remaining_input)?;
-    let (remaining_input, _delimiter) = char('=').parse(remaining_input)?;
-    let (remaining_input, service_2_status) = map_res(
-        take_until1(PROTOCOL_DELIMITER_STR),
-        str::parse::<bool>
-    ).parse(remaining_input)?;
-
-    let mut services = Services::default();
-
-    match (service_1_name, service_2_name)
-    {
-        ("search", "download") => {
-            services.search = service_1_status;
-            services.download = service_2_status;
-        },
-        ("download", "search") => {
-            services.search = service_2_status;
-            services.download = service_1_status;
-        },
-        _ => return Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
-    }
-
-    Ok((
-        remaining_input,
-        services
-    ))
-}
-
-
-/// Parser for the Requirement 2 messages.
-fn parse_search_message(input: &str) -> IResult<&str, SearchMessage>
-{
-    let (remaining_input, message_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
-
-    match message_type.to_lowercase().as_str()
-    {
-        REQUEST => {
-            Ok(parse_search_request_message(remaining_input)?)
-        },
-        RESULT => {
-            Ok(parse_search_result_message(remaining_input)?)
-        },
-        ERROR => {
-            Ok(parse_search_error_message(remaining_input)?)
-        },
-        _ => Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
-    }
-}
-
-fn parse_search_request_message(input: &str) -> IResult<&str, SearchMessage>
-{
-    let (remaining_input, search_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
-
-    Ok((
-        remaining_input,
-        SearchMessage::Request { search_string: search_string.to_string() },
-    ))
-}
-
-fn parse_search_result_message(input: &str) -> IResult<&str, SearchMessage>
-{
-    // Get the Response ID and consume the following delimiter.
-    let (remaining_input, response_id) = parse_response_id(input)?;
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
-
-    // Get the file string, but don't consume the delimiter after it.
-    let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
-
-    Ok((
-        remaining_input,
-        SearchMessage::Result { response_id, file_string: file_string.to_string() }
-    ))
-}
-
-fn parse_search_error_message(input: &str) -> IResult<&str, SearchMessage>
-{
-    let (remaining_input, response_id) = parse_response_id(input)?;
-
-    Ok((
-        remaining_input,
-        SearchMessage::Error { response_id }
-    ))
-}
-
-
-/// Parser for the Requirement 3 messages.
-fn parse_download_message(input: &str) -> IResult<&str, DownloadMessage>
-{
-    let (remaining_input, message_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
-
-    match message_type.to_lowercase().as_str()
-    {
-        REQUEST => {
-            Ok(parse_download_request_message(remaining_input)?)
-        },
-        RESULT => {
-            Ok(parse_download_result_message(remaining_input)?)
-        },
-        ERROR => {
-            Ok(parse_download_error_message(remaining_input)?)
-        },
-        _ => Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
-    }
-}
-
-fn parse_download_request_message(input: &str) -> IResult<&str, DownloadMessage>
-{
-    let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
-
-    Ok((
-        remaining_input,
-        DownloadMessage::Request { file_string: file_string.to_string() },
-    ))
-}
-
-fn parse_download_result_message(input: &str) -> IResult<&str, DownloadMessage>
-{
-    let (remaining_input, response_id) = parse_response_id(input)?;
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
-
-    // Get the file string, but don't consume the delimiter after it.
-    let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
-
-    todo!()
-    // Ok((
-    //     remaining_input,
-    //
-    //     ))
-}
-
-fn parse_download_error_message(input: &str) -> IResult<&str, DownloadMessage>
-{
-    let (remaining_input, response_id) = parse_response_id(input)?;
-
-    todo!()
-    // Ok((
-    //     remaining_input,
-    //
-    // ))
 }
