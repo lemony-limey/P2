@@ -12,6 +12,9 @@ use std::time::Duration;
 
 use configuration::Configuration;
 
+const PROPERTIES_FILE: &str = "filetreebrowser.toml";
+
+
 pub struct FileTreeBrowser
 {
     pub this_dir: PathBuf,
@@ -144,6 +147,7 @@ fn display_services(config: &Configuration)
 }
 
 /// TODO: Requirement 1
+/// Using discovery multicast messages, find all 
 fn nodes()
 {
     println!("\n * nodes: to do :-)");
@@ -171,20 +175,16 @@ fn read_line() -> io::Result<String>
 
 fn main() -> Result<(), Box<dyn std::error::Error>> 
 {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()
         .init();
 
-    let properties_file = "filetreebrowser.properties";
-    let config = Configuration::load(properties_file)?;
+    let config = Configuration::load(PROPERTIES_FILE)?;
 
     println!("port: {}, ipv6 addr: {}", config.m_port, config.m_addr6);
 
     info!("Starting FileTreeBrowser");
-    info!(
-        "Configuration loaded: id={}, root_dir={}",
-        config.id, config.root_dir
-    );
+    info!("Configuration loaded: id={}, root_dir={}", config.id, config.root_dir);
     debug!("Full config: {:?}", config);
 
     let root_path = fs::canonicalize(&config.root_dir)?;

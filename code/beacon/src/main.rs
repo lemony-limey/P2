@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
 
     info!("Starting Beacon application");
 
-    let config = Configuration::load("beacon.properties")?;
+    let config = Configuration::load("beacon.toml")?;
     let username = std::env::var("USER")
         .or_else(|_| std::env::var("USERNAME"))
         .unwrap_or_else(|_| "user".to_string());

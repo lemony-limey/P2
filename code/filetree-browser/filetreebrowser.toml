@@ -21,7 +21,7 @@ root_dir = "root_dir"
 m_addr6 = "ff02::4105:4105"
 
 # hopefully not used by anyone else! set this to your uid (see above)
-m_port = 40105
+m_port = 23756
 
 # hopcount before expiry -- 2 is enough, as no multicast routing in labs
 m_ttl = 2

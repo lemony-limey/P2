@@ -2,11 +2,14 @@ pub mod constants;
 
 use anyhow::anyhow;
 use bytes::Bytes;
-use code::{Header, Identifier, Message, Payload, protocol::{
-    discovery::{AdvertisementMessage, Services},
-    download::DownloadMessage,
-    search::SearchMessage,
-}, SerialNumber, Timestamp, ResponseID};
+use code::{
+    protocol::{
+        discovery::{AdvertisementMessage, Services},
+        download::DownloadMessage,
+        message::{Header, Identifier, Message, Payload, SerialNumber, Timestamp, ResponseID},
+        search::SearchMessage,
+    }
+};
 use crate::constants::{
     DISCOVERY,
     DOWNLOAD,
@@ -41,6 +44,7 @@ use nom::{
     Parser,
 };
 use std::num::NonZeroU16;
+
 
 // Methods
 pub fn parse_message(input: Bytes) -> anyhow::Result<Message>

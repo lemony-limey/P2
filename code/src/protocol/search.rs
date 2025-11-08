@@ -1,6 +1,6 @@
 use std::fmt;
 use std::fmt::Formatter;
-use crate::ResponseID;
+use crate::protocol::message::ResponseID;
 
 // R2 - Search
 #[derive(Clone, Debug)]

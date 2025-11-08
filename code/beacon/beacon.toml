@@ -3,7 +3,7 @@
 #
 
 # various messages
-logFile=beacon.log
+log_file = "beacon.log"
 
 # #### ####
 # multicast socket configuration
@@ -16,40 +16,40 @@ logFile=beacon.log
 
 # string, CS4105 beacon group
 # set values to "null" to disable use of IPv4 or IPv6, as required
-#mAddr4=239.255.4.105
-mAddr4=null
-#mAddr6=ff02::4105:4105
-mAddr6=null
+m_addr4 = "239.255.4.105"
+#m_addr4 = "null"
+mAddr6 = "ff02::4105:4105"
+#m_addr6 = "null"
 
 # hopefully not used by anyone else!
 # remember firewalling on hosts: >8000
 # mPort=40105
-mPort=23756
+m_port = 23756
 
 # hopcount before expiry -- even 1 is enough, as no mulitcast routing in labs
-mTTL=2
+m_ttl = 2
 
 # false: do/do-not see my own transmissions.
 # Note that this might behave differently depending on OS.
-loopback=false
+loopback = false
 
 # Allow other applications on this host to use this address
 # Set to "true" when using both IPv4 and IPv6
-reuseAddr=true
+reuse_addr = true
 
 # finite time to block on socket, ms
-soTimeout=100
+so_timeout = 100
 
 #
 # application-specfic config
 #
 
 # maximum message size
-msgSize=256
+msg_size = 256
 
 # ms, 1s
-sleepTime=1000
+sleep_time = 1000
 
 # how many to send before quiting
-beacon=100
+beacon = 100
 

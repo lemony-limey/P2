@@ -36,4 +36,3 @@ impl fmt::Display for Services
         write!(f, "search={},download={}", self.search, self.download)
     }
 }
-
