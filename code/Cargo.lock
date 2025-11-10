@@ -686,7 +686,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytes",
- "code",
  "nom 8.0.0",
 ]
 

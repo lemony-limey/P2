@@ -1,13 +1,17 @@
-use nom::Parser;
+use crate::{
+    constants::PROTOCOL_DELIMITER_STR,
+    parser::message::parse_delimiter,
+    protocol::discovery::{AdvertisementMessage, Services},
+};
+use nom::{
+    bytes::complete::take_until1,
+    character::complete::{char, digit1},
+    combinator::map_res,
+    error::ErrorKind,
+    IResult,
+    Parser,
+};
 use std::num::NonZeroU16;
-use nom::bytes::complete::take_until1;
-use nom::character::complete::{char, digit1};
-use nom::combinator::map_res;
-use nom::error::ErrorKind;
-use nom::IResult;
-use crate::constants::PROTOCOL_DELIMITER_STR;
-use crate::parse_delimiter;
-use crate::protocol::discovery::{AdvertisementMessage, Services};
 
 /// Parser for the Requirement 1 messages.
 pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, AdvertisementMessage>

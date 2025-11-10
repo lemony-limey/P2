@@ -1,20 +1,22 @@
-use crate::protocol::{
-    discovery::AdvertisementMessage,
-    download::DownloadMessage,
+use crate::{
     n_digit_number::{
         FourDigitNumber,
         ThreeDigitNumber,
         TwoDigitNumber,
     },
-    search::SearchMessage,
+    protocol::{
+        discovery::AdvertisementMessage,
+        download::DownloadMessage,
+        search::SearchMessage,
+    },
 };
 use std::{
     fmt::{self, Formatter},
-    num::ParseIntError,
+    marker::PhantomData,
+    num::{ParseIntError, NonZeroU64},
     str::FromStr,
 };
-use std::marker::PhantomData;
-use std::num::NonZeroU64;
+
 
 /// General Message Format
 #[derive(Clone, Debug)]

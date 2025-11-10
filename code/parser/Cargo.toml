@@ -6,5 +6,4 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.100"
 bytes = "1.10.1"
-code = { path = "../../code" }
 nom = "8.0.0"

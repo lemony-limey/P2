@@ -1,9 +1,14 @@
-use nom::bytes::complete::take_until1;
-use nom::error::ErrorKind;
-use nom::{IResult, Parser};
-use crate::constants::{ERROR, PROTOCOL_DELIMITER_STR, REQUEST, RESULT};
-use crate::{parse_delimiter, parse_response_id};
-use crate::protocol::search::SearchMessage;
+use crate::{
+    constants::{ERROR, PROTOCOL_DELIMITER_STR, REQUEST, RESULT},
+    parser::message::{parse_delimiter, parse_response_id},
+    protocol::search::SearchMessage,
+};
+use nom::{
+    bytes::complete::take_until1,
+    error::ErrorKind,
+    IResult,
+    Parser,
+};
 
 /// Parser for the Requirement 2 messages.
 pub(crate) fn parse_search_message(input: &str) -> IResult<&str, SearchMessage>

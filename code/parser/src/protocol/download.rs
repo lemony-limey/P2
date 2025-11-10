@@ -1,5 +1,5 @@
-use std::fmt::{self, Formatter};
 use crate::protocol::message::ResponseID;
+use std::fmt::{self, Formatter};
 
 // R3 - Download
 #[derive(Clone, Debug)]

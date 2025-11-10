@@ -1,8 +1,5 @@
 use std::{
-    fmt::{
-        self,
-        Formatter,
-    },
+    fmt::{self, Formatter},
     num::NonZeroU16,
 };
 
