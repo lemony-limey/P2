@@ -57,7 +57,7 @@ impl Default for Configuration
 impl Configuration
 {
     /// automatically grab the local hostname and IP addresses
-    pub fn load(properties_file: &str) -> Result<Self, Box<dyn std::error::Error>>
+    pub fn load(properties_file: &str) -> anyhow::Result<Self>
     {
         let settings = config::Config::builder()
             .add_source(config::File::with_name(properties_file).required(false))
@@ -82,7 +82,7 @@ impl Configuration
         Ok(config)
     }
 
-    fn detect_network_info(&mut self) -> Result<(), Box<dyn std::error::Error>>
+    fn detect_network_info(&mut self) -> anyhow::Result<()>
     {
         // grab hostname
         self.host_name = hostname::get()?

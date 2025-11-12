@@ -6,6 +6,7 @@ pub const FOUR_DIGITS: usize = 4;
 pub const IDENTIFIER_DELIMITER_CHAR: char = '@';
 pub const IDENTIFIER_DELIMITER_STR: &str = "@";
 pub const NUMBER_OF_SERVICES: usize = 2;
+pub const ONE_MILLION: u32 = 1_000_000;
 pub const PROTOCOL_DELIMITER_CHAR: char = ':';
 pub const PROTOCOL_DELIMITER_STR: &str = ":";
 pub const REQUEST: &str = "request";

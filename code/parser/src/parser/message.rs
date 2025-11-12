@@ -36,7 +36,7 @@ use nom::{
 
 // Methods
 /// This is the public method that will be called from the other crates.
-pub fn parse_message(input: Bytes) -> anyhow::Result<Message>
+pub fn parse_message(input: &Bytes) -> anyhow::Result<Message>
 {
     let result = parse_message_inner(str::from_utf8(&input)?)
         .finish();
@@ -47,7 +47,7 @@ pub fn parse_message(input: Bytes) -> anyhow::Result<Message>
     }
     else
     {
-        Err(anyhow!(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })))
+        Err(anyhow!(Err::Failure(nom::error::Error { input: input.clone(), code: ErrorKind::Fail })))
     }
 }
 
@@ -120,11 +120,7 @@ pub(crate) fn parse_identifier(input: &str) -> IResult<&str, Identifier>
 
     Ok((
         remaining_input,
-        Identifier
-        {
-            uid: uid.to_string(),
-            fqdn: fqdn.to_string(),
-        }
+        Identifier { uid, fqdn }
     ))
 }
 
@@ -160,7 +156,7 @@ pub(crate) fn parse_timestamp(input: &str) -> IResult<&str, Timestamp>
     let (remaining_input, milliseconds) = map_res(take(THREE_DIGITS), str::parse::<u16>).parse(remaining_input)?;
 
     // Attempt to create a Timestamp object with the provided values.
-    let Ok(timestamp) = Timestamp::try_new(
+    let Ok(timestamp) = Timestamp::new(
         year,
         month,
         day,

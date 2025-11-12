@@ -17,16 +17,15 @@ use std::{
     str::FromStr,
 };
 
-
 /// General Message Format
 #[derive(Clone, Debug)]
-pub struct Message
+pub struct Message<'a>
 {
-    pub header:  Header,
-    pub payload: Payload,
+    pub header:  Header<'a>,
+    pub payload: Payload<'a>,
 }
 
-impl fmt::Display for Message
+impl fmt::Display for Message<'_>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
@@ -36,14 +35,14 @@ impl fmt::Display for Message
 
 
 #[derive(Clone, Debug)]
-pub struct Header
+pub struct Header<'a>
 {
-    pub identifier:    Identifier,
+    pub identifier:    Identifier<'a>,
     pub serial_number: SerialNumber,
     pub timestamp:     Timestamp,
 }
 
-impl fmt::Display for Header
+impl fmt::Display for Header<'_>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
@@ -53,13 +52,13 @@ impl fmt::Display for Header
 
 
 #[derive(Clone, Debug)]
-pub struct Identifier
+pub struct Identifier<'a>
 {
-    pub uid:  String,
-    pub fqdn: String,
+    pub uid:  &'a str,
+    pub fqdn: &'a str,
 }
 
-impl fmt::Display for Identifier
+impl<'a> fmt::Display for Identifier<'a>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
@@ -109,7 +108,7 @@ pub struct Timestamp
 
 impl Timestamp
 {
-    pub fn try_new(
+    pub fn new(
         year: u16,
         month: u8,
         day: u8,
@@ -117,7 +116,7 @@ impl Timestamp
         minutes: u8,
         seconds: u8,
         milliseconds: u16,
-    ) -> Result<Self, String>
+    ) -> anyhow::Result<Self>
     {
         let year = FourDigitNumber::new(year)?;
         let month = TwoDigitNumber::new(month)?;
@@ -151,14 +150,14 @@ impl fmt::Display for Timestamp
 
 
 #[derive(Clone, Debug)]
-pub enum Payload
+pub enum Payload<'a>
 {
     Advertisement(AdvertisementMessage),
-    Search(SearchMessage),
-    Download(DownloadMessage),
+    Search(SearchMessage<'a>),
+    Download(DownloadMessage<'a>),
 }
 
-impl fmt::Display for Payload
+impl fmt::Display for Payload<'_>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
@@ -179,13 +178,13 @@ impl fmt::Display for Payload
 
 
 #[derive(Clone, Debug)]
-pub struct ResponseID
+pub struct ResponseID<'a>
 {
-    pub identifier:    Identifier,
+    pub identifier:    Identifier<'a>,
     pub serial_number: SerialNumber,
 }
 
-impl fmt::Display for ResponseID
+impl fmt::Display for ResponseID<'_>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {

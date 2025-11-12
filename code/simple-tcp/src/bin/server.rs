@@ -13,7 +13,7 @@ const SLEEP_TIME_MS: u64 = 1000;
 const BUFFER_SIZE: usize = 80;
 const SO_TIMEOUT_MS: u64 = 10;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> 
+fn main() -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()

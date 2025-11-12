@@ -2,15 +2,24 @@
 //! (based on Saleem's java variant)
 
 mod configuration;
+mod serial_number;
 
+use parser::protocol::message::{SerialNumber, Timestamp};
+use parser::protocol::message::Identifier;
+use parser::protocol::message::Header;
 use log::{debug, info, warn};
 use std::fs;
 use std::io::{self, BufRead, Write};
+use std::num::NonZeroU16;
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
-
+use anyhow::Context;
+use chrono::{Datelike, SubsecRound, Timelike};
 use configuration::Configuration;
+use parser::constants::ONE_MILLION;
+use parser::protocol::discovery::{AdvertisementMessage, Services};
+use parser::protocol::message::{Message, Payload};
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
@@ -46,11 +55,11 @@ impl FileTreeBrowser
     }
 
     /// print a formatted list of files and directories.
-    pub fn print_list(&self) -> io::Result<()> 
+    pub fn print_list(&self) -> anyhow::Result<()>
     {
         let entries = fs::read_dir(&self.this_dir)?;
 
-        println!("\n+++  id: {}", self.config.id);
+        println!("\n+++  id: {}", self.config.uid);
         println!("+++ dir: {}", self.logical_path_name(&self.this_dir));
         println!("+++\tfilename:");
 
@@ -139,7 +148,7 @@ fn display_services(config: &Configuration)
 {
     println!(
         ":id={}:timestamp={}:search={},download={}:",
-        config.id,
+        config.uid,
         timestamp(),
         config.search,
         config.download
@@ -148,24 +157,73 @@ fn display_services(config: &Configuration)
 
 /// TODO: Requirement 1
 /// Using discovery multicast messages, find all 
-fn nodes()
+fn nodes(config: &mut Configuration) -> anyhow::Result<()>
 {
     println!("\n * nodes: to do :-)");
+
+    let current_time = chrono::Utc::now();
+    let serial_number = SerialNumber(config.get_next_serial_number());
+
+    // Create discovery message
+    let message = Message
+    {
+        header: Header {
+            identifier: Identifier {
+                uid: &config.uid,
+                fqdn: &config.fqdn,
+            },
+            serial_number,
+            timestamp: Timestamp::new(
+                current_time.year() as u16,
+                current_time.month() as u8,
+                current_time.day() as u8,
+                current_time.hour() as u8,
+                current_time.minute() as u8,
+                current_time.second() as u8,
+                (current_time.round_subsecs(3).nanosecond() / ONE_MILLION) as u16
+            )
+                .with_context(|| "nodes(): could not create timestamp with supplied values")?,
+        },
+        payload: Payload::Advertisement(
+            AdvertisementMessage
+            {
+                server_port: NonZeroU16::new(config.m_port)
+                    .with_context(|| "nodes(): Could not convert supplied port number to NonZeroU16")?,
+                services: Services {
+                    search: false,
+                    download: false,
+                },
+            }
+        ),
+    };
+
+    // Send message
+
+
+    // Receive messages
+
+    println!("{}", message);
+
+    Ok(())
 }
 
 /// TODO: Requirement 2
-fn search()
+fn search(config: &mut Configuration) -> anyhow::Result<()>
 {
     println!("\n * search: to do :-)");
+
+    Ok(())
 }
 
 /// TODO: Requirement 3
-fn download()
+fn download(config: &mut Configuration) -> anyhow::Result<()>
 {
     println!("\n * download: to do :-)");
+
+    Ok(())
 }
 
-fn read_line() -> io::Result<String> 
+fn read_line() -> anyhow::Result<String>
 {
     let stdin = io::stdin();
     let mut line = String::new();
@@ -173,18 +231,18 @@ fn read_line() -> io::Result<String>
     Ok(line.trim().to_string())
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> 
+fn main() -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()
         .init();
 
-    let config = Configuration::load(PROPERTIES_FILE)?;
+    let mut config = Configuration::load(PROPERTIES_FILE)?;
 
     println!("port: {}, ipv6 addr: {}", config.m_port, config.m_addr6);
 
     info!("Starting FileTreeBrowser");
-    info!("Configuration loaded: id={}, root_dir={}", config.id, config.root_dir);
+    info!("Configuration loaded: id={}, root_dir={}", config.uid, config.root_dir);
     debug!("Full config: {:?}", config);
 
     let root_path = fs::canonicalize(&config.root_dir)?;
@@ -240,11 +298,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
                 }
             }
 
-            ":nodes" => nodes(),
+            ":nodes" => {
+                if let Err(_) = nodes(&mut config) { quit_browser = true; }
+            },
 
-            ":search" => search(),
+            ":search" => {
+                if let Err(_) = search(&mut config) { quit_browser = true; }
+            },
 
-            ":download" => download(),
+            ":download" => {
+                if let Err(_) = download(&mut config) { quit_browser = true; }
+            },
 
             _ => {
                 if let Some(path) = ftb.search_list(&user_cmd) 

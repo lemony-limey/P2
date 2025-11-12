@@ -8,5 +8,3 @@ resolver = "3"
 members = ["beacon", "filetree-browser", "parser", "simple-tcp"]
 
 [dependencies]
-anyhow = "1.0.100"
-clap = "4.5.51"

@@ -13,7 +13,7 @@ use multicast::{MulticastEndpoint, PacketType};
 
 const TX_RATIO: u32 = 5;
 
-fn main() -> Result<(), Box<dyn std::error::Error>>
+fn main() -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
 fn rx_beacon(
     endpoint: &mut MulticastEndpoint,
     config: &Configuration,
-) -> Result<(), Box<dyn std::error::Error>>
+) -> anyhow::Result<()>
 {
     let mut buffer = vec![0u8; config.msg_size];
 
@@ -85,7 +85,7 @@ fn tx_beacon(
     endpoint: &mut MulticastEndpoint,
     config: &Configuration,
     username: &str,
-) -> Result<(), Box<dyn std::error::Error>>
+) -> anyhow::Result<()>
 {
     let now = chrono::Local::now().format("%Y%m%d-%H%M%S%.3f");
     let body = format!("|{}|{}|{}|", now, username, config.host_name);

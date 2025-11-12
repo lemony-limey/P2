@@ -1,6 +1,7 @@
 //! Multicast networking functionality wrapper using socket2
 //! Rust version based on saleem's original Java
 
+use anyhow::anyhow;
 use log::{debug, error, info};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::mem::MaybeUninit;
@@ -34,7 +35,7 @@ impl MulticastEndpoint
     ///
     /// # Arguments
     /// * `config` - Application configuration
-    pub fn new(config: &Configuration) -> Result<Self, Box<dyn std::error::Error>>
+    pub fn new(config: &Configuration) -> anyhow::Result<Self>
     {
         let mut endpoint = Self {
             socket_v4: None,
@@ -58,14 +59,14 @@ impl MulticastEndpoint
 
         if endpoint.socket_v4.is_none() && endpoint.socket_v6.is_none()
         {
-            return Err("No multicast group defined".into());
+            return Err(anyhow!("No multicast group defined"));
         }
 
         Ok(endpoint)
     }
 
     /// sets up IPv4 multicast socket.
-    fn setup_ipv4(&mut self) -> Result<(), Box<dyn std::error::Error>>
+    fn setup_ipv4(&mut self) -> anyhow::Result<()>
     {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
 
@@ -88,7 +89,7 @@ impl MulticastEndpoint
     }
 
     /// sets up IPv6 multicast socket.
-    fn setup_ipv6(&mut self) -> Result<(), Box<dyn std::error::Error>>
+    fn setup_ipv6(&mut self) -> anyhow::Result<()>
     {
         let socket = Socket::new(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
 
@@ -111,7 +112,7 @@ impl MulticastEndpoint
     }
 
     /// join the multicast group(s).
-    pub fn join(&mut self) -> Result<(), Box<dyn std::error::Error>>
+    pub fn join(&mut self) -> anyhow::Result<()>
     {
         if let Some(ref socket) = self.socket_v4
         {
@@ -141,7 +142,7 @@ impl MulticastEndpoint
     }
 
     /// leave the multicast group(s).
-    pub fn leave(&mut self) -> Result<(), Box<dyn std::error::Error>>
+    pub fn leave(&mut self) -> anyhow::Result<()>
     {
         if let Some(ref socket) = self.socket_v4
         {
@@ -177,7 +178,7 @@ impl MulticastEndpoint
     ///
     /// # Returns
     /// the type of packet received (IPv4, IPv6, or None)
-    pub fn rx(&mut self, buffer: &mut [u8]) -> Result<PacketType, Box<dyn std::error::Error>>
+    pub fn rx(&mut self, buffer: &mut [u8]) -> anyhow::Result<PacketType>
     {
         let mut uninit_buffer: Vec<MaybeUninit<u8>> = vec![MaybeUninit::uninit(); buffer.len()];
 
@@ -244,7 +245,7 @@ impl MulticastEndpoint
         &mut self,
         pkt_type: PacketType,
         data: &[u8],
-    ) -> Result<bool, Box<dyn std::error::Error>>
+    ) -> anyhow::Result<bool>
     {
         match pkt_type
         {

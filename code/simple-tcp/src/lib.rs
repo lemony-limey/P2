@@ -1,10 +1,11 @@
 //! shared utilities for TCP client and server
 
+use anyhow::anyhow;
 use std::net::{IpAddr, Ipv6Addr};
 use log::info;
 
 /// this implementation works for lab machines
-pub fn get_link_local_ipv6() -> Result<(Ipv6Addr, String), Box<dyn std::error::Error>>
+pub fn get_link_local_ipv6() -> anyhow::Result<(Ipv6Addr, String)>
 {
     for iface in local_ip_address::list_afinet_netifas()?
     {
@@ -18,7 +19,7 @@ pub fn get_link_local_ipv6() -> Result<(Ipv6Addr, String), Box<dyn std::error::E
         }
     }
     
-    Err("No link-local IPv6 address found".into())
+    Err(anyhow!("No link-local IPv6 address found"))
 }
 
 /// gets the Unix UID for the current user

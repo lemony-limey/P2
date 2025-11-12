@@ -1,0 +1,34 @@
+use std::num::{NonZeroU64};
+use anyhow::Context;
+
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct SerialNumberGenerator
+{
+    next_serial_number: NonZeroU64,
+}
+
+impl SerialNumberGenerator
+{
+    pub fn new() -> anyhow::Result<Self>
+    {
+        let next_serial_number = NonZeroU64::new(1u64)
+            .with_context(|| "SerialNumberGenerator::new(): this should never fail")?;
+        Ok(Self { next_serial_number })
+    }
+
+    pub fn get_next_serial_number(&mut self) -> NonZeroU64
+    {
+        let serial_number = self.next_serial_number;
+        let _ = self.next_serial_number.saturating_add(1u64);
+
+        serial_number
+    }
+}
+
+impl Default for SerialNumberGenerator
+{
+    fn default() -> Self
+    {
+        Self::new().unwrap()
+    }
+}

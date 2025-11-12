@@ -1,11 +1,15 @@
+use std::num::NonZeroU64;
+use std::marker::PhantomData;
 use serde::Deserialize;
+use crate::serial_number::SerialNumberGenerator;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct Configuration
 {
     pub log_file: String,
-    pub id: String,
+    pub uid: String,
+    pub fqdn: String,
     pub root_dir: String,
     pub m_addr6: String,
     pub m_port: u16,
@@ -18,6 +22,9 @@ pub struct Configuration
     pub maximum_advertisement_period: u64,
     pub search: String,
     pub download: bool,
+    // Do not attempt to serialise or deserialise the following.
+    #[serde(skip)]
+    serial_number_generator: SerialNumberGenerator,
 }
 
 impl Default for Configuration 
@@ -38,7 +45,8 @@ impl Default for Configuration
         Self 
         {
             log_file: "filetreebrowser.log".to_string(),
-            id: format!("{}@{}", username, hostname),
+            uid: username,
+            fqdn: hostname,
             root_dir: "root_dir".to_string(),
             m_addr6: "ff02::4105:4105".to_string(),
             m_port: 4105,
@@ -51,13 +59,14 @@ impl Default for Configuration
             maximum_advertisement_period: 1000,
             search: "none".to_string(),
             download: false,
+            serial_number_generator: Default::default(),
         }
     }
 }
 
 impl Configuration 
 {
-    pub fn load(properties_file: &str) -> Result<Self, Box<dyn std::error::Error>> 
+    pub fn load(properties_file: &str) -> anyhow::Result<Self>
     {
         let settings = config::Config::builder()
             .add_source(config::File::with_name(properties_file).required(false))
@@ -75,12 +84,17 @@ impl Configuration
         // update log file with id if using default
         if config.log_file == "filetreebrowser.log"
         {
-            config.log_file = format!("{}-log.log", config.id);
+            config.log_file = format!("{}-log.log", config.uid);
         }
 
         log::info!("Configuration loaded from {}", properties_file);
         log::debug!("Config details: {:?}", config);
 
         Ok(config)
+    }
+
+    pub fn get_next_serial_number(&mut self) -> NonZeroU64
+    {
+        self.serial_number_generator.get_next_serial_number()
     }
 }

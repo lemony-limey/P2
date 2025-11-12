@@ -4,7 +4,7 @@
 use std::env;
 use std::ffi::CString;
 use std::io::{self, Read, Write};
-use std::net::{Ipv6Addr, SocketAddr, SocketAddrV6, TcpStream, ToSocketAddrs};
+use std::net::{Ipv6Addr, SocketAddr, SocketAddrV6, TcpStream};
 use std::str::FromStr;
 
 fn parse_ipv6_with_scope(addr_str: &str, port: u16) -> io::Result<SocketAddr>

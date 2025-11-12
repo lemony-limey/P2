@@ -4,7 +4,7 @@ use std::fmt::{self, Formatter};
 
 // R2 - Search
 #[derive(Clone, Debug)]
-pub enum SearchMessage
+pub enum SearchMessage<'a>
 {
     Request
     {
@@ -12,16 +12,16 @@ pub enum SearchMessage
     },
     Result
     {
-        response_id: ResponseID,
+        response_id: ResponseID<'a>,
         file_string: String,
     },
     Error
     {
-        response_id: ResponseID,
+        response_id: ResponseID<'a>,
     },
 }
 
-impl fmt::Display for SearchMessage
+impl fmt::Display for SearchMessage<'_>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {

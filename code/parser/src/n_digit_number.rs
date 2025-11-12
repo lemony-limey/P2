@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use std::{
     fmt::{self, Formatter},
 };
@@ -17,7 +18,7 @@ pub struct FourDigitNumber { value: u16 }
 
 impl TwoDigitNumber
 {
-    pub fn new(value: u8) -> Result<Self, String>
+    pub fn new(value: u8) -> anyhow::Result<Self>
     {
         if value <= TWO_DIGIT_NUMBER_MAX
         {
@@ -25,7 +26,7 @@ impl TwoDigitNumber
         }
         else
         {
-            Err(format!("Cannot convert \"{value}\" into a TwoDigitNumber"))
+            Err(anyhow!("TwoDigitNumber::new(): Cannot convert \"{value}\" into a TwoDigitNumber"))
         }
     }
 }
@@ -41,7 +42,7 @@ impl fmt::Display for TwoDigitNumber
 
 impl ThreeDigitNumber
 {
-    pub fn new(value: u16) -> Result<Self, String>
+    pub fn new(value: u16) -> anyhow::Result<Self>
     {
         if value <= THREE_DIGIT_NUMBER_MAX
         {
@@ -49,7 +50,7 @@ impl ThreeDigitNumber
         }
         else
         {
-            Err(format!("Cannot convert \"{value}\" into a ThreeDigitNumber"))
+            Err(anyhow!("ThreeDigitNumber::new(): Cannot convert \"{value}\" into a ThreeDigitNumber"))
         }
     }
 }
@@ -65,7 +66,7 @@ impl fmt::Display for ThreeDigitNumber
 
 impl FourDigitNumber
 {
-    pub fn new(value: u16) -> Result<Self, String>
+    pub fn new(value: u16) -> anyhow::Result<Self>
     {
         if value <= FOUR_DIGIT_NUMBER_MAX
         {
@@ -73,7 +74,7 @@ impl FourDigitNumber
         }
         else
         {
-            Err(format!("Cannot convert \"{value}\" into a FourDigitNumber"))
+            Err(anyhow!("FourDigitNumber::new(): Cannot convert \"{value}\" into a FourDigitNumber"))
         }
     }
 }
