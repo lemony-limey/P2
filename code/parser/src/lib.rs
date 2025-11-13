@@ -6,14 +6,22 @@ pub mod protocol;
 #[cfg(test)]
 mod tests
 {
-    use crate::protocol::services::DownloadAvailability;
-    use crate::protocol::services::SearchAvailability;
-    use crate::protocol::services::Services;
-    use crate::protocol::discovery::AdvertisementMessage;
-    use crate::protocol::message::{Payload, SerialNumber, Timestamp};
-    use crate::protocol::message::Identifier;
-    use crate::protocol::message::Header;
-    use crate::protocol::message::Message;
+    use crate::protocol::{
+        discovery::AdvertisementMessage,
+        message::{
+            Header,
+            Identifier,
+            Message,
+            Payload,
+            SerialNumber,
+            Timestamp
+        },
+        services::{
+            DownloadAvailability,
+            SearchAvailability,
+            Services
+        }
+    };
     use std::num::{NonZeroU16, NonZeroU64};
 
     #[test]

@@ -2,7 +2,7 @@ use crate::{
     constants::PROTOCOL_DELIMITER_STR,
     parser::message::parse_delimiter,
     protocol::{
-        discovery::{AdvertisementMessage},
+        discovery::AdvertisementMessage,
         services::{DownloadAvailability, SearchAvailability, Services},
     },
 };

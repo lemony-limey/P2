@@ -1,11 +1,14 @@
 use anyhow::anyhow;
+use crate::{
+    constants::{
+        FOUR_DIGIT_NUMBER_MAX,
+        THREE_DIGIT_NUMBER_MAX,
+        TWO_DIGIT_NUMBER_MAX
+    }
+};
 use std::{
     fmt::{self, Formatter},
 };
-
-const TWO_DIGIT_NUMBER_MAX: u8 = 99;
-const THREE_DIGIT_NUMBER_MAX: u16 = 999;
-const FOUR_DIGIT_NUMBER_MAX: u16 = 9999;
 
 
 #[derive(Copy, Clone, Debug)]

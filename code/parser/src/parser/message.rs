@@ -33,7 +33,6 @@ use nom::{
     Parser,
 };
 
-
 // Methods
 /// This is the public method that will be called from the other crates.
 pub fn parse_message(input: &Bytes) -> anyhow::Result<Message>

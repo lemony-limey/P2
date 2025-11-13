@@ -1,22 +1,20 @@
 use chrono::{Datelike, SubsecRound, Timelike};
-use crate::{
-    constants::ONE_MILLION,
-    n_digit_number::{
-        FourDigitNumber,
-        ThreeDigitNumber,
-        TwoDigitNumber,
-    },
-    protocol::{
-        discovery::AdvertisementMessage,
-        download::DownloadMessage,
-        search::SearchMessage,
-    },
+use crate::protocol::{
+    discovery::AdvertisementMessage,
+    download::DownloadMessage,
+    search::SearchMessage,
 };
 use std::{
     fmt::{self, Formatter},
     marker::PhantomData,
-    num::{ParseIntError, NonZeroU64},
+    num::{NonZeroU64, ParseIntError},
     str::FromStr,
+};
+use crate::constants::ONE_MILLION;
+use crate::n_digit_number::{
+    FourDigitNumber,
+    ThreeDigitNumber,
+    TwoDigitNumber,
 };
 
 /// General Message Format
