@@ -1,8 +1,34 @@
+use std::fmt;
+use std::fmt::Formatter;
 use anyhow::Context;
-use std::num::{NonZeroU64};
+use std::num::{NonZeroU64, ParseIntError};
+use std::str::FromStr;
+
+#[derive(Clone, Debug)]
+pub struct SerialNumber(pub NonZeroU64);
+
+impl fmt::Display for SerialNumber
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for SerialNumber
+{
+    type Err = ParseIntError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err>
+    {
+        let result = str::parse(s)?;
+        Ok(Self(result))
+    }
+}
+
 
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct SerialNumberGenerator
+pub struct SerialNumberGenerator
 {
     next_serial_number: NonZeroU64,
 }

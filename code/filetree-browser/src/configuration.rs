@@ -1,7 +1,6 @@
-use std::num::NonZeroU64;
-use std::marker::PhantomData;
+use parser::protocol::serial_number::SerialNumberGenerator;
 use serde::Deserialize;
-use crate::serial_number::SerialNumberGenerator;
+use std::num::NonZeroU64;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]

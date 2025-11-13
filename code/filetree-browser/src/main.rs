@@ -2,21 +2,24 @@
 //! (based on Saleem's java variant)
 
 mod configuration;
-mod serial_number;
 
 use anyhow::Context;
 use configuration::Configuration;
-use chrono::{Datelike, SubsecRound, Timelike};
 use log::{debug, info, warn};
-use parser::protocol::discovery::AdvertisementMessage;
-use parser::protocol::message::{Header, Identifier, Message, Payload, SerialNumber, Timestamp};
-use parser::protocol::services::{DownloadAvailability, SearchAvailability, Services};
-use std::fs;
-use std::io::{self, BufRead, Write};
-use std::num::NonZeroU16;
-use std::path::{Path, PathBuf};
-use std::thread;
-use std::time::Duration;
+use parser::protocol::{
+    services::{DownloadAvailability, SearchAvailability, Services},
+    message::{Header, Identifier, Message, Payload, Timestamp},
+    discovery::AdvertisementMessage,
+    serial_number::SerialNumber
+};
+use std::{
+    fs,
+    io::{self, BufRead, Write},
+    num::NonZeroU16,
+    path::{Path, PathBuf},
+    thread,
+    time::Duration
+};
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 

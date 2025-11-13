@@ -1,20 +1,21 @@
-use chrono::{Datelike, SubsecRound, Timelike};
-use crate::protocol::{
-    discovery::AdvertisementMessage,
-    download::DownloadMessage,
-    search::SearchMessage,
+use crate::{
+    protocol::serial_number::SerialNumber,
+    constants::ONE_MILLION,
+    protocol::{
+        discovery::AdvertisementMessage,
+        download::DownloadMessage,
+        search::SearchMessage,
+    },
+    n_digit_number::{
+        FourDigitNumber,
+        ThreeDigitNumber,
+        TwoDigitNumber,
+    },
 };
+use chrono::{Datelike, SubsecRound, Timelike};
 use std::{
     fmt::{self, Formatter},
     marker::PhantomData,
-    num::{NonZeroU64, ParseIntError},
-    str::FromStr,
-};
-use crate::constants::ONE_MILLION;
-use crate::n_digit_number::{
-    FourDigitNumber,
-    ThreeDigitNumber,
-    TwoDigitNumber,
 };
 
 /// General Message Format
@@ -113,29 +114,6 @@ impl<'a> fmt::Display for Identifier<'a>
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
         write!(f, "{}@{}", self.uid, self.fqdn)
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct SerialNumber(pub NonZeroU64);
-
-impl fmt::Display for SerialNumber
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
-    {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl FromStr for SerialNumber
-{
-    type Err = ParseIntError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err>
-    {
-        let result = str::parse(s)?;
-        Ok(Self(result))
     }
 }
 

@@ -3,3 +3,4 @@ pub mod download;
 pub mod message;
 pub mod search;
 pub mod services;
+pub mod serial_number;

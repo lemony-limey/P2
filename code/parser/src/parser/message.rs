@@ -20,7 +20,10 @@ use crate::{
         download::parse_download_message,
         search::parse_search_message,
     },
-    protocol::message::{Header, Identifier, Message, Payload, ResponseID, SerialNumber, Timestamp},
+    protocol::{
+        message::{Header, Identifier, Message, Payload, ResponseID, Timestamp},
+        serial_number::SerialNumber,
+    }
 };
 use nom::{
     bytes::complete::{take, take_until1},
@@ -35,7 +38,7 @@ use nom::{
 
 // Methods
 /// This is the public method that will be called from the other crates.
-pub fn parse_message(input: &Bytes) -> anyhow::Result<Message>
+pub fn parse_message(input: &Bytes) -> anyhow::Result<Message<'_>>
 {
     let result = parse_message_inner(str::from_utf8(&input)?)
         .finish();
@@ -50,7 +53,7 @@ pub fn parse_message(input: &Bytes) -> anyhow::Result<Message>
     }
 }
 
-fn parse_message_inner(input: &str) -> IResult<&str, Message>
+fn parse_message_inner(input: &str) -> IResult<&str, Message<'_>>
 {
     // Parse the first ":" character
     let (remaining_input, _delimiter) = parse_delimiter(input)?;
@@ -73,7 +76,7 @@ fn parse_message_inner(input: &str) -> IResult<&str, Message>
     ))
 }
 
-pub(crate) fn parse_header(input: &str) -> IResult<&str, Header>
+pub(crate) fn parse_header(input: &str) -> IResult<&str, Header<'_>>
 {
     // Parse the identifier and serial number
     let (remaining_input, response_id) = parse_response_id(input)?;
@@ -94,7 +97,7 @@ pub(crate) fn parse_header(input: &str) -> IResult<&str, Header>
     ))
 }
 
-pub(crate) fn parse_response_id(input: &str) -> IResult<&str, ResponseID>
+pub(crate) fn parse_response_id(input: &str) -> IResult<&str, ResponseID<'_>>
 {
     let (remaining_input, identifier) = parse_identifier(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
@@ -106,7 +109,7 @@ pub(crate) fn parse_response_id(input: &str) -> IResult<&str, ResponseID>
     ))
 }
 
-pub(crate) fn parse_identifier(input: &str) -> IResult<&str, Identifier>
+pub(crate) fn parse_identifier(input: &str) -> IResult<&str, Identifier<'_>>
 {
     // Get the identifier, then consume the delimiter "@".
     let (remaining_input, uid) = take_until1(IDENTIFIER_DELIMITER_STR).parse(input)?;
@@ -179,7 +182,7 @@ pub(crate) fn parse_delimiter(input: &str) -> IResult<&str, char>
 
 
 /// Parses a payload from the input string.
-fn parse_payload(input: &str) -> IResult<&str, Payload>
+fn parse_payload(input: &str) -> IResult<&str, Payload<'_>>
 {
     // Get the type of the payload: "discovery", "download" or "search", then consume a delimiter
     let (remaining_input, payload_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;

@@ -13,22 +13,24 @@ mod tests
             Identifier,
             Message,
             Payload,
-            SerialNumber,
-            Timestamp
+            Timestamp,
         },
+        serial_number::SerialNumber,
         services::{
             DownloadAvailability,
             SearchAvailability,
-            Services
-        }
+            Services,
+        },
     };
     use std::num::{NonZeroU16, NonZeroU64};
+
 
     #[test]
     fn advertisement_1()
     {
+        let timestamp = Timestamp::current_time().unwrap();
         let server_port_number = NonZeroU16::new(23756)
-            .expect("invalid serverport number");
+            .expect("invalid server port number");
         let message = Message::new(
             Header::new(
                 Identifier::new(
@@ -38,17 +40,25 @@ mod tests
                 SerialNumber(
                     NonZeroU64::new(1).expect("failed to create serial number")
                 ),
-                Timestamp::current_time().unwrap(),
+                timestamp.clone(),
             ),
-            Payload::Advertisement(AdvertisementMessage::new(
-                server_port_number,
-                Services::new(SearchAvailability(true), DownloadAvailability(false)),
-            )),
+            Payload::Advertisement(
+                AdvertisementMessage::new(
+                    server_port_number,
+                    Services::new(
+                        SearchAvailability(true),
+                        DownloadAvailability(false)
+                    ),
+                )
+            ),
         );
 
         assert_eq!(
             message.to_string(),
-            "::advertisement:23756:search=true,download=false:"
+            format!(
+                ":uid@cs.st-andrews.ac.uk:1:{}:advertisement:23756:search=true,download=false:",
+                timestamp
+            )
         )
     }
 }

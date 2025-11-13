@@ -1,6 +1,7 @@
-use std::fmt;
-use std::fmt::Formatter;
-use std::marker::PhantomData;
+use std::{
+    fmt::{self, Formatter},
+    marker::PhantomData,
+};
 
 /// This makes it harder to put the boolean values in the wrong way round.
 #[derive(Clone, Debug, Default)]

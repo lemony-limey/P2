@@ -28,7 +28,7 @@ pub fn get_uid_port() -> u16
     use nix::unistd::Uid;
     
     let uid = Uid::current().as_raw();
-    let mut port = uid as u16;
+    let port = uid as u16;
     
     port
 }
