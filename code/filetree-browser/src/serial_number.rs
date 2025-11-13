@@ -29,6 +29,6 @@ impl Default for SerialNumberGenerator
 {
     fn default() -> Self
     {
-        Self::new().unwrap()
+        Self::new().expect("SerialNumberGenerator::default()")
     }
 }
