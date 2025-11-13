@@ -70,7 +70,7 @@ fn parse_message_inner(input: &str) -> IResult<&str, Message>
 
     Ok((
         remaining_input,
-        Message { header, payload },
+        Message::new(header, payload),
     ))
 }
 
@@ -87,12 +87,11 @@ pub(crate) fn parse_header(input: &str) -> IResult<&str, Header>
 
     Ok((
         remaining_input,
-        Header
-        {
-            identifier: response_id.identifier,
-            serial_number: response_id.serial_number,
+        Header::new(
+            response_id.identifier,
+            response_id.serial_number,
             timestamp
-        }
+        )
     ))
 }
 
@@ -104,7 +103,7 @@ pub(crate) fn parse_response_id(input: &str) -> IResult<&str, ResponseID>
 
     Ok((
         remaining_input,
-        ResponseID { identifier, serial_number }
+        ResponseID::new(identifier, serial_number)
     ))
 }
 
@@ -120,7 +119,7 @@ pub(crate) fn parse_identifier(input: &str) -> IResult<&str, Identifier>
 
     Ok((
         remaining_input,
-        Identifier { uid, fqdn }
+        Identifier::new(uid, fqdn)
     ))
 }
 

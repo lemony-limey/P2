@@ -1,7 +1,10 @@
 use crate::{
     constants::PROTOCOL_DELIMITER_STR,
     parser::message::parse_delimiter,
-    protocol::discovery::{AdvertisementMessage, Services},
+    protocol::{
+        discovery::{AdvertisementMessage},
+        services::{DownloadAvailability, SearchAvailability, Services},
+    },
 };
 use nom::{
     bytes::complete::take_until1,
@@ -25,7 +28,7 @@ pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, Advertis
 
     Ok((
         remaining_input,
-        AdvertisementMessage { server_port, services }
+        AdvertisementMessage::new(server_port, services)
     ))
 }
 
@@ -59,12 +62,12 @@ pub(crate) fn parse_services(input: &str) -> IResult<&str, Services>
     match (service_1_name, service_2_name)
     {
         ("search", "download") => {
-            services.search = service_1_status;
-            services.download = service_2_status;
+            services.search = SearchAvailability(service_1_status);
+            services.download = DownloadAvailability(service_2_status);
         },
         ("download", "search") => {
-            services.search = service_2_status;
-            services.download = service_1_status;
+            services.search = SearchAvailability(service_2_status);
+            services.download = DownloadAvailability(service_1_status);
         },
         _ => return Err(nom::Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
     }

@@ -1,5 +1,5 @@
-use std::num::{NonZeroU64};
 use anyhow::Context;
+use std::num::{NonZeroU64};
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct SerialNumberGenerator

@@ -4,22 +4,19 @@
 mod configuration;
 mod serial_number;
 
-use parser::protocol::message::{SerialNumber, Timestamp};
-use parser::protocol::message::Identifier;
-use parser::protocol::message::Header;
+use anyhow::Context;
+use configuration::Configuration;
+use chrono::{Datelike, SubsecRound, Timelike};
 use log::{debug, info, warn};
+use parser::protocol::discovery::AdvertisementMessage;
+use parser::protocol::message::{Header, Identifier, Message, Payload, SerialNumber, Timestamp};
+use parser::protocol::services::{DownloadAvailability, SearchAvailability, Services};
 use std::fs;
 use std::io::{self, BufRead, Write};
 use std::num::NonZeroU16;
 use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
-use anyhow::Context;
-use chrono::{Datelike, SubsecRound, Timelike};
-use configuration::Configuration;
-use parser::constants::ONE_MILLION;
-use parser::protocol::discovery::{AdvertisementMessage, Services};
-use parser::protocol::message::{Message, Payload};
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
@@ -161,41 +158,30 @@ fn nodes(config: &mut Configuration) -> anyhow::Result<()>
 {
     println!("\n * nodes: to do :-)");
 
-    let current_time = chrono::Utc::now();
     let serial_number = SerialNumber(config.get_next_serial_number());
 
     // Create discovery message
-    let message = Message
-    {
-        header: Header {
-            identifier: Identifier {
-                uid: &config.uid,
-                fqdn: &config.fqdn,
-            },
+    let message = Message::new(
+        Header::new(
+            Identifier::new(
+                &config.uid,
+                &config.fqdn,
+            ),
             serial_number,
-            timestamp: Timestamp::new(
-                current_time.year() as u16,
-                current_time.month() as u8,
-                current_time.day() as u8,
-                current_time.hour() as u8,
-                current_time.minute() as u8,
-                current_time.second() as u8,
-                (current_time.round_subsecs(3).nanosecond() / ONE_MILLION) as u16
-            )
+            Timestamp::current_time()
                 .with_context(|| "nodes(): could not create timestamp with supplied values")?,
-        },
-        payload: Payload::Advertisement(
-            AdvertisementMessage
-            {
-                server_port: NonZeroU16::new(config.m_port)
-                    .with_context(|| "nodes(): Could not convert supplied port number to NonZeroU16")?,
-                services: Services {
-                    search: false,
-                    download: false,
-                },
-            }
         ),
-    };
+        Payload::Advertisement(
+            AdvertisementMessage::new(
+                NonZeroU16::new(config.m_port)
+                    .with_context(|| "nodes(): Could not convert supplied port number to NonZeroU16")?,
+                Services::new(
+                    SearchAvailability(false),
+                    DownloadAvailability(false),
+                ),
+            )
+        ),
+    );
 
     // Send message
 
