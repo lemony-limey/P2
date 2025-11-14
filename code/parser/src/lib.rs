@@ -6,11 +6,11 @@ pub mod protocol;
 #[cfg(test)]
 mod tests
 {
-    use crate::protocol::{
+use crate::protocol::{
         discovery::AdvertisementMessage,
+        identifier::{FQDN, Identifier, UID},
         message::{
             Header,
-            Identifier,
             Message,
             Payload,
             Timestamp,
@@ -34,8 +34,8 @@ mod tests
         let message = Message::new(
             Header::new(
                 Identifier::new(
-                    "uid",
-                    "cs.st-andrews.ac.uk",
+                    UID("uid"),
+                    FQDN("cs.st-andrews.ac.uk"),
                 ),
                 SerialNumber(
                     NonZeroU64::new(1).expect("failed to create serial number")

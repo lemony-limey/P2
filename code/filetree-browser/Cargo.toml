@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4"
-config = "0.14"
-serde = { version = "1.0", features = ["derive"] }
-hostname = "0.4"
-log = "0.4"
-env_logger = "0.11"
-parser = { path = "../parser" }
-anyhow = "1.0.100"
+anyhow.workspace = true
+chrono.workspace = true
+config.workspace = true
+env_logger.workspace = true
+hostname.workspace = true
+log.workspace = true
+parser.workspace = true
+serde.workspace = true
+tokio.workspace = true

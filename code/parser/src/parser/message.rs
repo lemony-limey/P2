@@ -1,3 +1,4 @@
+use crate::parser::identifier::parse_identifier;
 use anyhow::anyhow;
 use bytes::Bytes;
 use crate::{
@@ -21,7 +22,7 @@ use crate::{
         search::parse_search_message,
     },
     protocol::{
-        message::{Header, Identifier, Message, Payload, ResponseID, Timestamp},
+        message::{Header, Message, Payload, ResponseID, Timestamp},
         serial_number::SerialNumber,
     }
 };
@@ -79,7 +80,9 @@ fn parse_message_inner(input: &str) -> IResult<&str, Message<'_>>
 pub(crate) fn parse_header(input: &str) -> IResult<&str, Header<'_>>
 {
     // Parse the identifier and serial number
-    let (remaining_input, response_id) = parse_response_id(input)?;
+    let (remaining_input, identifier) = parse_identifier(input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+    let (remaining_input, serial_number) = parse_serial_number(remaining_input)?;
 
     // Parse the delimiter
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
@@ -90,9 +93,9 @@ pub(crate) fn parse_header(input: &str) -> IResult<&str, Header<'_>>
     Ok((
         remaining_input,
         Header::new(
-            response_id.identifier,
-            response_id.serial_number,
-            timestamp
+            identifier,
+            serial_number,
+            timestamp,
         )
     ))
 }
@@ -106,22 +109,6 @@ pub(crate) fn parse_response_id(input: &str) -> IResult<&str, ResponseID<'_>>
     Ok((
         remaining_input,
         ResponseID::new(identifier, serial_number)
-    ))
-}
-
-pub(crate) fn parse_identifier(input: &str) -> IResult<&str, Identifier<'_>>
-{
-    // Get the identifier, then consume the delimiter "@".
-    let (remaining_input, uid) = take_until1(IDENTIFIER_DELIMITER_STR).parse(input)?;
-    let (remaining_input, _delimiter) = char(IDENTIFIER_DELIMITER_CHAR).parse(remaining_input)?;
-
-    // Get the FQDN, but don't consume the following delimiter. That is out of the scope of
-    // this combinator, and will be handled by the caller (most likely parse_header()).
-    let (remaining_input, fqdn) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
-
-    Ok((
-        remaining_input,
-        Identifier::new(uid, fqdn)
     ))
 }
 

@@ -6,11 +6,15 @@ mod configuration;
 use anyhow::Context;
 use configuration::Configuration;
 use log::{debug, info, warn};
-use parser::protocol::{
-    services::{DownloadAvailability, SearchAvailability, Services},
-    message::{Header, Identifier, Message, Payload, Timestamp},
-    discovery::AdvertisementMessage,
-    serial_number::SerialNumber
+use parser::{
+    protocol::{
+        identifier::{FQDN, Identifier, UID},
+        services::{DownloadAvailability, SearchAvailability, Services},
+        message::{Header, Message, Payload, Timestamp},
+        discovery::AdvertisementMessage,
+        serial_number::SerialNumber,
+        search::SearchMessage
+    }
 };
 use std::{
     fs,
@@ -20,6 +24,8 @@ use std::{
     thread,
     time::Duration
 };
+use std::io::stdin;
+use tokio::sync::mpsc;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
@@ -167,8 +173,8 @@ fn nodes(config: &mut Configuration) -> anyhow::Result<()>
     let message = Message::new(
         Header::new(
             Identifier::new(
-                &config.uid,
-                &config.fqdn,
+                UID(&config.uid),
+                FQDN(&config.fqdn),
             ),
             serial_number,
             Timestamp::current_time()
@@ -191,6 +197,11 @@ fn nodes(config: &mut Configuration) -> anyhow::Result<()>
 
     // Receive messages
 
+
+    // Listen for devices for a while
+
+
+    // Print all displayed
     println!("{}", message);
 
     Ok(())
@@ -199,7 +210,25 @@ fn nodes(config: &mut Configuration) -> anyhow::Result<()>
 /// TODO: Requirement 2
 fn search(config: &mut Configuration) -> anyhow::Result<()>
 {
-    println!("\n * search: to do :-)");
+    let mut search_string = String::new();
+    stdin().lock().read_line(&mut search_string)
+        .with_context(|| "search(): could not get search string from stdin")?;
+
+    let serial_number = SerialNumber(config.get_next_serial_number());
+    let message = Message::new(
+        Header::new(
+            Identifier::new(
+                UID(&config.uid),
+                FQDN(&config.fqdn),
+            ),
+            serial_number,
+            Timestamp::current_time()
+                .with_context(|| "nodes(): could not create timestamp with supplied values")?,
+        ),
+        Payload::Search(
+            SearchMessage::Request { search_string }
+        )
+    );
 
     Ok(())
 }
@@ -220,7 +249,7 @@ fn read_line() -> anyhow::Result<String>
     Ok(line.trim().to_string())
 }
 
-fn main() -> anyhow::Result<()>
+pub fn run(rx_beacon_messages: mpsc::Receiver<String>) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()

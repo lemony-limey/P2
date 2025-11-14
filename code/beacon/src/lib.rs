@@ -4,16 +4,22 @@
 mod configuration;
 mod multicast;
 
-use log::info;
-use std::thread;
-use std::time::Duration;
-
 use configuration::Configuration;
+use log::info;
 use multicast::{MulticastEndpoint, PacketType};
+use std::{
+    sync::mpsc::{Receiver, SyncSender},
+    thread,
+    time::Duration
+};
+
 
 const TX_RATIO: u32 = 5;
 
-fn main() -> anyhow::Result<()>
+fn run(
+    tx_to_filetree_browser: &mut SyncSender<String>,
+    rx_shutdown: &mut Receiver<bool>,
+) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()
@@ -38,10 +44,13 @@ fn main() -> anyhow::Result<()>
         }
 
         // check for incoming beacons
-        rx_beacon(&mut endpoint, &config)?;
+        rx_beacon(&mut endpoint, &config, tx_to_filetree_browser)?;
 
         // pause to avoid excess traffic
         thread::sleep(Duration::from_millis(config.sleep_time));
+
+        // Check if shutdown has been signalled.
+        if let Ok(_) = rx_shutdown.try_recv() { break; }
     }
 
     endpoint.leave()?;
@@ -54,6 +63,7 @@ fn main() -> anyhow::Result<()>
 fn rx_beacon(
     endpoint: &mut MulticastEndpoint,
     config: &Configuration,
+    tx_to_user: &mut SyncSender<String>, // Send the received messages to filetree-browser
 ) -> anyhow::Result<()>
 {
     let mut buffer = vec![0u8; config.msg_size];
@@ -66,7 +76,8 @@ fn rx_beacon(
                 .trim_end_matches('\0')
                 .trim()
                 .to_string();
-            info!("->rx4 {}", msg);
+            info!("->rx4 {}", &msg);
+            tx_to_user.send(msg)?;
             Ok(())
         }
         PacketType::Ipv6 => {
@@ -74,7 +85,8 @@ fn rx_beacon(
                 .trim_end_matches('\0')
                 .trim()
                 .to_string();
-            info!("->rx6 {}", msg);
+            info!("->rx6 {}", &msg);
+            tx_to_user.send(msg)?;
             Ok(())
         }
     }

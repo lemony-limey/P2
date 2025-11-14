@@ -1,3 +1,4 @@
+use crate::protocol::identifier::Identifier;
 use crate::{
     protocol::serial_number::SerialNumber,
     constants::ONE_MILLION,
@@ -17,6 +18,7 @@ use std::{
     fmt::{self, Formatter},
     marker::PhantomData,
 };
+use crate::protocol::identifier::{FQDN, UID};
 
 /// General Message Format
 #[derive(Clone, Debug)]
@@ -83,37 +85,6 @@ impl fmt::Display for Header<'_>
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
         write!(f, "{}:{}:{}", self.identifier, self.serial_number, self.timestamp)
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct Identifier<'a>
-{
-    pub uid:  &'a str,
-    pub fqdn: &'a str,
-    // Force the new() constructor to be used.
-    _boo: PhantomData<usize>,
-}
-
-impl<'a> Identifier<'a>
-{
-    pub fn new(uid: &'a str, fqdn: &'a str) -> Self
-    {
-        Self
-        {
-            uid,
-            fqdn,
-            _boo: Default::default(),
-        }
-    }
-}
-
-impl<'a> fmt::Display for Identifier<'a>
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
-    {
-        write!(f, "{}@{}", self.uid, self.fqdn)
     }
 }
 
@@ -223,10 +194,8 @@ impl fmt::Display for Payload<'_>
 #[derive(Clone, Debug)]
 pub struct ResponseID<'a>
 {
-    pub identifier:    Identifier<'a>,
-    pub serial_number: SerialNumber,
-    // Force the new() constructor to be used.
-    _boo: PhantomData<usize>,
+    identifier:    Identifier<'a>,
+    serial_number: SerialNumber,
 }
 
 impl<'a> ResponseID<'a>
@@ -237,8 +206,17 @@ impl<'a> ResponseID<'a>
         {
             identifier,
             serial_number,
-            _boo: Default::default(),
         }
+    }
+
+    pub fn identifier(&self) -> &Identifier<'a>
+    {
+        &self.identifier
+    }
+
+    pub fn serial_number(&self) -> &SerialNumber
+    {
+        &self.serial_number
     }
 }
 
