@@ -4,10 +4,10 @@
 use anyhow::anyhow;
 use log::{debug, error, info};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::mem::MaybeUninit;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
-
+use bytes::BytesMut;
+use tokio::net::UdpSocket;
 use crate::configuration::Configuration;
 
 /// type of packet.
@@ -22,8 +22,8 @@ pub enum PacketType
 /// dual-stack multicast communication endpoint wrapper
 pub struct MulticastEndpoint
 {
-    socket_v4: Option<Socket>,
-    socket_v6: Option<Socket>,
+    socket_v4: Option<tokio::net::UdpSocket>,
+    socket_v6: Option<tokio::net::UdpSocket>,
     mcast_addr_v4: Option<SocketAddr>,
     mcast_addr_v6: Option<SocketAddr>,
     config: Configuration,
@@ -35,7 +35,7 @@ impl MulticastEndpoint
     ///
     /// # Arguments
     /// * `config` - Application configuration
-    pub fn new(config: &Configuration) -> anyhow::Result<Self>
+    pub fn new(config: Configuration) -> anyhow::Result<Self>
     {
         let mut endpoint = Self {
             socket_v4: None,
@@ -82,7 +82,10 @@ impl MulticastEndpoint
         self.mcast_addr_v4 = Some(SocketAddr::new(IpAddr::V4(mcast_addr), self.config.m_port));
 
         socket.set_nonblocking(true)?;
-        self.socket_v4 = Some(socket);
+
+        // Convert to a tokio::net::UdpSocket
+        let socket: std::net::UdpSocket = socket.into();
+        self.socket_v4 = Some(tokio::net::UdpSocket::from_std(socket)?);
 
         debug!("IPv4 socket configured: {}", self.config.m_addr4);
         Ok(())
@@ -105,7 +108,10 @@ impl MulticastEndpoint
         self.mcast_addr_v6 = Some(SocketAddr::new(IpAddr::V6(mcast_addr), self.config.m_port));
 
         socket.set_nonblocking(true)?;
-        self.socket_v6 = Some(socket);
+
+        // Convert to a tokio::net::UdpSocket
+        let socket: std::net::UdpSocket = socket.into();
+        self.socket_v6 = Some(tokio::net::UdpSocket::from_std(socket)?);
 
         debug!("IPv6 socket configured: {}", self.config.m_addr6);
         Ok(())
@@ -120,7 +126,7 @@ impl MulticastEndpoint
             {
                 if let IpAddr::V4(mcast_addr) = addr.ip()
                 {
-                    socket.join_multicast_v4(&mcast_addr, &Ipv4Addr::UNSPECIFIED)?;
+                    socket.join_multicast_v4(mcast_addr, Ipv4Addr::UNSPECIFIED)?;
                     info!("Joined IPv4 multicast group {}", addr);
                 }
             }
@@ -150,7 +156,7 @@ impl MulticastEndpoint
             {
                 if let IpAddr::V4(mcast_addr) = addr.ip()
                 {
-                    socket.leave_multicast_v4(&mcast_addr, &Ipv4Addr::UNSPECIFIED)?;
+                    socket.leave_multicast_v4(mcast_addr, Ipv4Addr::UNSPECIFIED)?;
                     info!("Left IPv4 multicast group");
                 }
             }
@@ -174,25 +180,18 @@ impl MulticastEndpoint
     /// Receives a multicast packet.
     ///
     /// # Arguments
-    /// * `buffer` - bufer to store received data
+    /// * `buffer` - buffer to store received data
     ///
     /// # Returns
     /// the type of packet received (IPv4, IPv6, or None)
-    pub fn rx(&mut self, buffer: &mut [u8]) -> anyhow::Result<PacketType>
+    pub async fn rx(&mut self, buffer: &mut [u8]) -> anyhow::Result<PacketType>
     {
-        let mut uninit_buffer: Vec<MaybeUninit<u8>> = vec![MaybeUninit::uninit(); buffer.len()];
-
         // try IPv4
         if let Some(ref socket) = self.socket_v4
         {
-            match socket.recv(&mut uninit_buffer)
+            match socket.recv(buffer).await
             {
                 Ok(len) if len > 0 => {
-                    // Copy initialized data to output buffer
-                    for i in 0..len
-                    {
-                        buffer[i] = unsafe { uninit_buffer[i].assume_init() };
-                    }
                     debug!("Received {} bytes on IPv4", len);
                     return Ok(PacketType::Ipv4);
                 }
@@ -209,14 +208,9 @@ impl MulticastEndpoint
         // try IPv6
         if let Some(ref socket) = self.socket_v6
         {
-            match socket.recv(&mut uninit_buffer)
+            match socket.recv(buffer).await
             {
                 Ok(len) if len > 0 => {
-                    // Copy initialized data to output buffer
-                    for i in 0..len
-                    {
-                        buffer[i] = unsafe { uninit_buffer[i].assume_init() };
-                    }
                     debug!("Received {} bytes on IPv6", len);
                     return Ok(PacketType::Ipv6);
                 }
@@ -241,7 +235,7 @@ impl MulticastEndpoint
     ///
     /// # Returns
     /// `true` if successful, `false` otherwise
-    pub fn tx(
+    pub async fn tx(
         &mut self,
         pkt_type: PacketType,
         data: &[u8],
@@ -249,11 +243,10 @@ impl MulticastEndpoint
     {
         match pkt_type
         {
-            PacketType::Ipv4 =>
-                {
+            PacketType::Ipv4 => {
                 if let (Some(ref socket), Some(addr)) = (&self.socket_v4, self.mcast_addr_v4)
                 {
-                    socket.send_to(data, &SockAddr::from(addr))?;
+                    socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv4", data.len());
                     Ok(true)
                 }
@@ -265,7 +258,7 @@ impl MulticastEndpoint
             PacketType::Ipv6 => {
                 if let (Some(ref socket), Some(addr)) = (&self.socket_v6, self.mcast_addr_v6)
                 {
-                    socket.send_to(data, &SockAddr::from(addr))?;
+                    socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv6", data.len());
                     Ok(true)
                 }
@@ -276,5 +269,10 @@ impl MulticastEndpoint
             }
             PacketType::None => Ok(false),
         }
+    }
+
+    pub fn config(&self) -> &Configuration
+    {
+        &self.config
     }
 }

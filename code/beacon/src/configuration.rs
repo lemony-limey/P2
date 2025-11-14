@@ -18,7 +18,7 @@ pub struct Configuration
     pub reuse_addr: bool,
     pub so_timeout: u64,
     pub msg_size: usize,
-    pub sleep_time: u64,
+    pub beacon_interval: u64,
     pub beacon: u32,
 
     // detected at run-time
@@ -28,6 +28,8 @@ pub struct Configuration
     pub ip_addr4: String,
     #[serde(skip)]
     pub ip_addr6: String,
+    #[serde(skip)]
+    pub username: String,
 }
 
 impl Default for Configuration
@@ -45,11 +47,12 @@ impl Default for Configuration
             reuse_addr: true,
             so_timeout: 1,
             msg_size: 128,
-            sleep_time: 10000,
+            beacon_interval: 10000,
             beacon: 10,
             host_name: String::new(),
             ip_addr4: String::new(),
             ip_addr6: String::new(),
+            username: String::new(),
         }
     }
 }

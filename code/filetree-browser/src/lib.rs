@@ -26,6 +26,7 @@ use std::{
 };
 use std::io::stdin;
 use tokio::sync::mpsc;
+use tokio::sync::mpsc::Receiver;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
@@ -249,7 +250,7 @@ fn read_line() -> anyhow::Result<String>
     Ok(line.trim().to_string())
 }
 
-pub fn run(rx_beacon_messages: mpsc::Receiver<String>) -> anyhow::Result<()>
+pub fn run(rx_beacon_messages: Receiver<Message>) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()

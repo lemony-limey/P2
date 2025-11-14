@@ -36,7 +36,7 @@ reuse_addr = false
 so_timeout = 10
 
 # thread sleep time, ms
-sleep_time = 1000
+beacon_interval = 1000
 
 # application-specific config info
 # Has to fit in a single UDP packet
