@@ -11,7 +11,7 @@ use nom::{
 };
 
 /// Parser for the Requirement 2 messages.
-pub(crate) fn parse_search_message(input: &str) -> IResult<&str, SearchMessage<'_>>
+pub(crate) fn parse_search_message(input: &str) -> IResult<&str, SearchMessage>
 {
     let (remaining_input, message_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
@@ -31,7 +31,7 @@ pub(crate) fn parse_search_message(input: &str) -> IResult<&str, SearchMessage<'
     }
 }
 
-pub(crate) fn parse_search_request_message(input: &str) -> IResult<&str, SearchMessage<'_>>
+pub(crate) fn parse_search_request_message(input: &str) -> IResult<&str, SearchMessage>
 {
     let (remaining_input, search_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
 
@@ -41,7 +41,7 @@ pub(crate) fn parse_search_request_message(input: &str) -> IResult<&str, SearchM
     ))
 }
 
-pub(crate) fn parse_search_result_message(input: &str) -> IResult<&str, SearchMessage<'_>>
+pub(crate) fn parse_search_result_message(input: &str) -> IResult<&str, SearchMessage>
 {
     // Get the Response ID and consume the following delimiter.
     let (remaining_input, response_id) = parse_response_id(input)?;
@@ -56,7 +56,7 @@ pub(crate) fn parse_search_result_message(input: &str) -> IResult<&str, SearchMe
     ))
 }
 
-pub(crate) fn parse_search_error_message(input: &str) -> IResult<&str, SearchMessage<'_>>
+pub(crate) fn parse_search_error_message(input: &str) -> IResult<&str, SearchMessage>
 {
     let (remaining_input, response_id) = parse_response_id(input)?;
 

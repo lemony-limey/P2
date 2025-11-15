@@ -28,14 +28,14 @@ use crate::protocol::{
     #[test]
     fn advertisement_1()
     {
-        let timestamp = Timestamp::current_time().unwrap();
+        let timestamp = Timestamp::now().unwrap();
         let server_port_number = NonZeroU16::new(23756)
             .expect("invalid server port number");
         let message = Message::new(
             Header::new(
                 Identifier::new(
-                    UID("uid"),
-                    FQDN("cs.st-andrews.ac.uk"),
+                    UID("uid".to_string()),
+                    FQDN("cs.st-andrews.ac.uk".to_string()),
                 ),
                 SerialNumber(
                     NonZeroU64::new(1).expect("failed to create serial number")

@@ -2,21 +2,21 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::marker::PhantomData;
 
-#[derive(Copy, Clone, Debug)]
-pub struct UID<'a>(pub &'a str);
-#[derive(Copy, Clone, Debug)]
-pub struct FQDN<'a>(pub &'a str);
+#[derive(Clone, Debug)]
+pub struct UID(pub String);
+#[derive(Clone, Debug)]
+pub struct FQDN(pub String);
 
-#[derive(Copy, Clone, Debug)]
-pub struct Identifier<'a>
+#[derive(Clone, Debug)]
+pub struct Identifier
 {
-    uid:  UID<'a>,
-    fqdn: FQDN<'a>,
+    uid:  UID,
+    fqdn: FQDN,
 }
 
-impl<'a> Identifier<'a>
+impl Identifier
 {
-    pub fn new(uid: UID<'a>, fqdn: FQDN<'a>) -> Self
+    pub fn new(uid: UID, fqdn: FQDN) -> Self
     {
         Self
         {
@@ -25,18 +25,18 @@ impl<'a> Identifier<'a>
         }
     }
 
-    pub fn uid(&self) -> &'a str
+    pub fn uid(&self) -> &String
     {
-        self.uid.0
+        &self.uid.0
     }
 
-    pub fn fqdn(&self) -> &'a str
+    pub fn fqdn(&self) -> &String
     {
-        self.fqdn.0
+        &self.fqdn.0
     }
 }
 
-impl<'a> fmt::Display for Identifier<'a>
+impl<'a> fmt::Display for Identifier
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {

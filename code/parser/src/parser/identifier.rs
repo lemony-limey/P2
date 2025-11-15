@@ -22,8 +22,8 @@ pub(crate) fn parse_identifier(input: &str) -> IResult<&str, Identifier>
     Ok((
         remaining_input,
         Identifier::new(
-            UID(uid),
-            FQDN(fqdn),
+            UID(uid.to_string()),
+            FQDN(fqdn.to_string()),
         )
     ))
 }

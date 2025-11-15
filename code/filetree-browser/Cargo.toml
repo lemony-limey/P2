@@ -14,3 +14,4 @@ log.workspace = true
 parser.workspace = true
 serde.workspace = true
 tokio.workspace = true
+tokio-stream.workspace = true

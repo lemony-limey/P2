@@ -1,6 +1,6 @@
 use crate::parser::identifier::parse_identifier;
 use anyhow::anyhow;
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 use crate::{
     constants::{
         ADVERTISEMENT,
@@ -39,7 +39,9 @@ use nom::{
 
 // Methods
 /// This is the public method that will be called from the other crates.
-pub fn parse_message(input: &Bytes) -> anyhow::Result<Message<'_>>
+/// TODO: Cannot use referenced strings because received messages will drop said strings when
+///     passing the message back to the main thread.
+pub fn parse_message(input: &BytesMut) -> anyhow::Result<Message>
 {
     let result = parse_message_inner(str::from_utf8(&input)?)
         .finish();
@@ -54,7 +56,7 @@ pub fn parse_message(input: &Bytes) -> anyhow::Result<Message<'_>>
     }
 }
 
-fn parse_message_inner(input: &str) -> IResult<&str, Message<'_>>
+fn parse_message_inner(input: &str) -> IResult<&str, Message>
 {
     // Parse the first ":" character
     let (remaining_input, _delimiter) = parse_delimiter(input)?;
@@ -77,7 +79,7 @@ fn parse_message_inner(input: &str) -> IResult<&str, Message<'_>>
     ))
 }
 
-pub(crate) fn parse_header(input: &str) -> IResult<&str, Header<'_>>
+pub(crate) fn parse_header(input: &str) -> IResult<&str, Header>
 {
     // Parse the identifier and serial number
     let (remaining_input, identifier) = parse_identifier(input)?;
@@ -100,7 +102,7 @@ pub(crate) fn parse_header(input: &str) -> IResult<&str, Header<'_>>
     ))
 }
 
-pub(crate) fn parse_response_id(input: &str) -> IResult<&str, ResponseID<'_>>
+pub(crate) fn parse_response_id(input: &str) -> IResult<&str, ResponseID>
 {
     let (remaining_input, identifier) = parse_identifier(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
@@ -169,7 +171,7 @@ pub(crate) fn parse_delimiter(input: &str) -> IResult<&str, char>
 
 
 /// Parses a payload from the input string.
-fn parse_payload(input: &str) -> IResult<&str, Payload<'_>>
+fn parse_payload(input: &str) -> IResult<&str, Payload>
 {
     // Get the type of the payload: "discovery", "download" or "search", then consume a delimiter
     let (remaining_input, payload_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;

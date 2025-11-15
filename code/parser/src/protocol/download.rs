@@ -3,7 +3,7 @@ use std::fmt::{self, Formatter};
 
 // R3 - Download
 #[derive(Clone, Debug)]
-pub enum DownloadMessage<'a>
+pub enum DownloadMessage
 {
     Request
     {
@@ -11,16 +11,16 @@ pub enum DownloadMessage<'a>
     },
     Result
     {
-        response_id: ResponseID<'a>,
+        response_id: ResponseID,
         file_string: String,
     },
     Error
     {
-        response_id: ResponseID<'a>,
+        response_id: ResponseID,
     },
 }
 
-impl fmt::Display for DownloadMessage<'_>
+impl fmt::Display for DownloadMessage
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {

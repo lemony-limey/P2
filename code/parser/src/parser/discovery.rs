@@ -34,10 +34,6 @@ pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, Advertis
 
 pub(crate) fn parse_services(input: &str) -> IResult<&str, Services>
 {
-    // Create arrays to
-    // let mut service_names: Vec<&str> = Vec::with_capacity(NUMBER_OF_SERVICES);
-    // let mut service_statuses: [bool; NUMBER_OF_SERVICES] = [false; NUMBER_OF_SERVICES];
-
     // Get the name of the first service and its status.
     let (remaining_input, service_1_name) = take_until1("=").parse(input)?;
     let (remaining_input, _delimiter) = char('=').parse(remaining_input)?;

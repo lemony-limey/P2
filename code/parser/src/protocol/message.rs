@@ -22,17 +22,17 @@ use crate::protocol::identifier::{FQDN, UID};
 
 /// General Message Format
 #[derive(Clone, Debug)]
-pub struct Message<'a>
+pub struct Message
 {
-    pub header:  Header<'a>,
-    pub payload: Payload<'a>,
+    pub header:  Header,
+    pub payload: Payload,
     // Force the new() constructor to be used.
     _boo: PhantomData<usize>,
 }
 
-impl<'a> Message<'a>
+impl Message
 {
-    pub fn new(header: Header<'a>, payload: Payload<'a>) -> Self
+    pub fn new(header: Header, payload: Payload) -> Self
     {
         Self
         {
@@ -43,7 +43,7 @@ impl<'a> Message<'a>
     }
 }
 
-impl fmt::Display for Message<'_>
+impl fmt::Display for Message
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
@@ -53,19 +53,19 @@ impl fmt::Display for Message<'_>
 
 
 #[derive(Clone, Debug)]
-pub struct Header<'a>
+pub struct Header
 {
-    pub identifier:    Identifier<'a>,
+    pub identifier:    Identifier,
     pub serial_number: SerialNumber,
     pub timestamp:     Timestamp,
     // Force the new() constructor to be used.
     _boo: PhantomData<usize>,
 }
 
-impl<'a> Header<'a>
+impl Header
 {
     pub fn new(
-        identifier:    Identifier<'a>,
+        identifier:    Identifier,
         serial_number: SerialNumber,
         timestamp:     Timestamp
     ) -> Self
@@ -80,7 +80,7 @@ impl<'a> Header<'a>
     }
 }
 
-impl fmt::Display for Header<'_>
+impl fmt::Display for Header
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
@@ -128,7 +128,7 @@ impl Timestamp
         Ok(Self { year, month, day, hours, minutes, seconds, milliseconds, _boo: Default::default() })
     }
 
-    pub fn current_time() -> anyhow::Result<Self>
+    pub fn now() -> anyhow::Result<Self>
     {
         let current_time = chrono::Utc::now();
 
@@ -164,14 +164,14 @@ impl fmt::Display for Timestamp
 
 
 #[derive(Clone, Debug)]
-pub enum Payload<'a>
+pub enum Payload
 {
     Advertisement(AdvertisementMessage),
-    Search(SearchMessage<'a>),
-    Download(DownloadMessage<'a>),
+    Search(SearchMessage),
+    Download(DownloadMessage),
 }
 
-impl fmt::Display for Payload<'_>
+impl fmt::Display for Payload
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
@@ -192,15 +192,15 @@ impl fmt::Display for Payload<'_>
 
 
 #[derive(Clone, Debug)]
-pub struct ResponseID<'a>
+pub struct ResponseID
 {
-    identifier:    Identifier<'a>,
+    identifier:    Identifier,
     serial_number: SerialNumber,
 }
 
-impl<'a> ResponseID<'a>
+impl ResponseID
 {
-    pub fn new(identifier: Identifier<'a>, serial_number: SerialNumber) -> Self
+    pub fn new(identifier: Identifier, serial_number: SerialNumber) -> Self
     {
         Self
         {
@@ -209,7 +209,7 @@ impl<'a> ResponseID<'a>
         }
     }
 
-    pub fn identifier(&self) -> &Identifier<'a>
+    pub fn identifier(&self) -> &Identifier
     {
         &self.identifier
     }
@@ -220,7 +220,7 @@ impl<'a> ResponseID<'a>
     }
 }
 
-impl fmt::Display for ResponseID<'_>
+impl fmt::Display for ResponseID
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {

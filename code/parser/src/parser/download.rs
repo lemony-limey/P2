@@ -11,7 +11,7 @@ use nom::{
 };
 
 /// Parser for the Requirement 3 messages.
-pub(crate) fn parse_download_message(input: &str) -> IResult<&str, DownloadMessage<'_>>
+pub(crate) fn parse_download_message(input: &str) -> IResult<&str, DownloadMessage>
 {
     let (remaining_input, message_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
@@ -31,7 +31,7 @@ pub(crate) fn parse_download_message(input: &str) -> IResult<&str, DownloadMessa
     }
 }
 
-pub(crate) fn parse_download_request_message(input: &str) -> IResult<&str, DownloadMessage<'_>>
+pub(crate) fn parse_download_request_message(input: &str) -> IResult<&str, DownloadMessage>
 {
     let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
 
@@ -41,7 +41,7 @@ pub(crate) fn parse_download_request_message(input: &str) -> IResult<&str, Downl
     ))
 }
 
-pub(crate) fn parse_download_result_message(input: &str) -> IResult<&str, DownloadMessage<'_>>
+pub(crate) fn parse_download_result_message(input: &str) -> IResult<&str, DownloadMessage>
 {
     let (remaining_input, _response_id) = parse_response_id(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
@@ -56,7 +56,7 @@ pub(crate) fn parse_download_result_message(input: &str) -> IResult<&str, Downlo
     //     ))
 }
 
-pub(crate) fn parse_download_error_message(input: &str) -> IResult<&str, DownloadMessage<'_>>
+pub(crate) fn parse_download_error_message(input: &str) -> IResult<&str, DownloadMessage>
 {
     let (remaining_input, _response_id) = parse_response_id(input)?;
 

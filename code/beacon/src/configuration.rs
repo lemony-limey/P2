@@ -1,8 +1,10 @@
 //! Configuration handling for the beacon application.
 //! Rust version based on saleem's original Java version
 
+use std::num::NonZeroU64;
 use serde::Deserialize;
 use std::net::IpAddr;
+use parser::protocol::serial_number::SerialNumberGenerator;
 
 /// Beacon application configuration.
 #[derive(Debug, Deserialize, Clone)]
@@ -30,6 +32,8 @@ pub struct Configuration
     pub ip_addr6: String,
     #[serde(skip)]
     pub username: String,
+    #[serde(skip)]
+    serial_number_generator: SerialNumberGenerator,
 }
 
 impl Default for Configuration
@@ -53,6 +57,7 @@ impl Default for Configuration
             ip_addr4: String::new(),
             ip_addr6: String::new(),
             username: String::new(),
+            serial_number_generator: Default::default(),
         }
     }
 }
@@ -102,12 +107,17 @@ impl Configuration
             }
         }
 
-        // grab liink-local IPv6 address
+        // grab link-local IPv6 address
         if let Ok(ip) = local_ip_address::local_ipv6()
         {
             self.ip_addr6 = ip.to_string();
         }
 
         Ok(())
+    }
+
+    pub fn get_next_serial_number(&mut self) -> NonZeroU64
+    {
+        self.serial_number_generator.get_next_serial_number()
     }
 }

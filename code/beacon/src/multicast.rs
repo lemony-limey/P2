@@ -26,7 +26,7 @@ pub struct MulticastEndpoint
     socket_v6: Option<tokio::net::UdpSocket>,
     mcast_addr_v4: Option<SocketAddr>,
     mcast_addr_v6: Option<SocketAddr>,
-    config: Configuration,
+    pub(crate) config: Configuration,
 }
 
 impl MulticastEndpoint
@@ -274,5 +274,10 @@ impl MulticastEndpoint
     pub fn config(&self) -> &Configuration
     {
         &self.config
+    }
+
+    pub fn config_mut(&mut self) -> &mut Configuration
+    {
+        &mut self.config
     }
 }

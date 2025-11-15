@@ -2,6 +2,7 @@
 //! (based on Saleem's java variant)
 
 mod configuration;
+mod soft_state;
 
 use anyhow::Context;
 use configuration::Configuration;
@@ -9,9 +10,7 @@ use log::{debug, info, warn};
 use parser::{
     protocol::{
         identifier::{FQDN, Identifier, UID},
-        services::{DownloadAvailability, SearchAvailability, Services},
         message::{Header, Message, Payload, Timestamp},
-        discovery::AdvertisementMessage,
         serial_number::SerialNumber,
         search::SearchMessage
     }
@@ -19,13 +18,11 @@ use parser::{
 use std::{
     fs,
     io::{self, BufRead, Write},
-    num::NonZeroU16,
     path::{Path, PathBuf},
     thread,
     time::Duration
 };
 use std::io::stdin;
-use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
@@ -168,42 +165,11 @@ fn nodes(config: &mut Configuration) -> anyhow::Result<()>
 {
     println!("\n * nodes: to do :-)");
 
-    let serial_number = SerialNumber(config.get_next_serial_number());
-
-    // Create discovery message
-    let message = Message::new(
-        Header::new(
-            Identifier::new(
-                UID(&config.uid),
-                FQDN(&config.fqdn),
-            ),
-            serial_number,
-            Timestamp::current_time()
-                .with_context(|| "nodes(): could not create timestamp with supplied values")?,
-        ),
-        Payload::Advertisement(
-            AdvertisementMessage::new(
-                NonZeroU16::new(config.m_port)
-                    .with_context(|| "nodes(): Could not convert supplied port number to NonZeroU16")?,
-                Services::new(
-                    SearchAvailability(false),
-                    DownloadAvailability(false),
-                ),
-            )
-        ),
-    );
-
-    // Send message
-
-
-    // Receive messages
-
-
-    // Listen for devices for a while
+    // Query storage
 
 
     // Print all displayed
-    println!("{}", message);
+    // println!("");
 
     Ok(())
 }
@@ -219,17 +185,20 @@ fn search(config: &mut Configuration) -> anyhow::Result<()>
     let message = Message::new(
         Header::new(
             Identifier::new(
-                UID(&config.uid),
-                FQDN(&config.fqdn),
+                UID(config.uid.to_string()),
+                FQDN(config.fqdn.to_string()),
             ),
             serial_number,
-            Timestamp::current_time()
+            Timestamp::now()
                 .with_context(|| "nodes(): could not create timestamp with supplied values")?,
         ),
         Payload::Search(
             SearchMessage::Request { search_string }
         )
     );
+
+    // Send message
+
 
     Ok(())
 }
@@ -250,7 +219,9 @@ fn read_line() -> anyhow::Result<String>
     Ok(line.trim().to_string())
 }
 
-pub fn run(rx_beacon_messages: Receiver<Message>) -> anyhow::Result<()>
+pub async fn run(
+    rx_beacon_messages: Receiver<Message>,
+) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()

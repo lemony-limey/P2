@@ -26,7 +26,7 @@ m_port = 23756
 # hopcount before expiry -- 2 is enough, as no multicast routing in labs
 m_ttl = 2
 
-# ignore my own transmissions
+# ignore my own transmissions TODO: Should this instead be false?
 loopback = true
 
 # allow other applications on this host to use this address
@@ -48,7 +48,7 @@ maximum_advertisement_period = 5000
 # Switches for application capability
 # Searching in various forms
 # No searching possible
-search = "none"
+search = false
 # Exact case-insensitive match on exact path
 # search = "path"
 # Exact case-insensitive match on path or filename

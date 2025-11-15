@@ -4,46 +4,41 @@
 mod configuration;
 mod multicast;
 
-use parser::protocol::message::Header;
-use parser::protocol::message::Payload;
-use tokio::sync::mpsc::Sender;
 use anyhow::Context;
+use bytes::BytesMut;
 use configuration::Configuration;
 use log::info;
 use multicast::{MulticastEndpoint, PacketType};
-use parser::protocol::{
-    message::Message,
-    process_status::ProcessStatus,
+use parser::{
+    parser::message::parse_message,
+    protocol::{
+        discovery::AdvertisementMessage,
+        identifier::{UID, FQDN, Identifier},
+        message::{Header, Timestamp, Payload, Message},
+        process_status::ProcessStatus,
+        serial_number::SerialNumber,
+        services::{DownloadAvailability, SearchAvailability, Services},
+    },
 };
 use std::{
     time::Duration,
     sync::{Arc},
+    num::{NonZeroU64, NonZeroU16},
 };
-use std::io::Read;
-use std::num::NonZeroU16;
 use tokio::{
-    sync::{
-        Mutex,
-        mpsc,
-        watch,
-    },
+    sync::mpsc::Sender,
+    sync::{Mutex, mpsc, watch},
 };
-use bytes::{Bytes, BytesMut};
-use parser::parser::message::parse_message;
-use parser::protocol::discovery::AdvertisementMessage;
-use parser::protocol::services::{DownloadAvailability, SearchAvailability, Services};
 
-const TX_RATIO: u32 = 5;
 
 pub async fn run(
-    tx_to_filetree_browser: mpsc::Sender<Message<'_>>,
+    tx_to_user_main: mpsc::Sender<Message>,
     rx_shutdown: watch::Receiver<ProcessStatus>,
 ) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()
         .init();
-
     info!("Starting Beacon application");
 
     let mut config = Configuration::load("beacon.toml")?;
@@ -54,19 +49,27 @@ pub async fn run(
 
     let mut endpoint = MulticastEndpoint::new(config)?;
     endpoint.join()?;
+    let endpoint = Arc::new(Mutex::new(endpoint));
 
-    let mut endpoint = Arc::new(Mutex::new(endpoint));
+    // TODO: Spawn the multicast receiver thread (pass in tx_to_user_main)
+
+    // TODO: Spawn the multicast transmission thread
 
     // Spawn the beacon. It will periodically send
-    tokio::spawn(async move {
-        let result = periodically_send_beacon(
-            endpoint.clone(),
+    let endpoint_handle = endpoint.clone();
+    let beacon_thread = tokio::spawn(async move {
+        let result = beacon(
+            endpoint_handle,
         ).await;
     });
 
     // Spawn the receiving thread. This is a listener that will receive messages as they come in,
     // parse them, and return them to the main thread for storage.
 
+    // let mut threads = tokio::task::JoinSet::new();
+    // threads.j
+
+    // Cleanup
     let mut endpoint = endpoint.lock().await;
     endpoint.leave()?;
     info!("Beacon application terminated");
@@ -75,85 +78,125 @@ pub async fn run(
 }
 
 // TODO: Only pass necessary config info instead of locking the whole struct.
-async fn periodically_send_beacon(
+async fn beacon(
     endpoint: Arc<Mutex<MulticastEndpoint>>,
 ) -> anyhow::Result<()>
 {
-    let sleep_time: Duration;
+    // Predefine all info that does not have to be redefined later in the critical section.
+    let beacon_interval: Duration;
+    let identifier: Identifier;
     let payload: Payload;
     {
-        let config_handle = endpoint.lock().await.config();
-        sleep_time = Duration::from_millis(config_handle.beacon_interval);
-        payload = Payload::new(
+        let mut endpoint = endpoint.lock().await;
+        let config = endpoint.config_mut();
+        beacon_interval = Duration::from_millis(config.beacon_interval);
+        identifier = Identifier::new(
+            UID(config.username.clone()),
+            FQDN(config.host_name.clone()),
+        );
+        payload = Payload::Advertisement(
             AdvertisementMessage::new(
-                NonZeroU16::new(config_handle.m_port)
-                    .with_context(|| "periodically_send_beacon(): invalid port number")?,
+                NonZeroU16::new(config.m_port)
+                    .with_context(|| "beacon(): invalid port number")?,
                 Services::new(
-                    SearchAvailability(config_handle),
-                    DownloadAvailability(),
+                    // TODO: Use the actual values instead of these placeholders.
+                    SearchAvailability(true),
+                    DownloadAvailability(true),
                 )
             )
         );
     }
 
-    let mut interval = tokio::time::interval(sleep_time);
-
-
+    // The beacon will send an advertisement message once every [interval] milliseconds.
+    let mut interval = tokio::time::interval(beacon_interval);
     loop
     {
-        // Header must be different because timestamp is constantly changing.
+        // Get the next serial number from the configuration.
+        let next_serial_number: NonZeroU64;
+        {
+            let mut endpoint = endpoint.lock().await;
+            let config = endpoint.config_mut();
+            next_serial_number = config.get_next_serial_number();
+        }
+
+        // Header must be different each iteration because timestamp is constantly changing.
         let message = Message::new(
             Header::new(
-
+                identifier.clone(),
+                SerialNumber(next_serial_number.clone()),
+                Timestamp::now()
+                    .with_context(|| "beacon(): could not create timestamp with supplied values")?,
             ),
-            payload
+            payload.clone()
         );
 
         // transmit a beacon periodically
-        tx_message(message, &mut endpoint)?;
+        tx_message(message, endpoint.clone()).await?;
 
         // pause to avoid excess traffic
         interval.tick().await;
     }
 }
 
-/// Used by the main thread to send stuff with tx_beacon, which is a private method.
+/// Used by the main thread to send stuff with multicast.
+/// tx_beacon is a private method, so this is used to call tx_beacon whenever a
 pub async fn multicast_tx(
-    rx_
+    mut messages_for_transmission: tokio::sync::mpsc::Receiver<Message>,
+    endpoint: Arc<Mutex<MulticastEndpoint>>,
 ) -> anyhow::Result<()>
 {
+    // Loop and receive messages from the main thread while the channel is open.
+    while let Some(message) = messages_for_transmission.recv().await
+    {
+        // Send the message.
+        tx_message(message, endpoint.clone()).await?
+    }
 
+    Ok(())
 }
 
-/// Receives and processes an incoming beacon.
+/// Listens for incoming messages
+pub async fn multicast_listener(
+    endpoint: Arc<Mutex<MulticastEndpoint>>,
+) -> anyhow::Result<()>
+{
+    let mut endpoint = endpoint.lock().await;
+    // while endpoint.rx()
+    // {
+    //
+    // }
+
+    Ok(())
+}
+
+/// Receives and processes an incoming multicast datagram.
 ///
 /// Will attempt to parse the message and perform the appropriate action.
 async fn rx_beacon(
-    endpoint: &mut MulticastEndpoint,
-    tx_to_user: &mut Sender<Message<'_>>, // Send the received messages to filetree-browser
-) -> anyhow::Result<()>
+    endpoint: Arc<Mutex<MulticastEndpoint>>,
+    tx_to_user: &mut Sender<Message>, // Send the received messages to filetree-browser
+) -> anyhow::Result<impl Stream<Item = Message>>
 {
-    let mut buffer = BytesMut::with_capacity(endpoint.config.msg_size);
+    // TODO: Just use a normal array or Vec for buffering to reduce dependencies.
+    let mut buffer: BytesMut;
+    let packet_type: PacketType;
+    {
+        let mut endpoint = endpoint.lock().await;
+        buffer = BytesMut::zeroed(endpoint.config.msg_size);
+        packet_type = endpoint.rx(&mut buffer).await?;
+    }
 
-    match endpoint.rx(&mut buffer).await?
+    match packet_type
     {
         PacketType::None => Ok(()),
         PacketType::Ipv4 => {
-            // let message_string = String::from_utf8_lossy(&buffer)
-            //     .trim_end_matches('\0')
-            //     .trim()
-            //     .to_string();
             let message = parse_message(&buffer)?;
             info!("->rx4 {}", &message);
             tx_to_user.send(message).await?;
             Ok(())
         },
         PacketType::Ipv6 => {
-            let message = parse_message(&Bytes::from(
-                String::from_utf8_lossy(&buffer)
-                    .trim_end_matches('\0')
-                    .trim()
-            ))?;
+            let message = parse_message(&buffer)?;
             info!("->rx6 {}", &message);
             tx_to_user.send(message).await?;
             Ok(())
@@ -163,10 +206,12 @@ async fn rx_beacon(
 
 /// transmits a beacon message.
 async fn tx_message(
-    message: Message<'_>,
-    endpoint: &mut MulticastEndpoint,
+    message: Message,
+    endpoint: Arc<Mutex<MulticastEndpoint>>,
 ) -> anyhow::Result<()>
 {
+    let mut endpoint = endpoint.lock().await;
+
     // send IPv4 beacon if configured
     if !endpoint.config().m_addr4.is_empty()
     {
