@@ -256,7 +256,7 @@ pub async fn run(
                     break line;
                 }
             }
-            thread::sleep(Duration::from_millis(ftb.config.sleep_time));
+            tokio::time::sleep(Duration::from_millis(ftb.config.sleep_time)).await;
         };
 
         debug!("User command: {}", user_cmd);

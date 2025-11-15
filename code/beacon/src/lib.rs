@@ -4,13 +4,11 @@
 mod configuration;
 mod multicast;
 
-use anyhow::Context;
-use bytes::BytesMut;
+use anyhow::{anyhow, Context};
 use configuration::Configuration;
 use log::info;
 use multicast::{MulticastEndpoint, PacketType};
 use parser::{
-    parser::message::parse_message,
     protocol::{
         discovery::AdvertisementMessage,
         identifier::{UID, FQDN, Identifier},
@@ -29,7 +27,6 @@ use tokio::{
     sync::mpsc::Sender,
     sync::{Mutex, mpsc, watch},
 };
-
 
 pub async fn run(
     tx_to_user_main: mpsc::Sender<Message>,
@@ -77,7 +74,7 @@ pub async fn run(
     Ok(())
 }
 
-// TODO: Only pass necessary config info instead of locking the whole struct.
+/// Send a beacon ping out every so often
 async fn beacon(
     endpoint: Arc<Mutex<MulticastEndpoint>>,
 ) -> anyhow::Result<()>
@@ -140,7 +137,7 @@ async fn beacon(
 
 /// Used by the main thread to send stuff with multicast.
 /// tx_beacon is a private method, so this is used to call tx_beacon whenever a
-pub async fn multicast_tx(
+pub async fn multicast_transmitter(
     mut messages_for_transmission: tokio::sync::mpsc::Receiver<Message>,
     endpoint: Arc<Mutex<MulticastEndpoint>>,
 ) -> anyhow::Result<()>
@@ -158,13 +155,15 @@ pub async fn multicast_tx(
 /// Listens for incoming messages
 pub async fn multicast_listener(
     endpoint: Arc<Mutex<MulticastEndpoint>>,
+    tx_to_user: Sender<Message>, // Send the received messages to filetree-browser
 ) -> anyhow::Result<()>
 {
-    let mut endpoint = endpoint.lock().await;
-    // while endpoint.rx()
-    // {
-    //
-    // }
+    // Keep receiving messages for as long as the program is running.
+    // TODO: Check for any instances of ? that would cause this to exit prematurely.
+    while let Ok(message) = rx_message(endpoint.clone()).await
+    {
+        tx_to_user.send(message).await?;
+    }
 
     Ok(())
 }
@@ -172,35 +171,38 @@ pub async fn multicast_listener(
 /// Receives and processes an incoming multicast datagram.
 ///
 /// Will attempt to parse the message and perform the appropriate action.
-async fn rx_beacon(
+async fn rx_message(
     endpoint: Arc<Mutex<MulticastEndpoint>>,
-    tx_to_user: &mut Sender<Message>, // Send the received messages to filetree-browser
-) -> anyhow::Result<impl Stream<Item = Message>>
+) -> anyhow::Result<Message>
 {
-    // TODO: Just use a normal array or Vec for buffering to reduce dependencies.
-    let mut buffer: BytesMut;
-    let packet_type: PacketType;
+    let (packet_type, message): (PacketType, Option<Message>);
     {
         let mut endpoint = endpoint.lock().await;
-        buffer = BytesMut::zeroed(endpoint.config.msg_size);
-        packet_type = endpoint.rx(&mut buffer).await?;
+        if let Ok((received_packet_type, received_message)) = endpoint.rx().await {
+            packet_type = received_packet_type;
+            message = Some(received_message);
+        }
+        else
+        {
+            packet_type = PacketType::None;
+            message = None;
+        }
     }
 
-    match packet_type
+    match (packet_type, message)
     {
-        PacketType::None => Ok(()),
-        PacketType::Ipv4 => {
-            let message = parse_message(&buffer)?;
+        (PacketType::None, _) => Err(anyhow!("an error occurred when reading the packet")),
+        (PacketType::Ipv4, Some(message)) => {
             info!("->rx4 {}", &message);
-            tx_to_user.send(message).await?;
-            Ok(())
+            Ok(message)
         },
-        PacketType::Ipv6 => {
-            let message = parse_message(&buffer)?;
+        (PacketType::Ipv6, Some(message)) => {
             info!("->rx6 {}", &message);
-            tx_to_user.send(message).await?;
-            Ok(())
+            Ok(message)
         },
+        (_, _) => {
+            Err(anyhow!("rx_message(): invalid combination of message and packet type"))
+        }
     }
 }
 

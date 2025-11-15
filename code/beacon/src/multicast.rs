@@ -1,6 +1,7 @@
 //! Multicast networking functionality wrapper using socket2
 //! Rust version based on saleem's original Java
 
+use parser::protocol::message::Message;
 use anyhow::anyhow;
 use log::{debug, error, info};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
@@ -8,6 +9,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 use bytes::BytesMut;
 use tokio::net::UdpSocket;
+use parser::parser::message::parse_message;
 use crate::configuration::Configuration;
 
 /// type of packet.
@@ -177,6 +179,21 @@ impl MulticastEndpoint
         Ok(())
     }
 
+    pub async fn rx(&mut self) -> anyhow::Result<(PacketType, Message)>
+    {
+        // Whichever packet is received first will be returned
+        Ok(
+            tokio::select! {
+                message = self.rx_ipv4() => {
+                    (PacketType::Ipv4, message?)
+                },
+                message = self.rx_ipv6() => {
+                    (PacketType::Ipv6, message?)
+                },
+            }
+        )
+    }
+
     /// Receives a multicast packet.
     ///
     /// # Arguments
@@ -184,16 +201,18 @@ impl MulticastEndpoint
     ///
     /// # Returns
     /// the type of packet received (IPv4, IPv6, or None)
-    pub async fn rx(&mut self, buffer: &mut [u8]) -> anyhow::Result<PacketType>
+    async fn rx_ipv4(&self) -> anyhow::Result<Message>
     {
+        let mut buffer = BytesMut::with_capacity(self.config.msg_size);
+
         // try IPv4
         if let Some(ref socket) = self.socket_v4
         {
-            match socket.recv(buffer).await
+            match socket.recv(&mut buffer).await
             {
                 Ok(len) if len > 0 => {
                     debug!("Received {} bytes on IPv4", len);
-                    return Ok(PacketType::Ipv4);
+                    return Ok(parse_message(&buffer)?);
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     // no data available, continue to IPv6
@@ -205,14 +224,21 @@ impl MulticastEndpoint
             }
         }
 
+        Err(anyhow!(""))
+    }
+
+    async fn rx_ipv6(&self) -> anyhow::Result<Message>
+    {
+        let mut buffer = BytesMut::with_capacity(self.config.msg_size);
+
         // try IPv6
         if let Some(ref socket) = self.socket_v6
         {
-            match socket.recv(buffer).await
+            match socket.recv(&mut buffer).await
             {
                 Ok(len) if len > 0 => {
                     debug!("Received {} bytes on IPv6", len);
-                    return Ok(PacketType::Ipv6);
+                    return Ok(parse_message(&buffer)?);
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     // mo data available
@@ -224,7 +250,7 @@ impl MulticastEndpoint
             }
         }
 
-        Ok(PacketType::None)
+        Err(anyhow!(""))
     }
 
     /// transmits a multicast packet.

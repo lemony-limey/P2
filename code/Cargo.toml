@@ -6,11 +6,13 @@ authors = ["220017916"]
 
 [workspace]
 resolver = "3"
-members = ["beacon", "filetree-browser", "parser", "simple-tcp"]
+members = ["beacon", "filetree-browser", "parser", "simple-tcp", "ui"]
 
 [workspace.dependencies]
 anyhow = "1.0.100"
+async-stream = "0.3.6"
 beacon = { path = "beacon" }
+bytes = "1.10.1"
 chrono = "0.4"
 config = "0.14"
 env_logger = "0.11.8"
