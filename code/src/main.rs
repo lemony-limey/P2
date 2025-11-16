@@ -1,3 +1,4 @@
+use tokio::task::spawn_blocking;
 use anyhow::Context;
 use beacon;
 use log::debug;
@@ -25,31 +26,33 @@ async fn main() -> anyhow::Result<()>
     debug!("created channel for sending messages to user's thread");
 
     // Create a channel that will be used to transfer messages to the multicast transmission thread.
-    let (tx_to_multicast_sender, rx_multicast_sender) = tokio::sync::mpsc::channel::<Message>(100);
+    let (tx_multicast_transmitter, rx_multicast_transmitter) = tokio::sync::mpsc::channel::<Message>(100);
 
     // Create a channel which will be used to terminate the beacon application
     // when the user exists the UI.
     let (tx_shutdown, rx_shutdown) = watch::channel::<ProcessStatus>(ProcessStatus::Running);
     debug!("created channel for sending messages");
 
-
     // Spin up a thread to run the beacon program.
+    // Storage and the multicast listener and transmitter are started here.
     let multicast_listener_handle = tokio::spawn(async move {
-        let result = beacon::run(
-            tx_received_messages.clone(),
+        beacon::run(
+            tx_received_messages,
+            rx_multicast_transmitter,
             rx_shutdown.clone()
-        ).await;
-        result
+        ).await
     });
 
     // Spin up a thread for the UI.
 
-    // Spin up a TCP listener thread.
-
-    // Initialise storage
-
     // When the UI exits, shutdown the beacon application also.
-    filetree_browser::run(rx_received_messages).await?;
+    let ui = tokio::spawn(async move {
+        filetree_browser::run(
+            rx_received_messages,
+            tx_multicast_transmitter,
+        ).await
+    });
+
     tx_shutdown.send(ProcessStatus::Shutdown).expect("sending beacon tx shutdown message failed");
     multicast_listener_handle.await.expect("beacon graceful shutdown failed")?;
 

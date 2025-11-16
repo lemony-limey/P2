@@ -23,7 +23,9 @@ pub struct Configuration
     pub download: bool,
     // Do not attempt to serialise or deserialise the following.
     #[serde(skip)]
-    serial_number_generator: SerialNumberGenerator,
+    search_serial_number_generator: SerialNumberGenerator,
+    #[serde(skip)]
+    download_serial_number_generator: SerialNumberGenerator,
 }
 
 impl Default for Configuration 
@@ -58,7 +60,8 @@ impl Default for Configuration
             maximum_advertisement_period: 1000,
             search: "none".to_string(),
             download: false,
-            serial_number_generator: Default::default(),
+            search_serial_number_generator: Default::default(),
+            download_serial_number_generator: Default::default(),
         }
     }
 }
@@ -92,8 +95,13 @@ impl Configuration
         Ok(config)
     }
 
-    pub fn get_next_serial_number(&mut self) -> NonZeroU64
+    pub fn next_search_serial_number(&mut self) -> NonZeroU64
     {
-        self.serial_number_generator.get_next_serial_number()
+        self.search_serial_number_generator.get_next_serial_number()
+    }
+
+    pub fn next_download_serial_number(&mut self) -> NonZeroU64
+    {
+        self.download_serial_number_generator.get_next_serial_number()
     }
 }

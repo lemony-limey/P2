@@ -16,14 +16,16 @@ use parser::{
     }
 };
 use std::{
-    fs,
     io::{self, BufRead, Write},
     path::{Path, PathBuf},
-    thread,
     time::Duration
 };
 use std::io::stdin;
-use tokio::sync::mpsc::Receiver;
+use tokio::fs;
+use tokio::io::AsyncWriteExt;
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::{Receiver, Sender};
+use crate::soft_state::SoftState;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
@@ -48,41 +50,48 @@ impl FileTreeBrowser
         }
     }
 
-    pub fn logical_path_name(&self, path: &Path) -> String 
+    pub async fn logical_path_name(&self, path: &Path) -> anyhow::Result<String>
     {
-        path.strip_prefix(&self.root_path)
-            .ok()
-            .and_then(|p| p.to_str())
-            .map(|s| if s.is_empty() { "/" } else { s })
-            .unwrap_or("/")
-            .to_string()
+        // This data has to be cloned since it doesn't have a static lifetime (&self and &path
+        // could hypothetically be dropped before this task finishes).
+        let path = path.to_owned();
+        let root_path = &self.root_path;
+        let root_path = root_path.to_owned();
+
+        let result = tokio::task::spawn_blocking(move || {
+            path.strip_prefix(root_path)
+                .ok()
+                .and_then(|p| p.to_str())
+                .map(|s| if s.is_empty() { "/" } else { s })
+                .unwrap_or("/")
+                .to_string()
+        }).await?;
+
+        Ok(result)
     }
 
     /// print a formatted list of files and directories.
-    pub fn print_list(&self) -> anyhow::Result<()>
+    pub async fn print_list(&self) -> anyhow::Result<()>
     {
-        let entries = fs::read_dir(&self.this_dir)?;
+        let mut entries = fs::read_dir(&self.this_dir).await?;
 
         println!("\n+++  id: {}", self.config.uid);
-        println!("+++ dir: {}", self.logical_path_name(&self.this_dir));
+        println!("+++ dir: {}", self.logical_path_name(&self.this_dir).await?);
         println!("+++\tfilename:");
 
         let mut count = 0;
-        for (i, entry) in entries.enumerate() 
+        while let Ok(Some(entry)) = entries.next_entry().await
         {
-            if let Ok(entry) = entry 
+            let path = entry.path();
+            let mut name = entry.file_name().to_string_lossy().to_string();
+
+            if path.is_dir()
             {
-                let path = entry.path();
-                let mut name = entry.file_name().to_string_lossy().to_string();
-
-                if path.is_dir()
-                {
-                    name.push(std::path::MAIN_SEPARATOR);
-                }
-
-                println!("{}\t{}", i, name);
-                count += 1;
+                name.push(std::path::MAIN_SEPARATOR);
             }
+
+            println!("{}\t{}", count, name);
+            count += 1;
         }
 
         println!("+++");
@@ -91,61 +100,65 @@ impl FileTreeBrowser
     }
 
     /// search for a file or directory by name in the current directory.
-    pub fn search_list(&self, name: &str) -> Option<PathBuf>
+    pub async fn search_list(&self, name: &str) -> anyhow::Result<Option<PathBuf>>
     {
         debug!("Searching for: {}", name);
-        if let Ok(entries) = fs::read_dir(&self.this_dir) 
+        let mut entries = fs::read_dir(&self.this_dir).await?;
+        while let Some(entry) = entries.next_entry().await?
         {
-            for entry in entries.flatten()
+            if entry.file_name().to_string_lossy() == name
             {
-                if entry.file_name().to_string_lossy() == name 
-                {
-                    debug!("Found: {:?}", entry.path());
-                    return Some(entry.path());
-                }
+                debug!("Found: {:?}", entry.path());
+                return Ok(Some(entry.path()));
             }
         }
         warn!("Not found: {}", name);
-        None
+        Ok(None)
     }
 
-    pub fn get_parent(&self) -> Option<PathBuf> {
+    pub fn get_parent(&self) -> Option<PathBuf>
+    {
         self.this_dir.parent().map(|p| p.to_path_buf())
     }
 }
 
-fn timestamp() -> String {
-    chrono::Local::now().format("%Y%m%d-%H%M%S%.3f").to_string()
+fn timestamp() -> String
+{
+    chrono::Utc::now().format("%Y%m%d-%H%M%S%.3f").to_string()
 }
 
-fn display_help()
+async fn display_help() -> anyhow::Result<()>
 {
-    let lines = [
-        "--* Welcome to the simple FileTreeBrowser. *--",
-        "* The display consists of:",
-        "\t- The name of the current directory",
-        "\t- The list of files (the numbers for the files are of no",
-        "\t  significance, but may help you with debugging).",
-        &format!(
-            "* Files that are directories have trailing '{}'.",
-            std::path::MAIN_SEPARATOR
-        ),
-        "* Use text entry to navigate the directory tree.",
-        "\t.\t\tTo refresh the view of the current directory.",
-        "\t..\t\tTo move up a directory level.",
-        "\tfilename\tTo list file details (if it is a file) or to",
-        "\t\t\tmove into that directory (if it is a directory name).",
-        "\t:services\tTo list the services offered.",
-        "\t:nodes\t\tTo list the other nodes discovered.",
-        "\t:download\tTo download a file.",
-        "\t:quit\t\tTo quit the program.",
-        "\t:help\t\tTo print this message.",
-    ];
+    tokio::task::spawn_blocking(move || {
+        let lines = [
+            "--* Welcome to the simple FileTreeBrowser. *--",
+            "* The display consists of:",
+            "\t- The name of the current directory",
+            "\t- The list of files (the numbers for the files are of no",
+            "\t  significance, but may help you with debugging).",
+            &format!(
+                "* Files that are directories have trailing '{}'.",
+                std::path::MAIN_SEPARATOR
+            ),
+            "* Use text entry to navigate the directory tree.",
+            "\t.\t\tTo refresh the view of the current directory.",
+            "\t..\t\tTo move up a directory level.",
+            "\tfilename\tTo list file details (if it is a file) or to",
+            "\t\t\tmove into that directory (if it is a directory name).",
+            "\t:services\tTo list the services offered.",
+            "\t:nodes\t\tTo list the other nodes discovered.",
+            "\t:download\tTo download a file.",
+            "\t:quit\t\tTo quit the program.",
+            "\t:help\t\tTo print this message.",
+        ];
 
-    for line in &lines 
-    {
-        println!("{}", line);
-    }
+        for line in &lines
+        {
+            println!("{}", line);
+        }
+    }).await?;
+
+    Ok(())
 }
 
 fn display_services(config: &Configuration) 
@@ -161,7 +174,7 @@ fn display_services(config: &Configuration)
 
 /// TODO: Requirement 1
 /// Using discovery multicast messages, find all 
-fn nodes(config: &mut Configuration) -> anyhow::Result<()>
+async fn nodes(config: &mut Configuration) -> anyhow::Result<()>
 {
     println!("\n * nodes: to do :-)");
 
@@ -175,13 +188,16 @@ fn nodes(config: &mut Configuration) -> anyhow::Result<()>
 }
 
 /// TODO: Requirement 2
-fn search(config: &mut Configuration) -> anyhow::Result<()>
+async fn search(
+    config: &mut Configuration,
+    tx_multicast_transmitter: mpsc::Sender<Message>,
+) -> anyhow::Result<()>
 {
     let mut search_string = String::new();
     stdin().lock().read_line(&mut search_string)
         .with_context(|| "search(): could not get search string from stdin")?;
 
-    let serial_number = SerialNumber(config.get_next_serial_number());
+    let serial_number = SerialNumber(config.next_download_serial_number());
     let message = Message::new(
         Header::new(
             Identifier::new(
@@ -198,29 +214,36 @@ fn search(config: &mut Configuration) -> anyhow::Result<()>
     );
 
     // Send message
+    tx_multicast_transmitter.send(message).await?;
 
+    // Wait for received messages
 
     Ok(())
 }
 
 /// TODO: Requirement 3
-fn download(config: &mut Configuration) -> anyhow::Result<()>
+async fn download(config: &mut Configuration) -> anyhow::Result<()>
 {
     println!("\n * download: to do :-)");
 
     Ok(())
 }
 
-fn read_line() -> anyhow::Result<String>
+async fn read_line() -> anyhow::Result<String>
 {
-    let stdin = io::stdin();
-    let mut line = String::new();
-    stdin.lock().read_line(&mut line)?;
-    Ok(line.trim().to_string())
+    let result = tokio::task::spawn_blocking(move || {
+        let stdin = io::stdin();
+        let mut line = String::new();
+        stdin.lock().read_line(&mut line)?;
+        Ok(line.trim().to_string())
+    }).await;
+
+    result?
 }
 
 pub async fn run(
-    rx_beacon_messages: Receiver<Message>,
+    rx_multicast_listener: Receiver<Message>,
+    tx_multicast_transmitter: Sender<Message>,
 ) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -235,23 +258,25 @@ pub async fn run(
     info!("Configuration loaded: id={}, root_dir={}", config.uid, config.root_dir);
     debug!("Full config: {:?}", config);
 
-    let root_path = fs::canonicalize(&config.root_dir)?;
+    // let storage = SoftState {};
+
+    let root_path = fs::canonicalize(&config.root_dir).await?;
     let mut ftb = FileTreeBrowser::new(&root_path, root_path.clone(), config.clone());
 
-    ftb.print_list()?;
+    ftb.print_list().await?;
 
     let mut quit_browser = false;
 
     while !quit_browser 
     {
         print!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
-        io::stdout().flush()?;
+        tokio::io::stdout().flush().await?;
 
         let user_cmd = loop
         {
-            if let Ok(line) = read_line() 
+            if let Ok(line) = read_line().await
             {
-                if !line.is_empty() 
+                if !line.is_empty()
                 {
                     break line;
                 }
@@ -268,11 +293,11 @@ pub async fn run(
                 quit_browser = true;
             }
 
-            ":help" => display_help(),
+            ":help" => if let Err(_) = display_help().await { quit_browser = true; }
 
             ":services" => display_services(&ftb.config),
 
-            "." => ftb.print_list()?,
+            "." => ftb.print_list().await?,
 
             ".." => {
                 if ftb.this_dir == root_path 
@@ -282,44 +307,43 @@ pub async fn run(
                 } 
                 else if let Some(parent) = ftb.get_parent() 
                 {
-                    println!("<<< {}\n", ftb.logical_path_name(&parent));
-                    info!("Moving up to: {}", ftb.logical_path_name(&parent));
+                    println!("<<< {}\n", ftb.logical_path_name(&parent).await?);
+                    info!("Moving up to: {}", ftb.logical_path_name(&parent).await?);
                     ftb = FileTreeBrowser::new(parent, root_path.clone(), ftb.config.clone());
                 }
             }
 
-            ":nodes" => {
-                if let Err(_) = nodes(&mut config) { quit_browser = true; }
-            },
+            ":nodes" => if let Err(_) = nodes(&mut config).await { quit_browser = true; },
 
             ":search" => {
-                if let Err(_) = search(&mut config) { quit_browser = true; }
+                if let Err(_) = search(&mut config, tx_multicast_transmitter.clone()).await
+                {
+                    quit_browser = true;
+                }
             },
 
-            ":download" => {
-                if let Err(_) = download(&mut config) { quit_browser = true; }
-            },
+            ":download" => if let Err(_) = download(&mut config).await { quit_browser = true; },
 
             _ => {
-                if let Some(path) = ftb.search_list(&user_cmd) 
+                if let Some(path) = ftb.search_list(&user_cmd).await?
                 {
                     if path.is_file() 
                     {
-                        println!("file: {}", ftb.logical_path_name(&path));
-                        if let Ok(metadata) = fs::metadata(&path) 
+                        println!("file: {}", ftb.logical_path_name(&path).await?);
+                        if let Ok(metadata) = fs::metadata(&path).await
                         {
                             println!("size: {}", metadata.len());
                             info!(
                                 "File accessed: {} (size: {})",
-                                ftb.logical_path_name(&path),
+                                ftb.logical_path_name(&path).await?,
                                 metadata.len()
                             );
                         }
                     } 
                     else if path.is_dir() 
                     {
-                        println!(">>> {}", ftb.logical_path_name(&path));
-                        info!("Entering directory: {}", ftb.logical_path_name(&path));
+                        println!(">>> {}", ftb.logical_path_name(&path).await?);
+                        info!("Entering directory: {}", ftb.logical_path_name(&path).await?);
                         ftb = FileTreeBrowser::new(path, root_path.clone(), ftb.config.clone());
                     }
                 } 

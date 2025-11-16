@@ -4,6 +4,7 @@
 mod configuration;
 mod multicast;
 
+use std::sync::mpsc::Receiver;
 use anyhow::{anyhow, Context};
 use configuration::Configuration;
 use log::info;
@@ -24,13 +25,13 @@ use std::{
     num::{NonZeroU64, NonZeroU16},
 };
 use tokio::{
-    sync::mpsc::Sender,
     sync::{Mutex, mpsc, watch},
 };
 
 pub async fn run(
-    tx_to_user_main: mpsc::Sender<Message>,
-    rx_shutdown: watch::Receiver<ProcessStatus>,
+    tx_to_user_main: tokio::sync::mpsc::Sender<Message>,
+    rx_from_user_main: tokio::sync::mpsc::Receiver<Message>,
+    rx_shutdown: tokio::sync::watch::Receiver<ProcessStatus>,
 ) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -48,17 +49,24 @@ pub async fn run(
     endpoint.join()?;
     let endpoint = Arc::new(Mutex::new(endpoint));
 
-    // TODO: Spawn the multicast receiver thread (pass in tx_to_user_main)
-
-    // TODO: Spawn the multicast transmission thread
-
-    // Spawn the beacon. It will periodically send
+    // Spawn the beacon. It will periodically send discovery messages.
     let endpoint_handle = endpoint.clone();
     let beacon_thread = tokio::spawn(async move {
-        let result = beacon(
-            endpoint_handle,
-        ).await;
+        beacon(endpoint_handle).await
     });
+
+    // Spawn the multicast receiver thread
+    let endpoint_handle = endpoint.clone();
+    let listener_handle = tokio::spawn(async move {
+        multicast_listener(endpoint_handle, tx_to_user_main).await
+    });
+
+    // TODO: Spawn the multicast transmission thread
+    let endpoint_handle = endpoint.clone();
+    let transmitter_handle = tokio::spawn(async move {
+        multicast_transmitter(endpoint_handle, rx_from_user_main).await
+    });
+
 
     // Spawn the receiving thread. This is a listener that will receive messages as they come in,
     // parse them, and return them to the main thread for storage.
@@ -138,12 +146,12 @@ async fn beacon(
 /// Used by the main thread to send stuff with multicast.
 /// tx_beacon is a private method, so this is used to call tx_beacon whenever a
 pub async fn multicast_transmitter(
-    mut messages_for_transmission: tokio::sync::mpsc::Receiver<Message>,
     endpoint: Arc<Mutex<MulticastEndpoint>>,
+    mut rx_messages_for_transmission: tokio::sync::mpsc::Receiver<Message>,
 ) -> anyhow::Result<()>
 {
     // Loop and receive messages from the main thread while the channel is open.
-    while let Some(message) = messages_for_transmission.recv().await
+    while let Some(message) = rx_messages_for_transmission.recv().await
     {
         // Send the message.
         tx_message(message, endpoint.clone()).await?
@@ -155,7 +163,7 @@ pub async fn multicast_transmitter(
 /// Listens for incoming messages
 pub async fn multicast_listener(
     endpoint: Arc<Mutex<MulticastEndpoint>>,
-    tx_to_user: Sender<Message>, // Send the received messages to filetree-browser
+    tx_to_user: mpsc::Sender<Message>, // Send the received messages to filetree-browser
 ) -> anyhow::Result<()>
 {
     // Keep receiving messages for as long as the program is running.
@@ -206,7 +214,8 @@ async fn rx_message(
     }
 }
 
-/// transmits a beacon message.
+/// Transmits a single UDP datagram over multicast, via IPv4 AND IPv6 (meaning at most two packets
+/// are sent overall).
 async fn tx_message(
     message: Message,
     endpoint: Arc<Mutex<MulticastEndpoint>>,
