@@ -27,7 +27,7 @@ m_port = 23756
 m_ttl = 2
 
 # ignore my own transmissions TODO: Should this instead be false?
-loopback = true
+loopback = false
 
 # allow other applications on this host to use this address
 reuse_addr = false
@@ -36,7 +36,7 @@ reuse_addr = false
 so_timeout = 10
 
 # thread sleep time, ms
-beacon_interval = 1000
+beacon_interval = 5000
 
 # application-specific config info
 # Has to fit in a single UDP packet

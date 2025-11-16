@@ -54,7 +54,7 @@ fn parse_ipv6_with_scope(addr_str: &str, port: u16) -> io::Result<SocketAddr>
 }
 
 
-fn main() -> io::Result<()>
+fn run_client() -> io::Result<()>
 {
     let mut args = env::args().skip(1);
     let server = match args.next()

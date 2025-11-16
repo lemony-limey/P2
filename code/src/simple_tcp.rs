@@ -1,5 +1,8 @@
 //! shared utilities for TCP client and server
 
+pub mod client;
+pub mod server;
+
 use anyhow::anyhow;
 use std::net::{IpAddr, Ipv6Addr};
 use log::info;
@@ -18,7 +21,7 @@ pub fn get_link_local_ipv6() -> anyhow::Result<(Ipv6Addr, String)>
             }
         }
     }
-    
+
     Err(anyhow!("No link-local IPv6 address found"))
 }
 
@@ -26,9 +29,9 @@ pub fn get_link_local_ipv6() -> anyhow::Result<(Ipv6Addr, String)>
 pub fn get_uid_port() -> u16
 {
     use nix::unistd::Uid;
-    
+
     let uid = Uid::current().as_raw();
     let port = uid as u16;
-    
+
     port
 }

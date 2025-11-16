@@ -1,16 +1,29 @@
 //! Multicast networking functionality wrapper using socket2
 //! Rust version based on saleem's original Java
 
-use parser::protocol::message::Message;
+use crate::{
+    protocol::message::{Header, Message, Payload, Timestamp},
+    parser::message::parse_message,
+    protocol::discovery::AdvertisementMessage,
+    protocol::identifier::{Identifier, FQDN, UID},
+    protocol::serial_number::SerialNumber,
+    protocol::services::{DownloadAvailability, SearchAvailability, Services},
+    beacon::configuration::MulticastConfiguration,
+};
 use anyhow::anyhow;
 use log::{debug, error, info};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-use std::time::Duration;
+use std::{
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
+    num::{NonZeroU16, NonZeroU64},
+    sync::Arc,
+    time::Duration
+};
 use bytes::BytesMut;
-use tokio::net::UdpSocket;
-use parser::parser::message::parse_message;
-use crate::configuration::Configuration;
+use tokio::{
+    net::UdpSocket,
+    sync::{mpsc, Mutex}
+};
 
 /// type of packet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,11 +37,11 @@ pub enum PacketType
 /// dual-stack multicast communication endpoint wrapper
 pub struct MulticastEndpoint
 {
-    socket_v4: Option<tokio::net::UdpSocket>,
-    socket_v6: Option<tokio::net::UdpSocket>,
+    socket_v4: Option<UdpSocket>,
+    socket_v6: Option<UdpSocket>,
     mcast_addr_v4: Option<SocketAddr>,
     mcast_addr_v6: Option<SocketAddr>,
-    pub(crate) config: Configuration,
+    pub(crate) config: MulticastConfiguration,
 }
 
 impl MulticastEndpoint
@@ -37,7 +50,7 @@ impl MulticastEndpoint
     ///
     /// # Arguments
     /// * `config` - Application configuration
-    pub fn new(config: Configuration) -> anyhow::Result<Self>
+    pub fn new(config: MulticastConfiguration) -> anyhow::Result<Self>
     {
         let mut endpoint = Self {
             socket_v4: None,
@@ -113,7 +126,7 @@ impl MulticastEndpoint
 
         // Convert to a tokio::net::UdpSocket
         let socket: std::net::UdpSocket = socket.into();
-        self.socket_v6 = Some(tokio::net::UdpSocket::from_std(socket)?);
+        self.socket_v6 = Some(UdpSocket::from_std(socket)?);
 
         debug!("IPv6 socket configured: {}", self.config.m_addr6);
         Ok(())
@@ -270,7 +283,7 @@ impl MulticastEndpoint
         match pkt_type
         {
             PacketType::Ipv4 => {
-                if let (Some(ref socket), Some(addr)) = (&self.socket_v4, self.mcast_addr_v4)
+                if let (Some(socket), Some(addr)) = (&self.socket_v4, self.mcast_addr_v4)
                 {
                     socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv4", data.len());
@@ -282,7 +295,7 @@ impl MulticastEndpoint
                 }
             }
             PacketType::Ipv6 => {
-                if let (Some(ref socket), Some(addr)) = (&self.socket_v6, self.mcast_addr_v6)
+                if let (Some(socket), Some(addr)) = (&self.socket_v6, self.mcast_addr_v6)
                 {
                     socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv6", data.len());
@@ -297,12 +310,12 @@ impl MulticastEndpoint
         }
     }
 
-    pub fn config(&self) -> &Configuration
+    pub fn config(&self) -> &MulticastConfiguration
     {
         &self.config
     }
 
-    pub fn config_mut(&mut self) -> &mut Configuration
+    pub fn config_mut(&mut self) -> &mut MulticastConfiguration
     {
         &mut self.config
     }

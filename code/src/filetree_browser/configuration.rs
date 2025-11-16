@@ -1,10 +1,10 @@
-use parser::protocol::serial_number::SerialNumberGenerator;
+use crate::protocol::serial_number::SerialNumberGenerator;
 use serde::Deserialize;
 use std::num::NonZeroU64;
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
-pub struct Configuration
+pub struct FiletreeBrowserConfiguration
 {
     pub log_file: String,
     pub uid: String,
@@ -28,7 +28,7 @@ pub struct Configuration
     download_serial_number_generator: SerialNumberGenerator,
 }
 
-impl Default for Configuration 
+impl Default for FiletreeBrowserConfiguration
 {
     fn default() -> Self 
     {
@@ -66,7 +66,7 @@ impl Default for Configuration
     }
 }
 
-impl Configuration 
+impl FiletreeBrowserConfiguration
 {
     pub fn load(properties_file: &str) -> anyhow::Result<Self>
     {
@@ -78,7 +78,7 @@ impl Configuration
 
         let mut config = settings.try_deserialize().unwrap_or_else(|_| {
             log::error!("Using default configuration");
-            Configuration::default()
+            FiletreeBrowserConfiguration::default()
         });
 
         println!("{:#?}", config);

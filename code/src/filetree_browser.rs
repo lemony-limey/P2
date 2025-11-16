@@ -5,9 +5,9 @@ mod configuration;
 mod soft_state;
 
 use anyhow::Context;
-use configuration::Configuration;
+use configuration::FiletreeBrowserConfiguration;
 use log::{debug, info, warn};
-use parser::{
+use crate::{
     protocol::{
         identifier::{FQDN, Identifier, UID},
         message::{Header, Message, Payload, Timestamp},
@@ -25,7 +25,7 @@ use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
-use crate::soft_state::SoftState;
+use soft_state::SoftState;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
@@ -34,12 +34,12 @@ pub struct FileTreeBrowser
 {
     pub this_dir: PathBuf,
     root_path: PathBuf,
-    pub config: Configuration,
+    pub config: FiletreeBrowserConfiguration,
 }
 
-impl FileTreeBrowser 
+impl FileTreeBrowser
 {
-    pub fn new(path: impl AsRef<Path>, root_path: PathBuf, config: Configuration) -> Self 
+    pub fn new(path: impl AsRef<Path>, root_path: PathBuf, config: FiletreeBrowserConfiguration) -> Self
     {
         debug!("Creating FileTreeBrowser for path: {:?}", path.as_ref());
         Self
@@ -161,7 +161,7 @@ async fn display_help() -> anyhow::Result<()>
     Ok(())
 }
 
-fn display_services(config: &Configuration) 
+fn display_services(config: &FiletreeBrowserConfiguration)
 {
     println!(
         ":id={}:timestamp={}:search={},download={}:",
@@ -173,8 +173,8 @@ fn display_services(config: &Configuration)
 }
 
 /// TODO: Requirement 1
-/// Using discovery multicast messages, find all 
-async fn nodes(config: &mut Configuration) -> anyhow::Result<()>
+/// Using discovery multicast messages, find all
+async fn nodes(config: &mut FiletreeBrowserConfiguration) -> anyhow::Result<()>
 {
     println!("\n * nodes: to do :-)");
 
@@ -189,7 +189,7 @@ async fn nodes(config: &mut Configuration) -> anyhow::Result<()>
 
 /// TODO: Requirement 2
 async fn search(
-    config: &mut Configuration,
+    config: &mut FiletreeBrowserConfiguration,
     tx_multicast_transmitter: mpsc::Sender<Message>,
 ) -> anyhow::Result<()>
 {
@@ -222,7 +222,7 @@ async fn search(
 }
 
 /// TODO: Requirement 3
-async fn download(config: &mut Configuration) -> anyhow::Result<()>
+async fn download(config: &mut FiletreeBrowserConfiguration) -> anyhow::Result<()>
 {
     println!("\n * download: to do :-)");
 
@@ -250,7 +250,7 @@ pub async fn run(
         .format_timestamp_millis()
         .init();
 
-    let mut config = Configuration::load(PROPERTIES_FILE)?;
+    let mut config = FiletreeBrowserConfiguration::load(PROPERTIES_FILE)?;
 
     println!("port: {}, ipv6 addr: {}", config.m_port, config.m_addr6);
 
@@ -267,7 +267,7 @@ pub async fn run(
 
     let mut quit_browser = false;
 
-    while !quit_browser 
+    while !quit_browser
     {
         print!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
         tokio::io::stdout().flush().await?;
@@ -286,7 +286,7 @@ pub async fn run(
 
         debug!("User command: {}", user_cmd);
 
-        match user_cmd.to_lowercase().as_str() 
+        match user_cmd.to_lowercase().as_str()
         {
             ":quit" => {
                 info!("Quitting application");
@@ -300,12 +300,12 @@ pub async fn run(
             "." => ftb.print_list().await?,
 
             ".." => {
-                if ftb.this_dir == root_path 
+                if ftb.this_dir == root_path
                 {
                     println!("At root : cannot move up.\n");
                     warn!("Attempt to move above root directory");
-                } 
-                else if let Some(parent) = ftb.get_parent() 
+                }
+                else if let Some(parent) = ftb.get_parent()
                 {
                     println!("<<< {}\n", ftb.logical_path_name(&parent).await?);
                     info!("Moving up to: {}", ftb.logical_path_name(&parent).await?);
@@ -327,7 +327,7 @@ pub async fn run(
             _ => {
                 if let Some(path) = ftb.search_list(&user_cmd).await?
                 {
-                    if path.is_file() 
+                    if path.is_file()
                     {
                         println!("file: {}", ftb.logical_path_name(&path).await?);
                         if let Ok(metadata) = fs::metadata(&path).await
@@ -339,15 +339,15 @@ pub async fn run(
                                 metadata.len()
                             );
                         }
-                    } 
-                    else if path.is_dir() 
+                    }
+                    else if path.is_dir()
                     {
                         println!(">>> {}", ftb.logical_path_name(&path).await?);
                         info!("Entering directory: {}", ftb.logical_path_name(&path).await?);
                         ftb = FileTreeBrowser::new(path, root_path.clone(), ftb.config.clone());
                     }
-                } 
-                else 
+                }
+                else
                 {
                     println!("Unknown command or filename: '{}'", user_cmd);
                     warn!("Unknown command or filename: '{}'", user_cmd);

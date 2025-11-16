@@ -35,13 +35,7 @@ async fn main() -> anyhow::Result<()>
 
     // Spin up a thread to run the beacon program.
     // Storage and the multicast listener and transmitter are started here.
-    let multicast_listener_handle = tokio::spawn(async move {
-        beacon::run(
-            tx_received_messages,
-            rx_multicast_transmitter,
-            rx_shutdown.clone()
-        ).await
-    });
+    let beacon = Beacon::new();
 
     // Spin up a thread for the UI.
 
@@ -58,3 +52,5 @@ async fn main() -> anyhow::Result<()>
 
     Ok(())
 }
+
+

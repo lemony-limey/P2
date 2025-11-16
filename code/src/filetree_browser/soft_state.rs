@@ -1,12 +1,19 @@
+use crate::{
+    protocol::{
+        message::Message,
+        identifier::Identifier,
+        message::Timestamp,
+        services::Services
+    }
+};
 use std::collections::HashSet;
 use std::num::NonZeroU16;
-use parser::protocol::identifier::Identifier;
-use parser::protocol::message::Timestamp;
-use parser::protocol::services::Services;
+use tokio::sync::mpsc;
 
 pub struct SoftState
 {
-    nodes: HashSet<Node>
+    nodes: HashSet<Node>,
+    rx_incoming_messages: mpsc::Receiver<Message>,
 }
 
 /// This is where we store info about nodes discovered in the network.

@@ -1,6 +1,7 @@
 //! Simple non-blocking TCP server using IPv6 link-local addresses
 //! (based on Saleem's Java version)
 
+use crate::simple_tcp;
 use std::{
     io::{Read, Write},
     net::{TcpListener, SocketAddr, IpAddr, Ipv6Addr},
@@ -13,7 +14,7 @@ const SLEEP_TIME_MS: u64 = 1000;
 const BUFFER_SIZE: usize = 80;
 const SO_TIMEOUT_MS: u64 = 10;
 
-fn main() -> anyhow::Result<()>
+fn run_server() -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         .format_timestamp_millis()

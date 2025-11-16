@@ -47,8 +47,8 @@ so_timeout = 100
 # maximum message size
 msg_size = 256
 
-# ms, 1s
-beacon_interval = 1000
+# ms, 5s
+beacon_interval = 5000
 
 # how many to send before quiting
 beacon = 100

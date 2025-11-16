@@ -4,12 +4,12 @@
 use std::num::NonZeroU64;
 use serde::Deserialize;
 use std::net::IpAddr;
-use parser::protocol::serial_number::SerialNumberGenerator;
+use crate::protocol::serial_number::SerialNumberGenerator;
 
 /// Beacon application configuration.
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
-pub struct Configuration
+pub struct MulticastConfiguration
 {
     pub log_file: String,
     pub m_addr4: String,
@@ -36,7 +36,7 @@ pub struct Configuration
     serial_number_generator: SerialNumberGenerator,
 }
 
-impl Default for Configuration
+impl Default for MulticastConfiguration
 {
     fn default() -> Self
     {
@@ -62,7 +62,7 @@ impl Default for Configuration
     }
 }
 
-impl Configuration
+impl MulticastConfiguration
 {
     /// automatically grab the local hostname and IP addresses
     pub fn load(properties_file: &str) -> anyhow::Result<Self>
@@ -71,9 +71,9 @@ impl Configuration
             .add_source(config::File::with_name(properties_file).required(false))
             .build()?;
 
-        let mut config: Configuration = settings.try_deserialize().unwrap_or_else(|_| {
+        let mut config: MulticastConfiguration = settings.try_deserialize().unwrap_or_else(|_| {
             log::info!("Using default configuration");
-            Configuration::default()
+            MulticastConfiguration::default()
         });
 
         config.detect_network_info()?;

@@ -1,12 +1,13 @@
-pub mod constants;
-pub mod n_digit_number;
-pub mod parser;
-pub mod protocol;
+pub mod discovery;
+pub mod download;
+pub mod identifier;
+pub mod message;
+pub mod search;
 
 #[cfg(test)]
 mod tests
 {
-use crate::protocol::{
+    use crate::protocol::{
         discovery::AdvertisementMessage,
         identifier::{FQDN, Identifier, UID},
         message::{

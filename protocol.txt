@@ -163,7 +163,7 @@
 
 <download-response> := <download-result> / <download-error>
 
-  # <download-request> := "request" ":" <file-string>
+  # <download-request> := "request" ":" <file-string> ":" <target_identifier> ":" <ipv6_link_local_addr>
   # <download-result> := "result" ":" <response-id> ...
   # <download-error> := "error" ":" <response-id> ...
 
