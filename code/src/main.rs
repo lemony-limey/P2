@@ -18,7 +18,7 @@ use code::multicast::multicast_endpoint::MulticastEndpoint;
 use code::constants::{FILETREE_BROWSER_CONFIGURATION_FILE, MULTICAST_CONFIGURATION_FILE};
 use code::filetree_browser::{FileTreeBrowser, configuration::FiletreeBrowserConfiguration, run_ftb};
 use code::message_socket::MessageSocket;
-use code::soft_state::SoftState;
+use code::soft_state::FTBSoftState;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()>
@@ -32,7 +32,7 @@ async fn main() -> anyhow::Result<()>
     endpoint.join()?;
     let socket = Arc::new(RwLock::new(MessageSocket::new(endpoint)));
 
-    let storage = Arc::new(RwLock::new(SoftState::new()));
+    let storage = Arc::new(RwLock::new(FTBSoftState::new()));
     let ftb_config = FiletreeBrowserConfiguration::load(FILETREE_BROWSER_CONFIGURATION_FILE)?;
 
     let root_path = fs::canonicalize(&ftb_config.root_dir).await?;

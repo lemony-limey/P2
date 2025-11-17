@@ -4,10 +4,12 @@ use std::{
     num::NonZeroU16,
 };
 use std::marker::PhantomData;
+use std::net::Ipv6Addr;
 
 #[derive(Clone, Debug)]
 pub struct AdvertisementMessage
 {
+    pub ipv6_link_local_addr: Ipv6Addr,
     pub server_port: NonZeroU16,
     pub services:    Services,
     _boo: PhantomData<usize>
@@ -15,10 +17,15 @@ pub struct AdvertisementMessage
 
 impl AdvertisementMessage
 {
-    pub fn new(server_port: NonZeroU16, services: Services) -> Self
+    pub fn new(
+        ipv6_link_local_addr: Ipv6Addr,
+        server_port: NonZeroU16,
+        services: Services
+    ) -> Self
     {
         Self
         {
+            ipv6_link_local_addr,
             server_port,
             services,
             _boo: Default::default()

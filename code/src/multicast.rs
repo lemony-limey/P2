@@ -26,6 +26,7 @@ use std::{
     sync::{Arc},
     num::{NonZeroU64, NonZeroU16}
 };
+use std::net::Ipv6Addr;
 use tokio::{
     sync::{Mutex, mpsc, watch},
 };
@@ -36,9 +37,9 @@ pub async fn run(
     rx_shutdown: tokio::sync::watch::Receiver<ProcessStatus>,
 ) -> anyhow::Result<()>
 {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .format_timestamp_millis()
-        .init();
+    // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+    //     .format_timestamp_millis()
+    //     .init();
     info!("Starting Beacon application");
 
     let mut config = MulticastConfiguration::load("beacon.toml")?;
@@ -65,15 +66,17 @@ pub async fn run(
 
 
 /// Send a beacon ping out every so often
-pub async fn beacon(beacon: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
+pub async fn beacon(socket: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
 {
     // Predefine all info that does not have to be redefined later in the critical section.
     let beacon_interval: Duration;
     let identifier: Identifier;
     let payload: Payload;
     {
-        let beacon_handle = beacon.read().await;
-        let endpoint = beacon_handle.endpoint();
+        let socket_handle = socket.read().await;
+        let endpoint = socket_handle.endpoint();
+        let ipv6_addr_string = &socket_handle.endpoint().config.ip_addr6;
+        let ipv6_addr = ipv6_addr_string.parse::<Ipv6Addr>()?;
         beacon_interval = Duration::from_millis(endpoint.config.beacon_interval);
         identifier = Identifier::new(
             UID(endpoint.config.username.clone()),
@@ -81,6 +84,7 @@ pub async fn beacon(beacon: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
         );
         payload = Payload::Advertisement(
             AdvertisementMessage::new(
+                ipv6_addr,
                 NonZeroU16::new(endpoint.config.m_port)
                     .with_context(|| "beacon(): invalid port number")?,
                 Services::new(
@@ -99,7 +103,7 @@ pub async fn beacon(beacon: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
         // Get the next serial number from the configuration.
         let next_serial_number: NonZeroU64;
         {
-            next_serial_number = beacon.write().await.endpoint_mut().config.get_next_serial_number();
+            next_serial_number = socket.write().await.endpoint_mut().config.get_next_serial_number();
         }
 
         // Header must be different each iteration because timestamp is constantly changing.
@@ -115,7 +119,7 @@ pub async fn beacon(beacon: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
 
         // Send the beacon message.
         {
-            beacon.read().await.tx_message(message).await?;
+            socket.read().await.tx_message(message).await?;
         }
 
         // Pause to avoid excess traffic.

@@ -22,9 +22,9 @@ pub fn run_server(
     file_requested_from_client: PathBuf,
 ) -> anyhow::Result<()>
 {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .format_timestamp_millis()
-        .init();
+    // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+    //     .format_timestamp_millis()
+    //     .init();
     
     info!("Starting TCP server");
 

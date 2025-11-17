@@ -1,3 +1,4 @@
+use crate::soft_state::Node;
 use crate::protocol::message::Payload;
 use crate::protocol::message::Header;
 use crate::message_socket::MessageSocket;
@@ -6,6 +7,7 @@ use std::sync::Arc;
 use log::info;
 use tokio::sync::RwLock;
 use crate::multicast::multicast_endpoint::PacketType;
+use crate::soft_state::FTBSoftState;
 
 pub mod multicast;
 pub mod constants;
@@ -18,7 +20,10 @@ pub mod simple_tcp;
 pub mod soft_state;
 pub mod ui;
 
-pub async fn process_messages(socket: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
+pub async fn process_messages(
+    socket: Arc<RwLock<MessageSocket>>,
+    storage: Arc<RwLock<FTBSoftState>>,
+) -> anyhow::Result<()>
 {
     // Process incoming messages
     loop
@@ -51,7 +56,11 @@ pub async fn process_messages(socket: Arc<RwLock<MessageSocket>>) -> anyhow::Res
         {
             // If advertisement, put into storage
             Payload::Advertisement(advertisement_message) => {
-
+                let node = Node::new(
+                    header.identifier,
+                    advertisement_message.
+                );
+                storage.write().await.discovery_update(node);
             },
             // If search, query storage then send message if no results have been returned.
             Payload::Search(search_message) => {

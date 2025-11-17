@@ -7,6 +7,7 @@ pub mod search;
 #[cfg(test)]
 mod tests
 {
+    use std::net::Ipv6Addr;
     use crate::protocol::{
         discovery::AdvertisementMessage,
         identifier::{FQDN, Identifier, UID},
@@ -32,6 +33,7 @@ mod tests
         let timestamp = Timestamp::now().unwrap();
         let server_port_number = NonZeroU16::new(23756)
             .expect("invalid server port number");
+        let ipv6_addr = "::1".parse::<Ipv6Addr>().unwrap();
         let message = Message::new(
             Header::new(
                 Identifier::new(
@@ -45,6 +47,7 @@ mod tests
             ),
             Payload::Advertisement(
                 AdvertisementMessage::new(
+                    ipv6_addr,
                     server_port_number,
                     Services::new(
                         SearchAvailability(true),

@@ -4,7 +4,7 @@
 pub mod configuration;
 
 use crate::soft_state::Node;
-use crate::soft_state::SoftState;
+use crate::soft_state::FTBSoftState;
 use tokio::{
     sync::RwLock,
     fs,
@@ -43,7 +43,7 @@ pub struct FileTreeBrowser
     pub this_dir: PathBuf,
     pub config: FiletreeBrowserConfiguration,
     socket: Arc<RwLock<MessageSocket>>,
-    storage: Arc<RwLock<SoftState>>,
+    storage: Arc<RwLock<FTBSoftState>>,
 }
 
 impl FileTreeBrowser
@@ -53,7 +53,7 @@ impl FileTreeBrowser
         root_path: PathBuf,
         config: FiletreeBrowserConfiguration,
         socket: Arc<RwLock<MessageSocket>>,
-        storage: Arc<RwLock<SoftState>>,
+        storage: Arc<RwLock<FTBSoftState>>,
     ) -> Self
     {
         debug!("Creating FileTreeBrowser for path: {:?}", path.as_ref());
@@ -191,7 +191,8 @@ fn display_services(config: &FiletreeBrowserConfiguration)
 }
 
 /// TODO: Requirement 1
-/// Using discovery multicast messages, find all
+/// Using discovery multicast messages, find all of the nodes on the network.
+/// Print them out.
 async fn nodes(
     ftb: &mut FileTreeBrowser,
 ) -> anyhow::Result<()>
@@ -208,15 +209,19 @@ async fn nodes(
 }
 
 /// TODO: Requirement 2
+/// We don't return any data back to the main program, we just print the files to stdout.
 async fn search(
     ftb: &mut FileTreeBrowser,
-    target_file: &str,
-) -> anyhow::Result<Option<Node>>
+) -> anyhow::Result<()>
 {
+    // Get the search string from the user.
+    let target_file = read_line().await?;
+    let target_file = target_file.as_str();
+
     // Query storage and check to see if we already know who has what file.
     if let Some(node_with_file) = ftb.storage.read().await.find_file(target_file)
     {
-        return Ok(node_with_file)
+        println!()
     }
 
     // If storage doesn't have what we need, send out a message
@@ -254,6 +259,7 @@ async fn search(
 }
 
 /// TODO: Requirement 3
+/// Send a
 async fn download(
     ftb: &mut FileTreeBrowser,
 ) -> anyhow::Result<()>
@@ -279,9 +285,9 @@ pub async fn run_ftb(
     ftb: &mut FileTreeBrowser,
 ) -> anyhow::Result<()>
 {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .format_timestamp_millis()
-        .init();
+    // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+    //     .format_timestamp_millis()
+    //     .init();
 
     let mut config = FiletreeBrowserConfiguration::load(PROPERTIES_FILE)?;
 

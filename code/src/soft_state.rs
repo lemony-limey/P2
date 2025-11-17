@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::path::PathBuf;
 use std::net::SocketAddr;
 use tokio::sync::RwLock;
 use std::sync::Arc;
@@ -11,42 +11,22 @@ use crate::{
     }
 };
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::net::Ipv6Addr;
 use std::num::NonZeroU16;
 use std::path::Path;
+use chrono::Utc;
 use tokio::sync::mpsc;
 use crate::message_socket::MessageSocket;
 
 #[derive(Clone, Debug)]
-pub struct SoftState
+pub struct FTBSoftState
 {
-    nodes: BTreeSet<Node>,
+    nodes: HashSet<Node>,
 }
 
-/// This is where we store info about nodes discovered in the network.
-#[derive(Clone, Debug)]
-pub struct Node
-{
-    pub identifier: Identifier,
-    pub ipv6addr: SocketAddr,
-    pub first_discovered: Timestamp,
-    pub server_port: NonZeroU16,
-    pub services: Services,
-    pub files: HashSet<String>,
-}
 
-// TODO: Should IPv6 Addr be part of the comparison?
-impl PartialEq for Node
-{
-    fn eq(&self, other: &Self) -> bool
-    {
-        self.identifier.eq(&other.identifier) // && self.ipv6addr.eq(&other.ipv6addr)
-    }
-}
-
-impl Eq for Node {}
-
-impl SoftState
+impl FTBSoftState
 {
     pub fn new() -> Self
     {
@@ -62,4 +42,85 @@ impl SoftState
 
         todo!()
     }
+
+
+    pub fn print_all_nodes(&self)
+    {
+        if self.nodes.is_empty()
+        {
+            println!("No other nodes on the network currently.");
+            return;
+        }
+
+        for node in &self.nodes
+        {
+            println!("{}|{}", node.identifier, node.ipv6addr);
+        }
+    }
+
+    pub fn discovery_update(&mut self, node: Node)
+    {
+        self.nodes.replace(node);
+    }
+}
+
+/// This is where we store info about nodes discovered in the network.
+#[derive(Clone, Debug)]
+pub struct Node
+{
+    pub identifier: Identifier,
+    pub ipv6addr: SocketAddr,
+    pub server_port: NonZeroU16,
+    pub services: Services,
+    pub files: HashSet<FileRecord>,
+    pub ttl: Utc,
+}
+
+// TODO: Should IPv6 Addr be part of the comparison?
+impl PartialEq for Node
+{
+    fn eq(&self, other: &Self) -> bool
+    {
+        self.identifier.eq(&other.identifier) // && self.ipv6addr.eq(&other.ipv6addr)
+    }
+}
+
+impl Eq for Node {}
+
+impl Hash for Node
+{
+    fn hash<H: Hasher>(&self, state: &mut H)
+    {
+        self.identifier.hash(state);
+    }
+}
+
+impl Node
+{
+    pub fn new(
+        identifier: Identifier,
+        ipv6addr: SocketAddr,
+        server_port: NonZeroU16,
+        services: Services,
+        files: HashSet<FileRecord>,
+        ttl: Utc,
+    ) -> Self
+    {
+        Self
+        {
+            identifier,
+            ipv6addr,
+            server_port,
+            services,
+            files,
+            ttl,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct FileRecord
+{
+    file_name: PathBuf,
+    ttl: Utc,
 }

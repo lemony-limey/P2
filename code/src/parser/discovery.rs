@@ -19,6 +19,9 @@ use std::num::NonZeroU16;
 /// Parser for the Requirement 1 messages.
 pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, AdvertisementMessage>
 {
+    // Get the IPv6 link local address
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+
     // Get the server port number
     let (remaining_input, server_port) = map_res(digit1, str::parse::<NonZeroU16>).parse(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
