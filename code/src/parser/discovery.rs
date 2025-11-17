@@ -1,3 +1,4 @@
+use std::net::Ipv6Addr;
 use crate::{
     constants::PROTOCOL_DELIMITER_STR,
     parser::message::parse_delimiter,
@@ -20,6 +21,8 @@ use std::num::NonZeroU16;
 pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, AdvertisementMessage>
 {
     // Get the IPv6 link local address
+    // TODO: Parse IPv6 here somehow
+    let ipv6_addr: Ipv6Addr;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     // Get the server port number
@@ -31,7 +34,7 @@ pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, Advertis
 
     Ok((
         remaining_input,
-        AdvertisementMessage::new(server_port, services)
+        AdvertisementMessage::new(ipv6_addr, server_port, services)
     ))
 }
 

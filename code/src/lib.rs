@@ -56,10 +56,12 @@ pub async fn process_messages(
         {
             // If advertisement, put into storage
             Payload::Advertisement(advertisement_message) => {
-                let node = Node::new(
+                let Ok(node) = Node::new(
                     header.identifier,
-                    advertisement_message.
-                );
+                    advertisement_message.ipv6_link_local_addr,
+                    advertisement_message.server_port,
+                    advertisement_message.services,
+                ) else { continue; };
                 storage.write().await.discovery_update(node);
             },
             // If search, query storage then send message if no results have been returned.

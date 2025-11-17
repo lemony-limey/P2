@@ -14,8 +14,10 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::net::Ipv6Addr;
 use std::num::NonZeroU16;
+use std::ops::Add;
 use std::path::Path;
-use chrono::Utc;
+use anyhow::Context;
+use chrono::{DateTime, TimeDelta, Utc};
 use tokio::sync::mpsc;
 use crate::message_socket::MessageSocket;
 
@@ -69,11 +71,11 @@ impl FTBSoftState
 pub struct Node
 {
     pub identifier: Identifier,
-    pub ipv6addr: SocketAddr,
+    pub ipv6addr: Ipv6Addr,
     pub server_port: NonZeroU16,
     pub services: Services,
     pub files: HashSet<FileRecord>,
-    pub ttl: Utc,
+    pub ttl: DateTime<Utc>,
 }
 
 // TODO: Should IPv6 Addr be part of the comparison?
@@ -99,22 +101,24 @@ impl Node
 {
     pub fn new(
         identifier: Identifier,
-        ipv6addr: SocketAddr,
+        ipv6addr: Ipv6Addr,
         server_port: NonZeroU16,
         services: Services,
-        files: HashSet<FileRecord>,
-        ttl: Utc,
-    ) -> Self
+    ) -> anyhow::Result<Self>
     {
-        Self
+        Ok(Self
         {
             identifier,
             ipv6addr,
             server_port,
             services,
-            files,
-            ttl,
+            files: HashSet::new(),
+            ttl: Utc::now().add(
+                TimeDelta::new(30, 0)
+                .with_context(|| "Node::new(): failed to add ttl value")?
+            ),
         }
+        )
     }
 }
 
