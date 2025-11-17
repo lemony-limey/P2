@@ -1,10 +1,26 @@
 //! File Tree Browser
 //! (based on Saleem's java variant)
 
-mod configuration;
+pub mod configuration;
 
-use tokio::sync::RwLock;
-use std::sync::Arc;
+use crate::soft_state::Node;
+use crate::soft_state::SoftState;
+use tokio::{
+    sync::RwLock,
+    fs,
+    io::AsyncWriteExt
+};
+use std::{
+    sync::Arc,
+    io::{
+        self,
+        // BufRead,
+        stdin
+    },
+    path::{Path, PathBuf},
+    time::Duration,
+};
+use std::io::BufRead;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
 use log::{debug, info, warn};
@@ -17,32 +33,28 @@ use crate::{
         serial_number::SerialNumber,
     },
 };
-use std::{
-    io::{self, BufRead, Write},
-    path::{Path, PathBuf},
-    time::Duration
-};
-use std::io::stdin;
-use tokio::fs;
-use tokio::io::AsyncWriteExt;
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::{Receiver, Sender};
-use crate::soft_state::SoftState;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
 
 pub struct FileTreeBrowser
 {
-    pub this_dir: PathBuf,
     root_path: PathBuf,
+    pub this_dir: PathBuf,
     pub config: FiletreeBrowserConfiguration,
-
+    socket: Arc<RwLock<MessageSocket>>,
+    storage: Arc<RwLock<SoftState>>,
 }
 
 impl FileTreeBrowser
 {
-    pub fn new(path: impl AsRef<Path>, root_path: PathBuf, config: FiletreeBrowserConfiguration) -> Self
+    pub fn new(
+        path: impl AsRef<Path>,
+        root_path: PathBuf,
+        config: FiletreeBrowserConfiguration,
+        socket: Arc<RwLock<MessageSocket>>,
+        storage: Arc<RwLock<SoftState>>,
+    ) -> Self
     {
         debug!("Creating FileTreeBrowser for path: {:?}", path.as_ref());
         Self
@@ -50,6 +62,8 @@ impl FileTreeBrowser
             this_dir: path.as_ref().to_path_buf(),
             root_path,
             config,
+            socket,
+            storage,
         }
     }
 
@@ -103,6 +117,7 @@ impl FileTreeBrowser
     }
 
     /// search for a file or directory by name in the current directory.
+    /// TODO: Return a Vec of results?
     pub async fn search_list(&self, name: &str) -> anyhow::Result<Option<PathBuf>>
     {
         debug!("Searching for: {}", name);
@@ -177,7 +192,9 @@ fn display_services(config: &FiletreeBrowserConfiguration)
 
 /// TODO: Requirement 1
 /// Using discovery multicast messages, find all
-async fn nodes(config: &mut FiletreeBrowserConfiguration) -> anyhow::Result<()>
+async fn nodes(
+    ftb: &mut FileTreeBrowser,
+) -> anyhow::Result<()>
 {
     println!("\n * nodes: to do :-)");
 
@@ -192,23 +209,29 @@ async fn nodes(config: &mut FiletreeBrowserConfiguration) -> anyhow::Result<()>
 
 /// TODO: Requirement 2
 async fn search(
-    config: &mut FiletreeBrowserConfiguration,
-    socket: Arc<RwLock<MessageSocket>>,
-) -> anyhow::Result<()>
+    ftb: &mut FileTreeBrowser,
+    target_file: &str,
+) -> anyhow::Result<Option<Node>>
 {
     // Query storage and check to see if we already know who has what file.
+    if let Some(node_with_file) = ftb.storage.read().await.find_file(target_file)
+    {
+        return Ok(node_with_file)
+    }
 
     // If storage doesn't have what we need, send out a message
     let mut search_string = String::new();
-    stdin().lock().read_line(&mut search_string)
-        .with_context(|| "search(): could not get search string from stdin")?;
+    {
+        stdin().lock().read_line(&mut search_string)
+            .with_context(|| "search(): could not get search string from stdin")?;
+    }
 
-    let serial_number = SerialNumber(config.next_download_serial_number());
+    let serial_number = SerialNumber(ftb.config.next_download_serial_number());
     let message = Message::new(
         Header::new(
             Identifier::new(
-                UID(config.uid.to_string()),
-                FQDN(config.fqdn.to_string()),
+                UID(ftb.config.uid.to_string()),
+                FQDN(ftb.config.fqdn.to_string()),
             ),
             serial_number,
             Timestamp::now()
@@ -221,7 +244,7 @@ async fn search(
 
     // Send message
     {
-        socket.read().await.tx_message(message).await?;
+        ftb.socket.read().await.tx_message(message).await?;
     }
 
     // Wait for received messages
@@ -231,7 +254,9 @@ async fn search(
 }
 
 /// TODO: Requirement 3
-async fn download(config: &mut FiletreeBrowserConfiguration) -> anyhow::Result<()>
+async fn download(
+    ftb: &mut FileTreeBrowser,
+) -> anyhow::Result<()>
 {
     println!("\n * download: to do :-)");
 
@@ -250,8 +275,8 @@ async fn read_line() -> anyhow::Result<String>
     result?
 }
 
-pub async fn run(
-    socket: Arc<RwLock<MessageSocket>>
+pub async fn run_ftb(
+    ftb: &mut FileTreeBrowser,
 ) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -265,11 +290,6 @@ pub async fn run(
     info!("Starting FileTreeBrowser");
     info!("Configuration loaded: id={}, root_dir={}", config.uid, config.root_dir);
     debug!("Full config: {:?}", config);
-
-    // let storage = SoftState {};
-
-    let root_path = fs::canonicalize(&config.root_dir).await?;
-    let mut ftb = FileTreeBrowser::new(&root_path, root_path.clone(), config.clone());
 
     ftb.print_list().await?;
 
@@ -308,7 +328,7 @@ pub async fn run(
             "." => ftb.print_list().await?,
 
             ".." => {
-                if ftb.this_dir == root_path
+                if ftb.this_dir == ftb.root_path
                 {
                     println!("At root : cannot move up.\n");
                     warn!("Attempt to move above root directory");
@@ -317,15 +337,14 @@ pub async fn run(
                 {
                     println!("<<< {}\n", ftb.logical_path_name(&parent).await?);
                     info!("Moving up to: {}", ftb.logical_path_name(&parent).await?);
-                    ftb = FileTreeBrowser::new(parent, root_path.clone(), ftb.config.clone());
                 }
             }
 
-            ":nodes" => nodes(&mut config).await?,
+            ":nodes" => nodes(ftb).await?,
 
-            ":search" => search(&mut config, socket.clone()).await?,
+            ":search" => search(ftb).await?,
 
-            ":download" => download(&mut config).await?,
+            ":download" => download(ftb).await?,
 
             _ => {
                 if let Some(path) = ftb.search_list(&user_cmd).await?
@@ -347,7 +366,6 @@ pub async fn run(
                     {
                         println!(">>> {}", ftb.logical_path_name(&path).await?);
                         info!("Entering directory: {}", ftb.logical_path_name(&path).await?);
-                        ftb = FileTreeBrowser::new(path, root_path.clone(), ftb.config.clone());
                     }
                 }
                 else

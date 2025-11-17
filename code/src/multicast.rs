@@ -1,13 +1,13 @@
 //! Multicast beacon application.
 //! Rust version based on saleem's original Java
 
-pub mod configuration;
-pub mod multicast;
+pub mod multicast_configuration;
+pub mod multicast_endpoint;
 
 use crate::message_socket::MessageSocket;
 use tokio::sync::RwLock;
 use anyhow::{anyhow, Context};
-use configuration::MulticastConfiguration;
+use multicast_configuration::MulticastConfiguration;
 use crate::{
     protocol::{
         discovery::AdvertisementMessage,
@@ -19,7 +19,7 @@ use crate::{
     },
 };
 use log::info;
-use multicast::{MulticastEndpoint, PacketType};
+use multicast_endpoint::{MulticastEndpoint, PacketType};
 use std::{
     sync::mpsc::Receiver,
     time::Duration,
@@ -30,6 +30,7 @@ use tokio::{
     sync::{Mutex, mpsc, watch},
 };
 use tokio::time::Interval;
+
 
 pub async fn run(
     rx_shutdown: tokio::sync::watch::Receiver<ProcessStatus>,

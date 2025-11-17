@@ -8,7 +8,7 @@ use crate::{
     protocol::identifier::{Identifier, FQDN, UID},
     protocol::serial_number::SerialNumber,
     protocol::services::{DownloadAvailability, SearchAvailability, Services},
-    beacon::configuration::MulticastConfiguration,
+    multicast::multicast_configuration::MulticastConfiguration,
 };
 use anyhow::anyhow;
 use log::{debug, error, info};

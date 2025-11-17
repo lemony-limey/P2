@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use log::info;
-use crate::beacon::multicast::{MulticastEndpoint, PacketType};
+use crate::multicast::multicast_endpoint::{MulticastEndpoint, PacketType};
 use crate::protocol::message::Message;
 
 /// MessageSocket is an abstraction over MulticastEndpoint.
@@ -40,7 +40,7 @@ impl MessageSocket
     /// Will attempt to parse the message and perform the appropriate action.
     pub async fn rx_message(
         &self,
-    ) -> anyhow::Result<Message>
+    ) -> anyhow::Result<(PacketType, Option<Message>)>
     {
         let (packet_type, message): (PacketType, Option<Message>);
         {
@@ -55,21 +55,7 @@ impl MessageSocket
             }
         }
 
-        match (packet_type, message)
-        {
-            (PacketType::None, _) => Err(anyhow!("an error occurred when reading the packet")),
-            (PacketType::Ipv4, Some(message)) => {
-                info!("->rx4 {}", &message);
-                Ok(message)
-            },
-            (PacketType::Ipv6, Some(message)) => {
-                info!("->rx6 {}", &message);
-                Ok(message)
-            },
-            (_, _) => {
-                Err(anyhow!("rx_message(): invalid combination of message and packet type"))
-            }
-        }
+        Ok((packet_type, message))
     }
 
     /// Transmits a single UDP datagram over multicast, via IPv4 AND IPv6 (meaning at most two packets
