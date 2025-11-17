@@ -2,18 +2,20 @@
 //! (based on Saleem's java variant)
 
 mod configuration;
-mod soft_state;
 
+use tokio::sync::RwLock;
+use std::sync::Arc;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
 use log::{debug, info, warn};
 use crate::{
+    message_socket::MessageSocket,
     protocol::{
-        identifier::{FQDN, Identifier, UID},
+        identifier::{Identifier, FQDN, UID},
         message::{Header, Message, Payload, Timestamp},
+        search::SearchMessage,
         serial_number::SerialNumber,
-        search::SearchMessage
-    }
+    },
 };
 use std::{
     io::{self, BufRead, Write},
@@ -25,7 +27,7 @@ use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
-use soft_state::SoftState;
+use crate::soft_state::SoftState;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
@@ -35,6 +37,7 @@ pub struct FileTreeBrowser
     pub this_dir: PathBuf,
     root_path: PathBuf,
     pub config: FiletreeBrowserConfiguration,
+
 }
 
 impl FileTreeBrowser
@@ -190,9 +193,12 @@ async fn nodes(config: &mut FiletreeBrowserConfiguration) -> anyhow::Result<()>
 /// TODO: Requirement 2
 async fn search(
     config: &mut FiletreeBrowserConfiguration,
-    tx_multicast_transmitter: mpsc::Sender<Message>,
+    socket: Arc<RwLock<MessageSocket>>,
 ) -> anyhow::Result<()>
 {
+    // Query storage and check to see if we already know who has what file.
+
+    // If storage doesn't have what we need, send out a message
     let mut search_string = String::new();
     stdin().lock().read_line(&mut search_string)
         .with_context(|| "search(): could not get search string from stdin")?;
@@ -214,9 +220,12 @@ async fn search(
     );
 
     // Send message
-    tx_multicast_transmitter.send(message).await?;
+    {
+        socket.read().await.tx_message(message).await?;
+    }
 
     // Wait for received messages
+    tokio::time::sleep(Duration::from_millis(500)).await;
 
     Ok(())
 }
@@ -242,8 +251,7 @@ async fn read_line() -> anyhow::Result<String>
 }
 
 pub async fn run(
-    rx_multicast_listener: Receiver<Message>,
-    tx_multicast_transmitter: Sender<Message>,
+    socket: Arc<RwLock<MessageSocket>>
 ) -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -293,7 +301,7 @@ pub async fn run(
                 quit_browser = true;
             }
 
-            ":help" => if let Err(_) = display_help().await { quit_browser = true; }
+            ":help" => display_help().await?,
 
             ":services" => display_services(&ftb.config),
 
@@ -313,16 +321,11 @@ pub async fn run(
                 }
             }
 
-            ":nodes" => if let Err(_) = nodes(&mut config).await { quit_browser = true; },
+            ":nodes" => nodes(&mut config).await?,
 
-            ":search" => {
-                if let Err(_) = search(&mut config, tx_multicast_transmitter.clone()).await
-                {
-                    quit_browser = true;
-                }
-            },
+            ":search" => search(&mut config, socket.clone()).await?,
 
-            ":download" => if let Err(_) = download(&mut config).await { quit_browser = true; },
+            ":download" => download(&mut config).await?,
 
             _ => {
                 if let Some(path) = ftb.search_list(&user_cmd).await?

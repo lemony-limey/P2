@@ -84,7 +84,7 @@
 #### ####
 ## R1: Discover -- Advertisement message
 
-  <advertisement-message> := "advertisement" ":" <server-port> : <services>
+  <advertisement-message> := "advertisement" ":" <ipv6_link_local_addr> ":" <server-port> ":" <services>
     # Example of a complete advertisement message, with header:
     #
     #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:10123:search=true,download=false:
@@ -139,11 +139,11 @@
     #   :srv@my.host3.net:1111:20240912-170112.123:search-result:sjm55@my.host1.net:1001:/dir1/dir2/hello_world.txt:
     #
     # Note that the root, "/", here is the root_dir of the logical filespace
-    # TODO: exposed via the application, and not the local unix root directory!
+    # exposed via the application, and not the local unix root directory!
     #
-    # Searches could generate multiple results, and these should be sent
-    # in separate messages, but using the same response-id so they can be
-    # matched to the same request.
+TODO:    # Searches could generate multiple results, and these should be sent
+    #   in separate messages, but using the same response-id so they can be
+    #   matched to the same request.
 
   <search-error> := "error" ":" <response-id>
     # The serial-number in the response should match that of the request.
@@ -163,7 +163,7 @@
 
 <download-response> := <download-result> / <download-error>
 
-  # <download-request> := "request" ":" <file-string> ":" <target_identifier> ":" <ipv6_link_local_addr>
-  # <download-result> := "result" ":" <response-id> ...
+  # <download-request> := "request" ":" <identifier> ":" <file_name> ":" <ipv6_link_local_addr>
+  # <download-result> := "result" ":" <response-id> ":" <file_name> ":" "complete" ...
   # <download-error> := "error" ":" <response-id> ...
 

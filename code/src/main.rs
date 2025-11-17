@@ -1,17 +1,25 @@
-use tokio::task::spawn_blocking;
+use tokio::task::JoinSet;
+use std::sync::Arc;
 use anyhow::Context;
-use beacon;
-use log::debug;
-use parser::protocol::{
+use code::{process_messages, protocol::{
     message::Message,
     process_status::ProcessStatus,
-};
+}};
+use log::debug;
 use std::{
     thread,
     time::Duration,
 };
-use tokio::sync::{broadcast, mpsc, watch, oneshot};
-
+use tokio::{
+    task::spawn_blocking,
+    sync::{broadcast, mpsc, watch, oneshot}
+};
+use tokio::sync::RwLock;
+use code::beacon::beacon;
+use code::beacon::configuration::MulticastConfiguration;
+use code::beacon::multicast::MulticastEndpoint;
+use code::constants::BEACON_CONFIGURATION_FILE;
+use code::message_socket::MessageSocket;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()>
@@ -20,37 +28,44 @@ async fn main() -> anyhow::Result<()>
         .format_timestamp_millis()
         .init();
 
-    // Create a channel that will be used to transfer received messages from the multicast
-    // listener thread to the main user thread.
-    let (tx_received_messages, rx_received_messages) = tokio::sync::mpsc::channel::<Message>(100);
-    debug!("created channel for sending messages to user's thread");
+    let config = get_multicast_configuration(BEACON_CONFIGURATION_FILE)?;
+    let mut endpoint = MulticastEndpoint::new(config)?;
+    endpoint.join()?;
 
-    // Create a channel that will be used to transfer messages to the multicast transmission thread.
-    let (tx_multicast_transmitter, rx_multicast_transmitter) = tokio::sync::mpsc::channel::<Message>(100);
-
-    // Create a channel which will be used to terminate the beacon application
-    // when the user exists the UI.
-    let (tx_shutdown, rx_shutdown) = watch::channel::<ProcessStatus>(ProcessStatus::Running);
-    debug!("created channel for sending messages");
+    let socket = Arc::new(RwLock::new(MessageSocket::new(endpoint)));
 
     // Spin up a thread to run the beacon program.
-    // Storage and the multicast listener and transmitter are started here.
-    let beacon = Beacon::new();
+    let socket_handle = socket.clone();
+    let beacon_handle = tokio::spawn(async move {
+        beacon(socket_handle).await
+    });
+
+    // Process all incoming messages
+    let socket_handle = socket.clone();
+    let processor_handle = tokio::spawn(async move {
+        process_messages(socket_handle).await
+    });
 
     // Spin up a thread for the UI.
 
     // When the UI exits, shutdown the beacon application also.
-    let ui = tokio::spawn(async move {
-        filetree_browser::run(
-            rx_received_messages,
-            tx_multicast_transmitter,
-        ).await
-    });
 
-    tx_shutdown.send(ProcessStatus::Shutdown).expect("sending beacon tx shutdown message failed");
-    multicast_listener_handle.await.expect("beacon graceful shutdown failed")?;
+    // Join all handles
+    let (beacon, processor) = tokio::join!(
+        beacon_handle,
+        processor_handle,
+    );
 
     Ok(())
 }
 
+fn get_multicast_configuration(beacon_config_file: &str) -> anyhow::Result<MulticastConfiguration>
+{
+    let mut config = MulticastConfiguration::load(beacon_config_file)?;
+    let username = std::env::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .unwrap_or_else(|_| "user".to_string());
+    config.username = username;
 
+    Ok(config)
+}

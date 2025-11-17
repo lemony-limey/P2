@@ -1,5 +1,6 @@
 // Relevant constants
 pub const ADVERTISEMENT: &str = "advertisement";
+pub const BEACON_CONFIGURATION_FILE: &str = "beacon.toml";
 pub const DOWNLOAD: &str = "download";
 pub const ERROR: &str = "error";
 pub const FOUR_DIGITS: usize = 4;

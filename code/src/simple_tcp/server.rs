@@ -11,9 +11,11 @@ use std::{
 use log::{info, error};
 
 const SLEEP_TIME_MS: u64 = 1000;
-const BUFFER_SIZE: usize = 80;
+const BUFFER_SIZE: usize = 1024;
 const SO_TIMEOUT_MS: u64 = 10;
 
+/// The server is the node requesting the download of the file from another node.
+/// It will receive the file from the client.
 fn run_server() -> anyhow::Result<()>
 {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))

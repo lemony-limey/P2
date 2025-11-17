@@ -89,7 +89,7 @@ impl fmt::Display for Header
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct Timestamp
 {
     pub year:         FourDigitNumber,

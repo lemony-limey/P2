@@ -35,10 +35,11 @@ pub enum PacketType
 }
 
 /// dual-stack multicast communication endpoint wrapper
+#[derive(Clone, Debug)]
 pub struct MulticastEndpoint
 {
-    socket_v4: Option<UdpSocket>,
-    socket_v6: Option<UdpSocket>,
+    socket_v4: Option<Arc<UdpSocket>>,
+    socket_v6: Option<Arc<UdpSocket>>,
     mcast_addr_v4: Option<SocketAddr>,
     mcast_addr_v6: Option<SocketAddr>,
     pub(crate) config: MulticastConfiguration,
@@ -100,7 +101,7 @@ impl MulticastEndpoint
 
         // Convert to a tokio::net::UdpSocket
         let socket: std::net::UdpSocket = socket.into();
-        self.socket_v4 = Some(tokio::net::UdpSocket::from_std(socket)?);
+        self.socket_v4 = Some(Arc::new(UdpSocket::from_std(socket)?));
 
         debug!("IPv4 socket configured: {}", self.config.m_addr4);
         Ok(())
@@ -126,7 +127,7 @@ impl MulticastEndpoint
 
         // Convert to a tokio::net::UdpSocket
         let socket: std::net::UdpSocket = socket.into();
-        self.socket_v6 = Some(UdpSocket::from_std(socket)?);
+        self.socket_v6 = Some(Arc::new(UdpSocket::from_std(socket)?));
 
         debug!("IPv6 socket configured: {}", self.config.m_addr6);
         Ok(())
@@ -192,16 +193,19 @@ impl MulticastEndpoint
         Ok(())
     }
 
-    pub async fn rx(&mut self) -> anyhow::Result<(PacketType, Message)>
+    pub async fn rx(&self) -> anyhow::Result<(PacketType, Message)>
     {
+        let mut buffer_1 = BytesMut::with_capacity(self.config.msg_size);
+        let mut buffer_2 = BytesMut::with_capacity(self.config.msg_size);
+
         // Whichever packet is received first will be returned
         Ok(
             tokio::select! {
-                message = self.rx_ipv4() => {
-                    (PacketType::Ipv4, message?)
+                packet_type = self.rx_ipv4(&mut buffer_1) => {
+                    (packet_type?, parse_message(&buffer_1)?)
                 },
-                message = self.rx_ipv6() => {
-                    (PacketType::Ipv6, message?)
+                packet_type = self.rx_ipv6(&mut buffer_2) => {
+                    (packet_type?, parse_message(&buffer_2)?)
                 },
             }
         )
@@ -214,18 +218,16 @@ impl MulticastEndpoint
     ///
     /// # Returns
     /// the type of packet received (IPv4, IPv6, or None)
-    async fn rx_ipv4(&self) -> anyhow::Result<Message>
+    async fn rx_ipv4(&self, buffer: &mut BytesMut) -> anyhow::Result<PacketType>
     {
-        let mut buffer = BytesMut::with_capacity(self.config.msg_size);
-
         // try IPv4
-        if let Some(ref socket) = self.socket_v4
+        if let Some(socket) = &self.socket_v4
         {
-            match socket.recv(&mut buffer).await
+            match socket.recv(buffer).await
             {
                 Ok(len) if len > 0 => {
                     debug!("Received {} bytes on IPv4", len);
-                    return Ok(parse_message(&buffer)?);
+                    return Ok(PacketType::Ipv4);
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     // no data available, continue to IPv6
@@ -237,21 +239,19 @@ impl MulticastEndpoint
             }
         }
 
-        Err(anyhow!(""))
+        Ok(PacketType::None)
     }
 
-    async fn rx_ipv6(&self) -> anyhow::Result<Message>
+    async fn rx_ipv6(&self, buffer: &mut BytesMut) -> anyhow::Result<PacketType>
     {
-        let mut buffer = BytesMut::with_capacity(self.config.msg_size);
-
         // try IPv6
-        if let Some(ref socket) = self.socket_v6
+        if let Some(socket) = &self.socket_v6
         {
-            match socket.recv(&mut buffer).await
+            match socket.recv(buffer).await
             {
                 Ok(len) if len > 0 => {
                     debug!("Received {} bytes on IPv6", len);
-                    return Ok(parse_message(&buffer)?);
+                    return Ok(PacketType::Ipv6);
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     // mo data available
@@ -263,7 +263,7 @@ impl MulticastEndpoint
             }
         }
 
-        Err(anyhow!(""))
+        Ok(PacketType::None)
     }
 
     /// transmits a multicast packet.
@@ -275,7 +275,7 @@ impl MulticastEndpoint
     /// # Returns
     /// `true` if successful, `false` otherwise
     pub async fn tx(
-        &mut self,
+        &self,
         pkt_type: PacketType,
         data: &[u8],
     ) -> anyhow::Result<bool>
@@ -318,5 +318,13 @@ impl MulticastEndpoint
     pub fn config_mut(&mut self) -> &mut MulticastConfiguration
     {
         &mut self.config
+    }
+}
+
+impl Drop for MulticastEndpoint
+{
+    fn drop(&mut self)
+    {
+        let _ = self.leave();
     }
 }

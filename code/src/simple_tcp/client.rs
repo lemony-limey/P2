@@ -53,7 +53,8 @@ fn parse_ipv6_with_scope(addr_str: &str, port: u16) -> io::Result<SocketAddr>
     }
 }
 
-
+/// The client is the node which contains a file which has been requested for download by another
+/// node. The client will send the data to the server.
 fn run_client() -> io::Result<()>
 {
     let mut args = env::args().skip(1);
