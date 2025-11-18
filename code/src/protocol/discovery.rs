@@ -37,6 +37,12 @@ impl fmt::Display for AdvertisementMessage
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
     {
-        write!(f, "advertisement:{}:{}", self.server_port, self.services)
+        write!(
+            f,
+            "advertisement:({}):{}:{}",
+            self.ipv6_link_local_addr,
+            self.server_port,
+            self.services,
+        )
     }
 }

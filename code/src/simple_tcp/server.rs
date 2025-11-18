@@ -1,24 +1,26 @@
 //! Simple non-blocking TCP server using IPv6 link-local addresses
 //! (based on Saleem's Java version)
 
-use std::fs::File;
-use std::io::BufReader;
+use tokio::io::{BufReader, BufWriter};
+use tokio::fs::File;
 use crate::{
     constants::{BUFFER_SIZE, SLEEP_TIME_MS, SO_TIMEOUT_MS},
     simple_tcp::{anyhow, self},
 };
 use std::{
-    io::{Read, Write},
-    net::{TcpListener, SocketAddr, IpAddr, Ipv6Addr},
+    // io::{Read, Write},
+    net::{SocketAddr, IpAddr, Ipv6Addr},
     thread,
     time::Duration,
 };
 use std::path::PathBuf;
 use log::{info, error};
+use tokio::net::TcpListener;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 /// The server is the node requesting the download of the file from another node.
 /// It will receive the file from the client.
-pub fn run_server(
+pub async fn run_server(
     file_requested_from_client: PathBuf,
 ) -> anyhow::Result<()>
 {
@@ -36,9 +38,8 @@ pub fn run_server(
     let bind_addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), port.get());
     
     info!("Binding to: {}", bind_addr);
-    let listener = TcpListener::bind(bind_addr)?;
-    listener.set_nonblocking(true)?;
-    
+    let listener = TcpListener::bind(bind_addr).await?;
+
     // Log the actual link-local address for reference
     if let Ok((ipv6_addr, interface)) = simple_tcp::get_link_local_ipv6() 
     {
@@ -48,12 +49,14 @@ pub fn run_server(
     
     info!("Waiting for connection...");
 
-    let new_file = File::create_new(file_requested_from_client)?;
-    
+    let new_file = File::create_new(file_requested_from_client).await?;
+    let mut file_writer = BufWriter::new(new_file);
+    let mut total_bytes_received = 0;
+
     // Wait for a connection
-    let mut stream = loop 
+    let stream = loop
     {
-        match listener.accept() 
+        match listener.accept().await
         {
             Ok((stream, addr)) => {
                 info!("New connection from: {}", addr);
@@ -61,7 +64,6 @@ pub fn run_server(
             }
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 // No incoming connection, keep trying
-                thread::sleep(Duration::from_millis(SO_TIMEOUT_MS));
             }
             Err(e) => {
                 error!("Error accepting connection: {}", e);
@@ -69,12 +71,9 @@ pub fn run_server(
             }
         }
     };
-    
+
     // No longer need to accept connections
     drop(listener);
-    
-    stream.set_read_timeout(Some(Duration::from_millis(SO_TIMEOUT_MS)))?;
-    stream.set_write_timeout(Some(Duration::from_millis(SO_TIMEOUT_MS)))?;
 
     let mut reader = BufReader::new(stream);
 
@@ -82,7 +81,7 @@ pub fn run_server(
     loop
     {
         let mut buffer = vec![0u8; BUFFER_SIZE];
-        match reader.read(&mut buffer)
+        match reader.read(&mut buffer).await
         {
             Ok(0) => {
                 info!("<Connection closed by client>");
@@ -90,8 +89,11 @@ pub fn run_server(
             }
             Ok(bytes_read) => {
                 let received = String::from_utf8_lossy(&buffer[..bytes_read]);
-                info!("Received {} bytes --> {}", bytes_read, received.trim());
+                info!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
 
+                // Write to file
+                file_writer.write(&mut buffer).await?;
+                file_writer.flush().await?;
             }
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock 
                    || e.kind() == std::io::ErrorKind::TimedOut => {
@@ -102,8 +104,6 @@ pub fn run_server(
                 break;
             }
         }
-        
-        thread::sleep(Duration::from_millis(SLEEP_TIME_MS));
     }
     
     info!("<Closing connection>");

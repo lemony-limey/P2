@@ -5,7 +5,8 @@ use std::path::PathBuf;
 
 /// This is only used if the server is run from the command line, not when initiated by a UDP
 /// multicast request.
-fn main() -> anyhow::Result<()>
+#[tokio::main]
+async fn main() -> anyhow::Result<()>
 {
     let mut args = env::args().skip(1);
     let file_name = match args.next()
@@ -17,5 +18,5 @@ fn main() -> anyhow::Result<()>
         }
     };
 
-    run_server(PathBuf::from(file_name))
+    run_server(PathBuf::from(file_name)).await
 }

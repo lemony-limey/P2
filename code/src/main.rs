@@ -32,7 +32,7 @@ async fn main() -> anyhow::Result<()>
     endpoint.join()?;
     let socket = Arc::new(RwLock::new(MessageSocket::new(endpoint)));
 
-    let storage = Arc::new(RwLock::new(FTBSoftState::new()));
+    let state = Arc::new(RwLock::new(FTBSoftState::new()));
     let ftb_config = FiletreeBrowserConfiguration::load(FILETREE_BROWSER_CONFIGURATION_FILE)?;
 
     let root_path = fs::canonicalize(&ftb_config.root_dir).await?;
@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()>
         root_path.clone(),
         ftb_config,
         socket.clone(),
-        storage,
+        state.clone(),
     );
 
     // Spin up a thread to run the beacon program.
@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()>
     // Process all incoming messages
     let socket_handle = socket.clone();
     tokio::spawn(async move {
-        process_messages(socket.clone()).await
+        process_messages(socket.clone(), state.clone()).await
     });
 
     // Spin up a thread for the UI.

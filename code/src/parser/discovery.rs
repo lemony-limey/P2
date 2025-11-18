@@ -16,17 +16,20 @@ use nom::{
     Parser,
 };
 use std::num::NonZeroU16;
+use crate::constants::{CLOSING_BRACKET_CHAR, OPENING_BRACKET_CHAR};
 
 /// Parser for the Requirement 1 messages.
 pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, AdvertisementMessage>
 {
     // Get the IPv6 link local address
-    // TODO: Parse IPv6 here somehow
-    let ipv6_addr: Ipv6Addr;
+    let (remaining_input, ipv6_addr) = parse_ipv6_addr(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     // Get the server port number
-    let (remaining_input, server_port) = map_res(digit1, str::parse::<NonZeroU16>).parse(input)?;
+    let (remaining_input, server_port) = map_res(
+        digit1,
+        str::parse::<NonZeroU16>
+    ).parse(remaining_input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     // Parse the services
@@ -35,6 +38,27 @@ pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, Advertis
     Ok((
         remaining_input,
         AdvertisementMessage::new(ipv6_addr, server_port, services)
+    ))
+}
+
+pub(crate) fn parse_ipv6_addr(input: &str) -> IResult<&str, Ipv6Addr>
+{
+    // Parse the opening bracket
+    let (remaining_input, _opening_bracket) = char(OPENING_BRACKET_CHAR).parse(input)?;
+
+    // Parse the IP address in the middle up to the closing bracket (the closing bracket itself
+    // is not consumed).
+    let (remaining_input, ipv6_addr) = map_res(
+        take_until1(")"),
+        str::parse::<Ipv6Addr>,
+    ).parse(remaining_input)?;
+
+    // Parse the closing bracket
+    let (remaining_input, _opening_bracket) = char(CLOSING_BRACKET_CHAR).parse(remaining_input)?;
+
+    Ok((
+        remaining_input,
+        ipv6_addr,
     ))
 }
 

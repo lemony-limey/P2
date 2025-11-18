@@ -70,6 +70,7 @@ pub async fn process_messages(
             },
             // If download, check if download is enabled then query storage,
             // then eventually spin up the TCP server.
+            // TCP will be done asynchronously.
             Payload::Download(download_message) => {
 
             },

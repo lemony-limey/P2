@@ -1,6 +1,7 @@
 // Relevant constants
 pub const ADVERTISEMENT: &str = "advertisement";
 pub const BUFFER_SIZE: usize = 1024;
+pub const CLOSING_BRACKET_CHAR: char = ')';
 pub const DOWNLOAD: &str = "download";
 pub const ERROR: &str = "error";
 pub const FILETREE_BROWSER_CONFIGURATION_FILE: &str = "filetreebrowser.toml";
@@ -11,6 +12,7 @@ pub const IDENTIFIER_DELIMITER_STR: &str = "@";
 pub const MULTICAST_CONFIGURATION_FILE: &str = "beacon.toml";
 pub const NUMBER_OF_SERVICES: usize = 2;
 pub const ONE_MILLION: u32 = 1_000_000;
+pub const OPENING_BRACKET_CHAR: char = '(';
 pub const PROTOCOL_DELIMITER_CHAR: char = ':';
 pub const PROTOCOL_DELIMITER_STR: &str = ":";
 pub const REQUEST: &str = "request";

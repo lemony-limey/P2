@@ -1,37 +1,43 @@
 //! Simple IPv6 link-local client
 //! (based on Saleem's Java version)
 
+use log::info;
 use anyhow::anyhow;
-use std::io::BufWriter;
 use std::{
     env,
     ffi::CString,
-    io::{self, Read, Write},
-    net::{Ipv6Addr, SocketAddr, SocketAddrV6, TcpStream},
+    io::{self},
+    net::{Ipv6Addr, SocketAddr, SocketAddrV6},
     str::FromStr
 };
-use std::fs::File;
-use std::io::BufReader;
-use std::num::NonZeroU16;
+use tokio::{
+    fs::File,
+    io::{
+        AsyncReadExt,
+        AsyncWriteExt,
+        BufReader,
+        BufWriter,
+    },
+    net::TcpStream
+};
 use std::path::PathBuf;
 use crate::constants::BUFFER_SIZE;
 
 /// The client is the node which contains a file which has been requested for download by another
 /// node. The client will send the data to the server.
-pub fn run_client(
+pub async fn run_client(
     server_addr: SocketAddr,
     requested_file: PathBuf,
 ) -> anyhow::Result<()>
 {
     // We assume this requested file is an absolute path with "root_dir" as a prefix.
     // This is specified in the FileTreeBrowser instance.
-    let target_file = File::open(requested_file)?;
+    let target_file = File::open(requested_file).await?;
 
     println!("connecting to {}...", server_addr);
 
-    let stream = TcpStream::connect(server_addr)?;
+    let stream = TcpStream::connect(server_addr).await?;
     let mut total_bytes_sent: usize = 0;
-    let mut total_bytes_received: usize = 0;
 
     println!("connected! sending hello...\n");
 
@@ -42,26 +48,17 @@ pub fn run_client(
     loop
     {
         let mut buffer = [0u8; BUFFER_SIZE];
-        file_reader.read(&mut buffer)?;
+        file_reader.read(&mut buffer).await?;
 
-        // while let Ok(bytes_written) = writer.write()
-        // {
-        //     if bytes_written > 0
-        //     {
-        //         println!("written ({} bytes):\n{}", bytes_written, String::from_utf8_lossy(&file_reader.buffer()[total_bytes_received..total_bytes_received + bytes_written]));
-        //         total_bytes_received += bytes_written;
-        //     }
-        //     else if bytes_written == 0
-        //     {
-        //         println!("connection closed by peer with no data");
-        //         return Ok(())
-        //     }
-        // }
-        match writer.write(&mut buffer)
+        let result = writer.write(&mut buffer).await;
+        writer.flush().await?;
+
+        match result
         {
             Ok(n) if n > 0 => {
                 println!("received ({} bytes):\n{}", n, String::from_utf8_lossy(&buffer[..n]));
-                total_bytes_received += n;
+                total_bytes_sent += n;
+                info!("total bytes sent: {}", total_bytes_sent);
             }
             Ok(_) => {
                 println!("connection closed");

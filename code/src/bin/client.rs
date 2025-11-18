@@ -7,7 +7,8 @@ use code::simple_tcp::client::run_client;
 
 /// This is only used if the client is run from the command line, not when initiated by a UDP
 /// multicast request.
-pub fn main() -> anyhow::Result<()>
+#[tokio::main]
+pub async fn main() -> anyhow::Result<()>
 {
     let mut args = env::args().skip(1);
     let server = match args.next()
@@ -47,5 +48,5 @@ pub fn main() -> anyhow::Result<()>
         }
     };
 
-    run_client(addr, PathBuf::from(file_name))
+    run_client(addr, PathBuf::from(file_name)).await
 }
