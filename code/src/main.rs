@@ -1,5 +1,5 @@
 use code::constants::{FILETREE_BROWSER_CONFIGURATION_FILE, MULTICAST_CONFIGURATION_FILE};
-use code::filetree_browser::{configuration::FiletreeBrowserConfiguration, run_ftb, FileTreeBrowser};
+use code::filetree_browser::{configuration::FiletreeBrowserConfiguration, run_ftb_ui, FileTreeBrowser};
 use code::message_socket::MessageSocket;
 use code::multicast::beacon;
 use code::multicast::multicast_configuration::MulticastConfiguration;
@@ -26,13 +26,13 @@ async fn main() -> anyhow::Result<()>
     let ftb_config = FiletreeBrowserConfiguration::load(FILETREE_BROWSER_CONFIGURATION_FILE)?;
 
     let root_path = fs::canonicalize(&ftb_config.root_dir).await?;
-    let mut ftb = FileTreeBrowser::new(
+    let ftb = Arc::new(RwLock::new(FileTreeBrowser::new(
         &root_path,
         root_path.clone(),
         ftb_config.clone(),
         socket.clone(),
         state.clone(),
-    );
+    )));
 
     // Spin up a thread to run the beacon program.
     let socket_handle = socket.clone();
@@ -42,12 +42,13 @@ async fn main() -> anyhow::Result<()>
 
     // Process all incoming messages
     let socket_handle = socket.clone();
+    let ftb_handle = ftb.clone();
     tokio::spawn(async move {
-        process_incoming_messages(socket_handle, state.clone(), ftb_config).await
+        process_incoming_messages(socket_handle, state.clone(), ftb_handle).await
     });
 
     // Spin up a thread for the UI.
-    run_ftb(&mut ftb).await?;
+    run_ftb_ui(ftb).await?;
 
     // On exit, tokio will stop the beacon and message processing tasks.
     Ok(())

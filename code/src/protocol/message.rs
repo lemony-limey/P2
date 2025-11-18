@@ -167,8 +167,9 @@ impl fmt::Display for Timestamp
 pub enum Payload
 {
     Advertisement(AdvertisementMessage),
-    Search(SearchMessage),
     Download(DownloadMessage),
+    Leaving,
+    Search(SearchMessage),
 }
 
 impl fmt::Display for Payload
@@ -180,10 +181,13 @@ impl fmt::Display for Payload
             Payload::Advertisement(message) => {
                 write!(f, "{}", message)
             }
-            Payload::Search(message) => {
+            Payload::Download(message) => {
                 write!(f, "{}", message)
             }
-            Payload::Download(message) => {
+            Payload::Leaving => {
+                write!(f, "leaving")
+            }
+            Payload::Search(message) => {
                 write!(f, "{}", message)
             }
         }

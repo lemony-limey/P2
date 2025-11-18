@@ -3,6 +3,8 @@
 
 pub mod configuration;
 
+use std::collections::HashSet;
+use std::num::NonZeroU64;
 use crate::soft_state::Node;
 use crate::soft_state::FTBSoftState;
 use tokio::{
@@ -179,8 +181,11 @@ async fn display_help() -> anyhow::Result<()>
     Ok(())
 }
 
-fn display_services(config: &FiletreeBrowserConfiguration)
+async fn display_services(ftb: Arc<RwLock<FileTreeBrowser>>)
 {
+    let ftb_handle = ftb.read().await;
+    let config = &ftb_handle.config;
+
     println!(
         ":id={}:timestamp={}:search={},download={}:",
         config.uid,
@@ -194,7 +199,7 @@ fn display_services(config: &FiletreeBrowserConfiguration)
 /// Using discovery multicast messages, find all of the nodes on the network.
 /// Print them out.
 async fn nodes(
-    ftb: &mut FileTreeBrowser,
+    ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
     println!("\n * nodes: to do :-)");
@@ -211,17 +216,36 @@ async fn nodes(
 /// TODO: Requirement 2
 /// We don't return any data back to the main program, we just print the files to stdout.
 async fn search(
-    ftb: &mut FileTreeBrowser,
+    ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
     // Get the search string from the user.
     let target_file = read_line().await?;
     let target_file = target_file.as_str();
 
+    let mut nodes_with_file = HashSet::new();
+
     // Query storage and check to see if we already know who has what file.
-    if let Some(node_with_file) = ftb.storage.read().await.find_file(target_file)
+    if let Some(results) = ftb.read().await.storage.read().await.find_file(target_file).await
     {
-        println!()
+        nodes_with_file = results;
+    }
+
+    let serial_number: SerialNumber;
+    let uid: UID;
+    let fqdn: FQDN;
+    let sleep_time: u64;
+
+    // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
+    {
+        let mut ftb_handle = ftb.write().await;
+        serial_number = SerialNumber(ftb_handle.config.next_search_serial_number());
+    }
+    {
+        let ftb_handle = ftb.read().await;
+        uid = UID(ftb_handle.config.uid.to_string());
+        fqdn = FQDN(ftb_handle.config.fqdn.to_string());
+        sleep_time = ftb_handle.config.sleep_time
     }
 
     // If storage doesn't have what we need, send out a message
@@ -231,16 +255,15 @@ async fn search(
             .with_context(|| "search(): could not get search string from stdin")?;
     }
 
-    let serial_number = SerialNumber(ftb.config.next_download_serial_number());
     let message = Message::new(
         Header::new(
             Identifier::new(
-                UID(ftb.config.uid.to_string()),
-                FQDN(ftb.config.fqdn.to_string()),
+                uid,
+                fqdn,
             ),
             serial_number,
             Timestamp::now()
-                .with_context(|| "nodes(): could not create timestamp with supplied values")?,
+                .with_context(|| "search(): creating timestamp for search message with now()")?,
         ),
         Payload::Search(
             SearchMessage::Request { search_string }
@@ -249,11 +272,17 @@ async fn search(
 
     // Send message
     {
-        ftb.socket.read().await.tx_message(message).await?;
+        ftb.read().await.socket.read().await.tx_message(message).await?;
     }
 
     // Wait for received messages
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    tokio::time::sleep(Duration::from_millis(sleep_time)).await;
+
+    // Query storage and check to see if we already know who has what file.
+    if let Some(results) = ftb.read().await.storage.read().await.find_file(target_file).await
+    {
+        nodes_with_file = results;
+    }
 
     Ok(())
 }
@@ -261,7 +290,7 @@ async fn search(
 /// TODO: Requirement 3
 /// Send a
 async fn download(
-    ftb: &mut FileTreeBrowser,
+    ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
     println!("\n * download: to do :-)");
@@ -281,8 +310,8 @@ async fn read_line() -> anyhow::Result<String>
     result?
 }
 
-pub async fn run_ftb(
-    ftb: &mut FileTreeBrowser,
+pub async fn run_ftb_ui(
+    ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
     // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
@@ -297,7 +326,9 @@ pub async fn run_ftb(
     info!("Configuration loaded: id={}, root_dir={}", config.uid, config.root_dir);
     debug!("Full config: {:?}", config);
 
-    ftb.print_list().await?;
+    {
+        ftb.read().await.print_list().await?;
+    }
 
     let mut quit_browser = false;
 
@@ -315,7 +346,13 @@ pub async fn run_ftb(
                     break line;
                 }
             }
-            tokio::time::sleep(Duration::from_millis(ftb.config.sleep_time)).await;
+
+            // Sleep for a short time, then prompt the user for input again
+            let sleep_time: u64;
+            {
+                sleep_time = ftb.read().await.config.sleep_time;
+            }
+            tokio::time::sleep(Duration::from_millis(sleep_time)).await;
         };
 
         debug!("User command: {}", user_cmd);
@@ -329,49 +366,51 @@ pub async fn run_ftb(
 
             ":help" => display_help().await?,
 
-            ":services" => display_services(&ftb.config),
+            ":services" => display_services(ftb.clone()).await,
 
-            "." => ftb.print_list().await?,
+            "." => ftb.read().await.print_list().await?,
 
             ".." => {
-                if ftb.this_dir == ftb.root_path
+                let ftb_handle = ftb.read().await;
+                if ftb_handle.this_dir == ftb_handle.root_path
                 {
                     println!("At root : cannot move up.\n");
                     warn!("Attempt to move above root directory");
                 }
-                else if let Some(parent) = ftb.get_parent()
+                else if let Some(parent) = ftb_handle.get_parent()
                 {
-                    println!("<<< {}\n", ftb.logical_path_name(&parent).await?);
-                    info!("Moving up to: {}", ftb.logical_path_name(&parent).await?);
+                    println!("<<< {}\n", ftb_handle.logical_path_name(&parent).await?);
+                    info!("Moving up to: {}", ftb_handle.logical_path_name(&parent).await?);
                 }
             }
 
-            ":nodes" => nodes(ftb).await?,
+            ":nodes" => nodes(ftb.clone()).await?,
 
-            ":search" => search(ftb).await?,
+            ":search" => search(ftb.clone()).await?,
 
-            ":download" => download(ftb).await?,
+            ":download" => download(ftb.clone()).await?,
 
             _ => {
-                if let Some(path) = ftb.search_list(&user_cmd).await?
+                let ftb_handle = ftb.read().await;
+                if let Some(path) = ftb_handle.search_list(&user_cmd).await?
                 {
                     if path.is_file()
                     {
-                        println!("file: {}", ftb.logical_path_name(&path).await?);
+                        println!("file: {}", ftb_handle.logical_path_name(&path).await?);
                         if let Ok(metadata) = fs::metadata(&path).await
                         {
                             println!("size: {}", metadata.len());
                             info!(
                                 "File accessed: {} (size: {})",
-                                ftb.logical_path_name(&path).await?,
+                                ftb_handle.logical_path_name(&path).await?,
                                 metadata.len()
                             );
                         }
                     }
                     else if path.is_dir()
                     {
-                        println!(">>> {}", ftb.logical_path_name(&path).await?);
-                        info!("Entering directory: {}", ftb.logical_path_name(&path).await?);
+                        println!(">>> {}", ftb_handle.logical_path_name(&path).await?);
+                        info!("Entering directory: {}", ftb_handle.logical_path_name(&path).await?);
                     }
                 }
                 else

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::net::SocketAddr;
 use tokio::sync::RwLock;
@@ -19,14 +20,14 @@ use std::path::Path;
 use anyhow::Context;
 use chrono::{DateTime, TimeDelta, Utc};
 use tokio::sync::mpsc;
+use tokio::sync::mpsc::Receiver;
 use crate::message_socket::MessageSocket;
 
 
 #[derive(Clone, Debug)]
 pub struct FTBSoftState
 {
-    nodes: HashSet<Arc<RwLock<Node>>>,
-    // files: HashSet<PathBuf>,
+    pub nodes: Arc<RwLock<HashMap<Identifier, Arc<RwLock<Node>>>>>,
 }
 
 impl FTBSoftState
@@ -35,49 +36,91 @@ impl FTBSoftState
     {
         Self
         {
-            nodes: HashSet::new(),
+            nodes: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    /// Return the handle to the first node found that contains the specified file.
-    pub fn find_file(&self, target: &str) -> Option<Arc<RwLock<Node>>>
+    /// Return the handle to any node found that contains the specified file.
+    pub async fn find_file(&self, target: &str) -> Option<HashSet<Identifier>>
     {
+        let mut results = HashSet::new();
+        let nodes_handle = self.nodes.read().await;
 
-        todo!()
+        // Iterate over every node and save the identifiers of any node with the target file
+        for (identifier, node) in nodes_handle.iter()
+        {
+            if node.read().await.files.contains_key(target)
+            {
+                results.insert(identifier.clone());
+            }
+        }
+
+        if results.is_empty()
+        {
+            None
+        }
+        else
+        {
+            Some(results)
+        }
     }
 
 
-    pub fn print_all_nodes(&self)
+    pub async fn print_all_nodes(&self)
     {
-        if self.nodes.is_empty()
+        if self.nodes.read().await.is_empty()
         {
             println!("No other nodes on the network currently.");
             return;
         }
 
-        for node in &self.nodes
+        for (identifier, node) in self.nodes.read().await.iter()
         {
-            println!("{}|{}", node.identifier, node.ipv6addr);
+            let node = node.read().await;
+            println!("{}|{}", identifier, node.address.ip());
         }
     }
 
-    pub fn discovery_update(&mut self, node: Node)
+    pub async fn discovery_update(&mut self, node: Node) -> anyhow::Result<()>
     {
-        if !self.nodes.contains(&node)
+        // If the node is inserted successfully and None is returned, we know there was no node
+        // with the same identifier in the HashMap before.
         {
-            self.nodes.insert(node);
-            return;
+            if self.nodes.write().await.insert(
+                node.identifier.clone(),
+                Arc::new(RwLock::new(node)),
+            ).is_none() { return Ok(()); }
         }
 
         // If nodes does contain this node already, update the fields and refresh the ttl value.
-
+        Ok(())
     }
 
-    /// Return
-    pub fn contains_file(file_name: &str) -> Option<Arc<RwLock<Node>>>
+    /// Check whether a given node contains a specific file
+    pub async fn contains_file(&self, identifier: &Identifier, target_file: &String) -> bool
     {
+        // If the node corresponding to the specified identifier contains the file listed, return
+        // true.
+        if let Some(node) = self.nodes.read().await.get(identifier)
+        {
+            let mut node_handle = node.write().await;
+            if let Some(ttl) = node_handle.files.get(target_file)
+            {
+                // If the entry is still valid (i.e., it expires at a later time), return true.
+                if *ttl > Utc::now()
+                {
+                    return true;
+                }
+                // Remove invalid entry
+                else
+                {
+                    node_handle.files.remove(target_file);
+                    return false;
+                }
+            }
+        }
 
-        None
+        false
     }
 }
 
@@ -87,10 +130,9 @@ impl FTBSoftState
 pub struct Node
 {
     pub identifier: Identifier,
-    pub ipv6addr: Ipv6Addr,
-    pub server_port: NonZeroU16,
+    pub address: SocketAddr,
     pub services: Services,
-    pub files: HashSet<FileRecord>,
+    pub files: HashMap<String, DateTime<Utc>>,
     pub ttl: DateTime<Utc>,
 }
 
@@ -117,18 +159,16 @@ impl Node
 {
     pub fn new(
         identifier: Identifier,
-        ipv6addr: Ipv6Addr,
-        server_port: NonZeroU16,
+        address: SocketAddr,
         services: Services,
     ) -> anyhow::Result<Self>
     {
         Ok(Self
         {
             identifier,
-            ipv6addr,
-            server_port,
+            address,
             services,
-            files: HashSet::new(),
+            files: HashMap::new(),
             ttl: Utc::now().add(
                 TimeDelta::new(30, 0)
                 .with_context(|| "Node::new(): failed to add ttl value")?
@@ -136,12 +176,4 @@ impl Node
         }
         )
     }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct FileRecord
-{
-    file_name: PathBuf,
-    ttl: Utc,
 }

@@ -8,6 +8,7 @@ use crate::{
         FOUR_DIGITS,
         IDENTIFIER_DELIMITER_CHAR,
         IDENTIFIER_DELIMITER_STR,
+        LEAVING,
         PROTOCOL_DELIMITER_CHAR,
         PROTOCOL_DELIMITER_STR,
         SEARCH,
@@ -175,22 +176,27 @@ fn parse_payload(input: &str) -> IResult<&str, Payload>
 {
     // Get the type of the payload: "discovery", "download" or "search", then consume a delimiter
     let (remaining_input, payload_type) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     match payload_type.to_lowercase().as_str()
     {
         ADVERTISEMENT => {
+            let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
             let (remaining_input, advertisement_message) = parse_advertisement_message(remaining_input)?;
             Ok((remaining_input, Payload::Advertisement(advertisement_message)))
         },
         DOWNLOAD => {
+            let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
             let (remaining_input, download_message) = parse_download_message(remaining_input)?;
             Ok((remaining_input, Payload::Download(download_message)))
         },
+        LEAVING => {
+            Ok((remaining_input, Payload::Leaving))
+        },
         SEARCH => {
+            let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
             let (remaining_input, search_message) = parse_search_message(remaining_input)?;
             Ok((remaining_input, Payload::Search(search_message)))
-        }
+        },
         _ => Err(Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
     }
 }
