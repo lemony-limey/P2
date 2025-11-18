@@ -15,10 +15,6 @@ pub enum SearchMessage
         response_id: ResponseID,
         file_string: String,
     },
-    Error
-    {
-        response_id: ResponseID,
-    },
 }
 
 impl fmt::Display for SearchMessage
@@ -34,9 +30,6 @@ impl fmt::Display for SearchMessage
             }
             SearchMessage::Result { response_id, file_string } => {
                 write!(f, "result:{}:{}", response_id, file_string)
-            }
-            SearchMessage::Error { response_id } => {
-                write!(f, "error:{}", response_id)
             }
         }
     }

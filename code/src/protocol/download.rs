@@ -14,10 +14,6 @@ pub enum DownloadMessage
         response_id: ResponseID,
         file_string: String,
     },
-    Error
-    {
-        response_id: ResponseID,
-    },
 }
 
 impl fmt::Display for DownloadMessage
@@ -33,10 +29,6 @@ impl fmt::Display for DownloadMessage
             }
             DownloadMessage::Result { response_id, file_string } => {
                 // write!(f, "result:{}:{}", response_id, file_string)
-                todo!()
-            }
-            DownloadMessage::Error { response_id } => {
-                // write!(f, "error:{}", response_id)
                 todo!()
             }
         }

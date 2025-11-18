@@ -24,9 +24,6 @@ pub(crate) fn parse_download_message(input: &str) -> IResult<&str, DownloadMessa
         RESULT => {
             Ok(parse_download_result_message(remaining_input)?)
         },
-        ERROR => {
-            Ok(parse_download_error_message(remaining_input)?)
-        },
         _ => Err(nom::Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
     }
 }
@@ -54,15 +51,4 @@ pub(crate) fn parse_download_result_message(input: &str) -> IResult<&str, Downlo
     //     remaining_input,
     //
     //     ))
-}
-
-pub(crate) fn parse_download_error_message(input: &str) -> IResult<&str, DownloadMessage>
-{
-    let (remaining_input, _response_id) = parse_response_id(input)?;
-
-    todo!()
-    // Ok((
-    //     remaining_input,
-    //
-    // ))
 }

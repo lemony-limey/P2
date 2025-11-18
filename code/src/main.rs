@@ -1,24 +1,14 @@
-use tokio::task::JoinSet;
-use std::sync::Arc;
-use anyhow::Context;
-use code::{process_messages, protocol::{
-    message::Message,
-    process_status::ProcessStatus,
-}};
-use log::{debug, info};
-use std::{
-    thread,
-    time::Duration,
-};
-use tokio::{task::spawn_blocking, sync::{broadcast, mpsc, watch, oneshot}, fs};
-use tokio::sync::RwLock;
+use code::constants::{FILETREE_BROWSER_CONFIGURATION_FILE, MULTICAST_CONFIGURATION_FILE};
+use code::filetree_browser::{configuration::FiletreeBrowserConfiguration, run_ftb, FileTreeBrowser};
+use code::message_socket::MessageSocket;
 use code::multicast::beacon;
 use code::multicast::multicast_configuration::MulticastConfiguration;
 use code::multicast::multicast_endpoint::MulticastEndpoint;
-use code::constants::{FILETREE_BROWSER_CONFIGURATION_FILE, MULTICAST_CONFIGURATION_FILE};
-use code::filetree_browser::{FileTreeBrowser, configuration::FiletreeBrowserConfiguration, run_ftb};
-use code::message_socket::MessageSocket;
 use code::soft_state::FTBSoftState;
+use code::process_incoming_messages;
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use tokio::fs;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()>
@@ -39,7 +29,7 @@ async fn main() -> anyhow::Result<()>
     let mut ftb = FileTreeBrowser::new(
         &root_path,
         root_path.clone(),
-        ftb_config,
+        ftb_config.clone(),
         socket.clone(),
         state.clone(),
     );
@@ -53,7 +43,7 @@ async fn main() -> anyhow::Result<()>
     // Process all incoming messages
     let socket_handle = socket.clone();
     tokio::spawn(async move {
-        process_messages(socket.clone(), state.clone()).await
+        process_incoming_messages(socket_handle, state.clone(), ftb_config).await
     });
 
     // Spin up a thread for the UI.

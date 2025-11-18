@@ -21,12 +21,13 @@ use chrono::{DateTime, TimeDelta, Utc};
 use tokio::sync::mpsc;
 use crate::message_socket::MessageSocket;
 
+
 #[derive(Clone, Debug)]
 pub struct FTBSoftState
 {
-    nodes: HashSet<Node>,
+    nodes: HashSet<Arc<RwLock<Node>>>,
+    // files: HashSet<PathBuf>,
 }
-
 
 impl FTBSoftState
 {
@@ -39,7 +40,7 @@ impl FTBSoftState
     }
 
     /// Return the handle to the first node found that contains the specified file.
-    pub fn find_file(&self, target: &str) -> Option<&Node>
+    pub fn find_file(&self, target: &str) -> Option<Arc<RwLock<Node>>>
     {
 
         todo!()
@@ -62,9 +63,24 @@ impl FTBSoftState
 
     pub fn discovery_update(&mut self, node: Node)
     {
-        self.nodes.replace(node);
+        if !self.nodes.contains(&node)
+        {
+            self.nodes.insert(node);
+            return;
+        }
+
+        // If nodes does contain this node already, update the fields and refresh the ttl value.
+
+    }
+
+    /// Return
+    pub fn contains_file(file_name: &str) -> Option<Arc<RwLock<Node>>>
+    {
+
+        None
     }
 }
+
 
 /// This is where we store info about nodes discovered in the network.
 #[derive(Clone, Debug)]
@@ -78,7 +94,6 @@ pub struct Node
     pub ttl: DateTime<Utc>,
 }
 
-// TODO: Should IPv6 Addr be part of the comparison?
 impl PartialEq for Node
 {
     fn eq(&self, other: &Self) -> bool
@@ -89,6 +104,7 @@ impl PartialEq for Node
 
 impl Eq for Node {}
 
+/// This allows us to use the "contains()" method on a HashMap containing Nodes.
 impl Hash for Node
 {
     fn hash<H: Hasher>(&self, state: &mut H)
@@ -121,6 +137,7 @@ impl Node
         )
     }
 }
+
 
 #[derive(Clone, Debug)]
 pub struct FileRecord

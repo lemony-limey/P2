@@ -24,9 +24,6 @@ pub(crate) fn parse_search_message(input: &str) -> IResult<&str, SearchMessage>
         RESULT => {
             Ok(parse_search_result_message(remaining_input)?)
         },
-        ERROR => {
-            Ok(parse_search_error_message(remaining_input)?)
-        },
         _ => Err(nom::Err::Failure(nom::error::Error { input, code: ErrorKind::Fail })),
     }
 }
@@ -53,15 +50,5 @@ pub(crate) fn parse_search_result_message(input: &str) -> IResult<&str, SearchMe
     Ok((
         remaining_input,
         SearchMessage::Result { response_id, file_string: file_string.to_string() }
-    ))
-}
-
-pub(crate) fn parse_search_error_message(input: &str) -> IResult<&str, SearchMessage>
-{
-    let (remaining_input, response_id) = parse_response_id(input)?;
-
-    Ok((
-        remaining_input,
-        SearchMessage::Error { response_id }
     ))
 }
