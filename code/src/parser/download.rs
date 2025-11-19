@@ -43,7 +43,7 @@ pub(crate) fn parse_download_request_message(input: &str) -> IResult<&str, Downl
         remaining_input,
         DownloadMessage::Request {
             identifier,
-            file_path: LogicalFilePath::new(file_path),
+            logical_file_path: LogicalFilePath::new(file_path),
         },
     ))
 }
@@ -61,7 +61,7 @@ pub(crate) fn parse_download_result_message(input: &str) -> IResult<&str, Downlo
         remaining_input,
         DownloadMessage::Result {
             response_id,
-            file_path: LogicalFilePath::new(file_path),
+            logical_file_path: LogicalFilePath::new(file_path),
         },
     ))
 }

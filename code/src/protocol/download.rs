@@ -10,12 +10,12 @@ pub enum DownloadMessage
     Request
     {
         identifier: Identifier,
-        file_path: LogicalFilePath,
+        logical_file_path: LogicalFilePath,
     },
     Result
     {
         response_id: ResponseID,
-        file_path: LogicalFilePath,
+        logical_file_path: LogicalFilePath,
     },
 }
 
@@ -27,11 +27,11 @@ impl fmt::Display for DownloadMessage
 
         match self
         {
-            DownloadMessage::Request { identifier, file_path: file_string } => {
-                write!(f, "request:{}:{}", identifier, file_string)
+            DownloadMessage::Request { identifier, logical_file_path } => {
+                write!(f, "request:{}:{}", identifier, logical_file_path)
             }
-            DownloadMessage::Result { response_id, file_path: file_string } => {
-                write!(f, "result:{}:{}:complete", response_id, file_string)
+            DownloadMessage::Result { response_id, logical_file_path } => {
+                write!(f, "result:{}:{}:complete", response_id, logical_file_path)
             }
         }
     }

@@ -111,8 +111,7 @@ pub async fn beacon(socket: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
             Header::new(
                 identifier.clone(),
                 SerialNumber(next_serial_number.clone()),
-                Timestamp::now()
-                    .with_context(|| "beacon(): could not create timestamp with supplied values")?,
+                Timestamp::now()?,
             ),
             payload.clone()
         );

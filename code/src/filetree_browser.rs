@@ -3,7 +3,8 @@
 
 pub mod configuration;
 
-use tokio::fs::DirEntry;
+use log::error;
+use tokio::fs::{DirEntry, File};
 use std::collections::VecDeque;
 use crate::anyhow;
 use std::collections::HashSet;
@@ -37,6 +38,9 @@ use crate::{
     },
 };
 use crate::logical_file_path::LogicalFilePath;
+use crate::parser::identifier::parse_identifier;
+use crate::protocol::download::DownloadMessage;
+use crate::simple_tcp::server::run_server;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
@@ -46,7 +50,7 @@ pub struct FileTreeBrowser
     pub this_dir: PathBuf,
     pub config: FiletreeBrowserConfiguration,
     socket: Arc<RwLock<MessageSocket>>,
-    storage: Arc<RwLock<FTBSoftState>>,
+    soft_state: Arc<RwLock<FTBSoftState>>,
 }
 
 impl FileTreeBrowser
@@ -66,7 +70,7 @@ impl FileTreeBrowser
             root_path,
             config,
             socket,
-            storage,
+            soft_state: storage,
         }
     }
 
@@ -160,7 +164,7 @@ impl FileTreeBrowser
     /// Add any substring match to a results vec, which is returned.
     pub async fn search_for_substring(&self, substring: &str) -> anyhow::Result<Vec<LogicalFilePath>>
     {
-        let mut results: Vec<LogicalFilePath> = Vec::new();
+        let mut matches: Vec<LogicalFilePath> = Vec::new();
         let mut initial_entry = fs::read_dir(&self.root_path).await?;
         let mut queue: VecDeque<DirEntry> = VecDeque::new();
 
@@ -174,6 +178,7 @@ impl FileTreeBrowser
         {
             let entry = queue.pop_front().unwrap().path();
 
+            // If the entry is a directory, add all of its entries to the queue also.
             if entry.is_dir()
             {
                 while let Ok(mut new_entries) = fs::read_dir(&entry).await
@@ -186,36 +191,36 @@ impl FileTreeBrowser
             }
             else
             {
+                // If the current file contains a substring match, add it to the list of matches
                 if let Some(entry) = entry.to_str()
                 {
                     if entry.contains(substring)
                     {
-                        results.push(LogicalFilePath::new(entry));
+                        matches.push(LogicalFilePath::new(entry));
                     }
                 }
                 debug!("search_for_substring: MATCH! substring: {}; string: {}", substring, entry.to_str().unwrap());
             }
         }
 
-        Ok(results)
+        Ok(matches)
     }
 
-    // TODO: Currently only searches PWD.
-    // pub async fn search_list_for_exact_path_match(&self, path: &LogicalFilePath) -> anyhow::Result<Option<PathBuf>>
-    // {
-    //     debug!("Searching for: {}", path);
-    //     let mut entries = fs::read_dir(&self.this_dir).await?;
-    //     while let Some(entry) = entries.next_entry().await?
-    //     {
-    //         if *path == entry.path().to_string_lossy().to_string()
-    //         {
-    //             debug!("Found: {:?}", entry.path());
-    //             return Ok(Some(entry.path()));
-    //         }
-    //     }
-    //     warn!("Not found: {}", path);
-    //     Ok(None)
-    // }
+    /// Check if a specific file exists in the file tree.
+    /// If it does not, a call to open() will return an error.
+    pub async fn does_file_exist(&self, logical_file_path: &LogicalFilePath) -> anyhow::Result<bool>
+    {
+        let absolute_path = self.logical_path_to_absolute_path(logical_file_path.clone()).await?;
+
+        if let Ok(_) = File::open(&absolute_path).await
+        {
+            Ok(true)
+        }
+        else
+        {
+            Ok(false)
+        }
+    }
 
     pub fn get_parent(&self) -> Option<PathBuf>
     {
@@ -283,14 +288,8 @@ async fn nodes(
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
-    println!("\n * nodes: to do :-)");
-
-    // Query storage
-
-
     // Print all displayed
-    // println!("");
-
+    ftb.read().await.soft_state.read().await.print_all_nodes().await;
     Ok(())
 }
 
@@ -307,14 +306,13 @@ async fn search(
     let mut nodes_with_file = HashSet::new();
 
     // Query storage and check to see if we already know who has what file.
-    if let Some(results) = ftb.read().await.storage.read().await.find_file(&target_file).await
+    if let Some(results) = ftb.read().await.soft_state.read().await.find_file(&target_file).await
     {
         nodes_with_file = results;
     }
 
     let serial_number: SerialNumber;
-    let uid: UID;
-    let fqdn: FQDN;
+    let identifier: Identifier;
     let sleep_time: u64;
     // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
     {
@@ -323,8 +321,10 @@ async fn search(
     }
     {
         let ftb_handle = ftb.read().await;
-        uid = UID(ftb_handle.config.uid.to_string());
-        fqdn = FQDN(ftb_handle.config.fqdn.to_string());
+        identifier = Identifier::new(
+            UID(ftb_handle.config.uid.to_string()),
+            FQDN(ftb_handle.config.fqdn.to_string())
+        );
         sleep_time = ftb_handle.config.sleep_time
     }
 
@@ -338,13 +338,9 @@ async fn search(
     // Construct the search request message
     let message = Message::new(
         Header::new(
-            Identifier::new(
-                uid,
-                fqdn,
-            ),
+            identifier,
             serial_number,
-            Timestamp::now()
-                .with_context(|| "search(): creating timestamp for search message with now()")?,
+            Timestamp::now()?,
         ),
         Payload::Search(
             SearchMessage::Request { search_string }
@@ -360,7 +356,7 @@ async fn search(
     tokio::time::sleep(Duration::from_millis(sleep_time)).await;
 
     // Query storage and check to see if we already know who has what file.
-    if let Some(results) = ftb.read().await.storage.read().await.find_file(&target_file).await
+    if let Some(results) = ftb.read().await.soft_state.read().await.find_file(&target_file).await
     {
         nodes_with_file = results;
     }
@@ -369,13 +365,110 @@ async fn search(
 }
 
 /// TODO: Requirement 3
-/// Send a
+/// Send a download request
 async fn download(
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
     println!("\n * download: to do :-)");
 
+    let serial_number: SerialNumber;
+    let user_identifier: Identifier;
+    // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
+    {
+        let mut ftb_handle = ftb.write().await;
+        serial_number = SerialNumber(ftb_handle.config.next_search_serial_number());
+    }
+    {
+        let ftb_handle = ftb.read().await;
+        user_identifier = Identifier::new(
+            UID(ftb_handle.config.uid.to_string()),
+            FQDN(ftb_handle.config.fqdn.to_string())
+        );
+    }
+
+    // If storage doesn't have what we need, send out a message
+    println!("Enter the name of the file you wish to download:");
+    let mut target_file = String::new();
+    {
+        stdin().lock().read_line(&mut target_file)
+            .with_context(|| "search(): could not get search string from stdin")?;
+    }
+    let target_file = LogicalFilePath(target_file);
+    let target_file_absolute_path: PathBuf;
+    {
+        target_file_absolute_path = ftb.read().await.logical_path_to_absolute_path(target_file.clone()).await?;
+    }
+
+    // Get the identifier of the node we wish to download the file from.
+    println!("Enter the identifier of the node you wish to request this file from:");
+    let mut target_identifier = String::new();
+    {
+        stdin().lock().read_line(&mut target_identifier)
+            .with_context(|| "search(): could not get search string from stdin")?;
+    }
+
+    let mut identifier_components = target_identifier.split('@');
+    let Some(uid) = identifier_components.next() else {
+        return Err(anyhow!("Invalid identifier entered"));
+    };
+    let Some(fqdn) = identifier_components.next() else {
+        return Err(anyhow!("Invalid identifier entered"));
+    };
+    let target_identifier = Identifier::new(
+        UID(uid.to_string()),
+        FQDN(fqdn.to_string()),
+    );
+
+    // Check that the node in question contains the file we are looking for. Otherwise, abandon.
+    {
+        let ftb_handle = ftb.read().await;
+        let soft_state_handle = ftb_handle.soft_state.read().await;
+        let nodes_handle = soft_state_handle.nodes.read().await;
+        let Some(target_node) = nodes_handle.get(&target_identifier) else {
+            info!("download abandoned: requested node \"{}\" does not exist", &target_identifier);
+            return Err(anyhow!("node does not exist"));
+        };
+        // If node does not contain file, abandon download.
+        if !target_node.read().await.files.contains_key(&target_file)
+        {
+            info!(
+                "download abandoned: requested node \"{}\" does not contain file \"{}\"",
+                &target_identifier,
+                &target_file,
+            );
+            return Err(anyhow!("node does not contain file"));
+        }
+    }
+
+    // Construct the search request message
+    let message = Message::new(
+        Header::new(
+            user_identifier,
+            serial_number,
+            Timestamp::now()?,
+        ),
+        Payload::Download(
+            DownloadMessage::Request {
+                identifier: target_identifier,
+                logical_file_path: target_file.clone(),
+            },
+        ),
+    );
+
+    // Send download message
+    {
+        ftb.read().await.socket.read().await.tx_message(message).await?;
+    }
+
+    // Start server and report what happens
+    if let Err(e) = run_server(target_file_absolute_path).await
+    {
+        error!("download of {} failed", &target_file);
+        error!("error: {}", e)
+    }
+
+    info!("download of {} succeeded!", &target_file);
     Ok(())
 }
 

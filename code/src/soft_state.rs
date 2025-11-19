@@ -1,28 +1,19 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::net::SocketAddr;
-use tokio::sync::RwLock;
-use std::sync::Arc;
-use crate::{
-    protocol::{
-        message::Message,
-        identifier::Identifier,
-        message::Timestamp,
-        services::Services
-    }
+use crate::logical_file_path::LogicalFilePath;
+use crate::protocol::{
+    identifier::Identifier,
+    services::Services,
 };
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
-use std::net::Ipv6Addr;
-use std::num::NonZeroU16;
-use std::ops::Add;
-use std::path::Path;
 use anyhow::Context;
 use chrono::{DateTime, TimeDelta, Utc};
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::Receiver;
-use crate::logical_file_path::LogicalFilePath;
-use crate::message_socket::MessageSocket;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::fmt;
+use std::fmt::Formatter;
+use std::hash::{Hash, Hasher};
+use std::net::SocketAddr;
+use std::ops::Add;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 
 #[derive(Clone, Debug)]
@@ -76,10 +67,10 @@ impl FTBSoftState
             return;
         }
 
-        for (identifier, node) in self.nodes.read().await.iter()
+        for (_identifier, node) in self.nodes.read().await.iter()
         {
             let node = node.read().await;
-            println!("{}|{}", identifier, node.address.ip());
+            println!("{}", node);
         }
     }
 
@@ -138,6 +129,14 @@ pub struct Node
     pub ttl: DateTime<Utc>,
 }
 
+impl fmt::Display for Node
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "{}|{}", self.identifier, self.address)
+    }
+}
+
 impl PartialEq for Node
 {
     fn eq(&self, other: &Self) -> bool
@@ -165,17 +164,18 @@ impl Node
         services: Services,
     ) -> anyhow::Result<Self>
     {
-        Ok(Self
-        {
-            identifier,
-            address,
-            services,
-            files: HashMap::new(),
-            ttl: Utc::now().add(
-                TimeDelta::new(30, 0)
-                .with_context(|| "Node::new(): failed to add ttl value")?
-            ),
-        }
+        Ok(
+            Self
+            {
+                identifier,
+                address,
+                services,
+                files: HashMap::new(),
+                ttl: Utc::now().add(
+                    TimeDelta::new(30, 0)
+                    .with_context(|| "Node::new(): failed to add ttl value")?
+                ),
+            }
         )
     }
 }
