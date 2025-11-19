@@ -26,7 +26,7 @@ m_port = 23756
 # hopcount before expiry -- 2 is enough, as no multicast routing in labs
 m_ttl = 2
 
-# ignore my own transmissions TODO: Should this instead be false?
+# ignore my own transmissions
 loopback = false
 
 # allow other applications on this host to use this address

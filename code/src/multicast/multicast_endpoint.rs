@@ -321,6 +321,7 @@ impl MulticastEndpoint
     }
 }
 
+/// Leave the multicast group when this endpoint is dropped.
 impl Drop for MulticastEndpoint
 {
     fn drop(&mut self)

@@ -18,7 +18,6 @@ use std::{
     sync::Arc,
     io::{
         self,
-        // BufRead,
         stdin
     },
     path::{Path, PathBuf},
@@ -281,7 +280,7 @@ async fn display_services(ftb: Arc<RwLock<FileTreeBrowser>>)
     );
 }
 
-/// TODO: Requirement 1
+/// Requirement 1
 /// Using discovery multicast messages, find all of the nodes on the network.
 /// Print them out.
 async fn nodes(
@@ -293,7 +292,7 @@ async fn nodes(
     Ok(())
 }
 
-/// TODO: Requirement 2
+/// Requirement 2 - Search
 /// We don't return any data back to the main program, we just print the files to stdout.
 async fn search(
     ftb: Arc<RwLock<FileTreeBrowser>>,
@@ -302,14 +301,6 @@ async fn search(
     // Get the search string from the user.
     let target_file = read_line().await?;
     let target_file = LogicalFilePath::new(target_file);
-
-    let mut nodes_with_file = HashSet::new();
-
-    // Query storage and check to see if we already know who has what file.
-    if let Some(results) = ftb.read().await.soft_state.read().await.find_file(&target_file).await
-    {
-        nodes_with_file = results;
-    }
 
     let serial_number: SerialNumber;
     let identifier: Identifier;
@@ -329,6 +320,7 @@ async fn search(
     }
 
     // If storage doesn't have what we need, send out a message
+    println!("Enter the name of the file you wish to find:");
     let mut search_string = String::new();
     {
         stdin().lock().read_line(&mut search_string)
@@ -343,7 +335,7 @@ async fn search(
             Timestamp::now()?,
         ),
         Payload::Search(
-            SearchMessage::Request { search_string }
+            SearchMessage::Request { search_string: search_string.clone() }
         )
     );
 
@@ -356,16 +348,36 @@ async fn search(
     tokio::time::sleep(Duration::from_millis(sleep_time)).await;
 
     // Query storage and check to see if we already know who has what file.
+    let mut nodes_with_file = HashSet::new();
     if let Some(results) = ftb.read().await.soft_state.read().await.find_file(&target_file).await
     {
         nodes_with_file = results;
     }
 
+    if nodes_with_file.is_empty()
+    {
+        println!("No nodes are currently known to contain the file \"{}\"", &search_string);
+    }
+    else
+    {
+        println!(
+            "{} nodes are currently known to contain the file \"{}\"",
+            nodes_with_file.len(),
+            &search_string,
+        );
+
+        // TODO: We don't show the IP address here. Should we?
+        for node in nodes_with_file
+        {
+            println!("{}", node);
+        }
+    }
+
     Ok(())
 }
 
-/// TODO: Requirement 3
-/// Send a download request
+/// Requirement 3
+/// Send a download request for a specific file.
 async fn download(
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
@@ -424,8 +436,7 @@ async fn download(
     {
         let ftb_handle = ftb.read().await;
         let soft_state_handle = ftb_handle.soft_state.read().await;
-        let nodes_handle = soft_state_handle.nodes.read().await;
-        let Some(target_node) = nodes_handle.get(&target_identifier) else {
+        let Some(target_node) = soft_state_handle.get_node(&target_identifier).await else {
             info!("download abandoned: requested node \"{}\" does not exist", &target_identifier);
             return Err(anyhow!("node does not exist"));
         };
@@ -465,7 +476,8 @@ async fn download(
     if let Err(e) = run_server(target_file_absolute_path).await
     {
         error!("download of {} failed", &target_file);
-        error!("error: {}", e)
+        error!("error: {}", &e);
+        return Err(e);
     }
 
     info!("download of {} succeeded!", &target_file);

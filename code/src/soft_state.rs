@@ -14,7 +14,8 @@ use std::net::SocketAddr;
 use std::ops::Add;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-
+use crate::constants::{TTL_NANOSECONDS, TTL_SECONDS};
+use crate::get_ttl_timestamp;
 
 #[derive(Clone, Debug)]
 pub struct FTBSoftState
@@ -58,6 +59,25 @@ impl FTBSoftState
         }
     }
 
+    /// This function will get a read lock on a node to first check its TTL value, before
+    /// returning the pointer to the node.
+    pub async fn get_node(&self, identifier: &Identifier) -> Option<Arc<RwLock<Node>>>
+    {
+        let mut nodes_handle = self.nodes.write().await;
+        let Some(node) = nodes_handle.get(identifier) else {
+            return None;
+        };
+
+        // Check TTL. If expired, remove node.
+        if node.read().await.ttl < Utc::now()
+        {
+            nodes_handle.remove(identifier);
+            return None;
+        }
+
+        Some(node.clone())
+    }
+
 
     pub async fn print_all_nodes(&self)
     {
@@ -79,10 +99,23 @@ impl FTBSoftState
         // If the node is inserted successfully and None is returned, we know there was no node
         // with the same identifier in the HashMap before.
         {
-            if self.nodes.write().await.insert(
-                node.identifier.clone(),
-                Arc::new(RwLock::new(node)),
-            ).is_none() { return Ok(()); }
+            // If we have seen the node before, refresh its TTL value.
+            let mut nodes_handle = self.nodes.write().await;
+            if nodes_handle.contains_key(&node.identifier)
+            {
+                if let Some(existing_node) = nodes_handle.get_mut(&node.identifier) {
+                    existing_node.write().await.ttl = get_ttl_timestamp(TTL_SECONDS, TTL_NANOSECONDS)?;
+                };
+
+                return Ok(())
+            }
+            else
+            {
+                nodes_handle.insert(
+                    node.identifier.clone(),
+                    Arc::new(RwLock::new(node)),
+                );
+            }
         }
 
         // If nodes does contain this node already, update the fields and refresh the ttl value.

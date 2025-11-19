@@ -71,7 +71,6 @@ pub async fn process_incoming_messages(
         }
 
         // Match the type of the message to determine how to process it
-        // TODO: When we hear from a node we know, update its TTL value.
         match payload
         {
             // If advertisement, put into storage

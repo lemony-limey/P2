@@ -12,7 +12,6 @@ pub struct LogicalFilePath(pub String);
 
 impl LogicalFilePath
 {
-    /// TODO: Should this be a fallible conversion? Probably not.
     pub fn new(logical_path: impl ToString) -> Self
     {
         Self(logical_path.to_string())

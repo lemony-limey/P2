@@ -40,8 +40,6 @@ use nom::{
 
 // Methods
 /// This is the public method that will be called from the other crates.
-/// TODO: Cannot use referenced strings because received messages will drop said strings when
-///     passing the message back to the main thread.
 pub fn parse_message(input: &BytesMut) -> anyhow::Result<Message>
 {
     let result = parse_message_inner(str::from_utf8(&input)?)
