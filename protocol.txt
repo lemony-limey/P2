@@ -46,6 +46,7 @@
     #
     # This could, for example, be a monotonically increasing number.
 
+TODO: Only respond on success?
 
   # A <response-id> would be used in a response messages to match requests to
   # responses so that multiple requests can be outstanding to the same server.
@@ -84,10 +85,10 @@
 #### ####
 ## R1: Discover -- Advertisement message
 
-  <advertisement-message> := "advertisement" ":" <ipv6_link_local_addr> ":" <server-port> ":" <services>
+  <advertisement-message> := "advertisement" ":" "(" <ipv6_link_local_addr> ")" ":" <server-port> ":" <services>
     # Example of a complete advertisement message, with header:
     #
-    #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:10123:search=true,download=false:
+    #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:(::1):10123:search=true,download=false:
 
   <server-port> := *DIGIT
     # a non-zero, unsigned, 16-bit decimal number, on which this server
@@ -105,12 +106,15 @@
   <service-status> := "true" / "false"
 
 
+  <leaving-message> := "leaving"
+
+
 #### ####
 ## R2: Search
 
   <search-message> := "search" ":" <search-request> / <search-response>
 
-  <search-response> := <search-result> / <search-error>
+  <search-response> := <search-result>
 
   <search-request> := "request" ":" <search-string>
 
@@ -145,14 +149,6 @@ TODO:    # Searches could generate multiple results, and these should be sent
     #   in separate messages, but using the same response-id so they can be
     #   matched to the same request.
 
-  <search-error> := "error" ":" <response-id>
-    # The serial-number in the response should match that of the request.
-    # For example, if the server srv@my.host3.net does not have a match, then
-    # a response to the example request would be:
-    #
-    #   :srv@my.host3.net:1001:20240912-170112.123:search-error:sjm55@my.host1.net:1001:
-
-
 #### ####
 ## R3: Download -- TBD.
 # If you attempt this, please include a description of your design and
@@ -163,7 +159,6 @@ TODO:    # Searches could generate multiple results, and these should be sent
 
 <download-response> := <download-result> / <download-error>
 
-  # <download-request> := "request" ":" <identifier> ":" <file_name> ":" <ipv6_link_local_addr>
+  # <download-request> := "request" ":" <identifier> ":" <file_name>
   # <download-result> := "result" ":" <response-id> ":" <file_name> ":" "complete" ...
-  # <download-error> := "error" ":" <response-id> ...
 

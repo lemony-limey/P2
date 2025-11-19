@@ -3,6 +3,8 @@
 
 pub mod configuration;
 
+use std::fmt;
+use crate::anyhow;
 use std::collections::HashSet;
 use std::num::NonZeroU64;
 use crate::soft_state::Node;
@@ -22,6 +24,7 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
+use std::fmt::Formatter;
 use std::io::BufRead;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
@@ -35,9 +38,9 @@ use crate::{
         serial_number::SerialNumber,
     },
 };
+use crate::logical_file_path::LogicalFilePath;
 
 const PROPERTIES_FILE: &str = "filetreebrowser.toml";
-
 
 pub struct FileTreeBrowser
 {
@@ -69,7 +72,7 @@ impl FileTreeBrowser
         }
     }
 
-    pub async fn logical_path_name(&self, path: &Path) -> anyhow::Result<String>
+    pub async fn logical_path_name(&self, path: &Path) -> anyhow::Result<LogicalFilePath>
     {
         // This data has to be cloned since it doesn't have a static lifetime (&self and &path
         // could hypothetically be dropped before this task finishes).
@@ -86,7 +89,20 @@ impl FileTreeBrowser
                 .to_string()
         }).await?;
 
-        Ok(result)
+        Ok(LogicalFilePath(result))
+    }
+
+    // TODO: Potential source of bugs
+    pub async fn logical_path_to_absolute_path(&self, logical_path: LogicalFilePath) -> anyhow::Result<PathBuf>
+    {
+        let root_path = &self.root_path;
+        let Some(root_path_str) = root_path.to_str() else {
+            return Err(anyhow!("provided file path does not exist: {:#?}", root_path));
+        };
+        // Logical path will always at least contain "/", so we don't need to manually insert it.
+        let absolute_path = format!("{}{}", root_path_str, logical_path);
+
+        Ok(PathBuf::from(absolute_path))
     }
 
     /// print a formatted list of files and directories.
@@ -95,7 +111,7 @@ impl FileTreeBrowser
         let mut entries = fs::read_dir(&self.this_dir).await?;
 
         println!("\n+++  id: {}", self.config.uid);
-        println!("+++ dir: {}", self.logical_path_name(&self.this_dir).await?);
+        println!("+++ dir: {}", self.logical_path_name(&self.this_dir).await?.0);
         println!("+++\tfilename:");
 
         let mut count = 0;
@@ -222,12 +238,12 @@ async fn search(
 {
     // Get the search string from the user.
     let target_file = read_line().await?;
-    let target_file = target_file.as_str();
+    let target_file = LogicalFilePath::new(target_file);
 
     let mut nodes_with_file = HashSet::new();
 
     // Query storage and check to see if we already know who has what file.
-    if let Some(results) = ftb.read().await.storage.read().await.find_file(target_file).await
+    if let Some(results) = ftb.read().await.storage.read().await.find_file(&target_file).await
     {
         nodes_with_file = results;
     }
@@ -236,7 +252,6 @@ async fn search(
     let uid: UID;
     let fqdn: FQDN;
     let sleep_time: u64;
-
     // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
     {
         let mut ftb_handle = ftb.write().await;
@@ -256,6 +271,7 @@ async fn search(
             .with_context(|| "search(): could not get search string from stdin")?;
     }
 
+    // Construct the search request message
     let message = Message::new(
         Header::new(
             Identifier::new(
@@ -280,7 +296,7 @@ async fn search(
     tokio::time::sleep(Duration::from_millis(sleep_time)).await;
 
     // Query storage and check to see if we already know who has what file.
-    if let Some(results) = ftb.read().await.storage.read().await.find_file(target_file).await
+    if let Some(results) = ftb.read().await.storage.read().await.find_file(&target_file).await
     {
         nodes_with_file = results;
     }

@@ -15,6 +15,7 @@ use tokio::sync::RwLock;
 use crate::constants::{TTL_NANOSECONDS, TTL_SECONDS};
 use crate::filetree_browser::configuration::FiletreeBrowserConfiguration;
 use crate::filetree_browser::FileTreeBrowser;
+use crate::logical_file_path::LogicalFilePath;
 use crate::multicast::multicast_endpoint::PacketType;
 use crate::protocol::download::DownloadMessage;
 use crate::protocol::search::SearchMessage;
@@ -24,6 +25,7 @@ use crate::soft_state::FTBSoftState;
 pub mod multicast;
 pub mod constants;
 pub mod filetree_browser;
+pub mod logical_file_path;
 pub mod message_socket;
 pub mod n_digit_number;
 pub mod parser;
@@ -125,7 +127,7 @@ pub async fn process_incoming_messages(
                 ttl = ttl.add(delta);
 
                 // TODO: Convert file_string to logical path
-                node_handle.files.insert(file_string, ttl);
+                node_handle.files.insert(LogicalFilePath::new(file_string), ttl);
 
                 todo!()
             },
@@ -168,6 +170,25 @@ pub async fn process_incoming_messages(
             // A host is indicating to us that another host has successfully received a
             // download.
             Payload::Download(DownloadMessage::Result { response_id, file_string }) => {
+                // Add file to the node, if it exists
+                let storage_handle = storage.write().await;
+                let mut nodes_handle = storage_handle.nodes.write().await;
+
+                let Some(node) = nodes_handle.get_mut(response_id.identifier()) else {
+                    debug!("search result dropped: unknown node");
+                    continue;
+                };
+
+                let mut node_handle = node.write().await;
+                let mut ttl = Utc::now();
+                let Some(delta) = TimeDelta::new(TTL_SECONDS, TTL_NANOSECONDS) else {
+                    return Err(anyhow!("an error occurred when attempting to create the TTL timestamp"));
+                };
+                ttl = ttl.add(delta);
+
+                // Convert file_string to logical path
+                node_handle.files.insert(LogicalFilePath::new(file_string), ttl);
+
                 todo!()
             },
             // Remove specified entry from the cache

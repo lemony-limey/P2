@@ -21,6 +21,7 @@ use anyhow::Context;
 use chrono::{DateTime, TimeDelta, Utc};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
+use crate::logical_file_path::LogicalFilePath;
 use crate::message_socket::MessageSocket;
 
 
@@ -41,7 +42,8 @@ impl FTBSoftState
     }
 
     /// Return the handle to any node found that contains the specified file.
-    pub async fn find_file(&self, target: &str) -> Option<HashSet<Identifier>>
+    /// Exact matches only.
+    pub async fn find_file(&self, target: &LogicalFilePath) -> Option<HashSet<Identifier>>
     {
         let mut results = HashSet::new();
         let nodes_handle = self.nodes.read().await;
@@ -97,7 +99,7 @@ impl FTBSoftState
     }
 
     /// Check whether a given node contains a specific file
-    pub async fn contains_file(&self, identifier: &Identifier, target_file: &String) -> bool
+    pub async fn contains_file(&self, identifier: &Identifier, target_file: &LogicalFilePath) -> bool
     {
         // If the node corresponding to the specified identifier contains the file listed, return
         // true.
@@ -132,7 +134,7 @@ pub struct Node
     pub identifier: Identifier,
     pub address: SocketAddr,
     pub services: Services,
-    pub files: HashMap<String, DateTime<Utc>>,
+    pub files: HashMap<LogicalFilePath, DateTime<Utc>>,
     pub ttl: DateTime<Utc>,
 }
 
