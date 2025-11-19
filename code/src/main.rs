@@ -9,6 +9,7 @@ use code::process_incoming_messages;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::fs;
+use code::protocol::services::{DownloadAvailability, SearchAvailability};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()>
@@ -38,7 +39,11 @@ async fn main() -> anyhow::Result<()>
     // Spin up a thread to run the beacon program.
     let socket_handle = socket.clone();
     tokio::spawn(async move {
-        beacon(socket_handle).await
+        beacon(
+            socket_handle,
+            SearchAvailability(ftb_config.search),
+            DownloadAvailability(ftb_config.download),
+        ).await
     });
 
     // Process all incoming messages

@@ -66,7 +66,11 @@ pub async fn run(
 
 
 /// Send a beacon ping out every so often
-pub async fn beacon(socket: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
+pub async fn beacon(
+    socket: Arc<RwLock<MessageSocket>>,
+    search_availability: SearchAvailability,
+    download_availability: DownloadAvailability,
+) -> anyhow::Result<()>
 {
     // Predefine all info that does not have to be redefined later in the critical section.
     let beacon_interval: Duration;
@@ -88,9 +92,8 @@ pub async fn beacon(socket: Arc<RwLock<MessageSocket>>) -> anyhow::Result<()>
                 NonZeroU16::new(endpoint.config.m_port)
                     .with_context(|| "beacon(): invalid port number")?,
                 Services::new(
-                    // TODO: Use the actual values instead of these placeholders.
-                    SearchAvailability(true),
-                    DownloadAvailability(true),
+                    search_availability,
+                    download_availability,
                 )
             )
         );
