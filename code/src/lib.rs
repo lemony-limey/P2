@@ -1,3 +1,4 @@
+use chrono::DateTime;
 use crate::protocol::identifier::Identifier;
 use chrono::{TimeDelta, Utc};
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
@@ -200,16 +201,23 @@ pub async fn process_incoming_messages(
                 // Get the address of the host requesting the file transfer.
                 let path_to_file: PathBuf;
                 let target_addr: SocketAddr;
+                // Lock the soft state cache.
                 {
                     let soft_state_handle = soft_state.read().await;
                     let nodes_handle = soft_state_handle.nodes.read().await;
-                    let Some(target_host) = nodes_handle.get(&header.identifier) else {
+                    if let Some(target_host) = nodes_handle.get(&header.identifier) {
+                        // Update its TTL value
+                        let mut target_host_handle = target_host.write().await;
+                        target_host_handle.ttl = get_ttl_timestamp(TTL_SECONDS, TTL_NANOSECONDS)?;
+                        target_addr = target_host_handle.address;
+                    }
+                    else
+                    {
                         info!("download request dropped: target host not found");
                         continue;
                     };
-                    let target_host_handle = target_host.read().await;
-                    target_addr = target_host_handle.address;
                 }
+                // Lock the file tree browser.
                 {
                     let ftb_handle = ftb.read().await;
                     let Ok(path) = ftb_handle.logical_path_to_absolute_path(file_path).await else {
@@ -219,8 +227,8 @@ pub async fn process_incoming_messages(
                     path_to_file = path;
                 }
 
-                info!("starting TCP connection");
                 // Start TCP client connection and attempt transfer.
+                info!("starting TCP connection");
                 run_client(
                     target_addr,
                     path_to_file,
@@ -241,12 +249,8 @@ pub async fn process_incoming_messages(
                 };
 
                 // Add the file along with a time to live value.
+                let ttl = get_ttl_timestamp(TTL_SECONDS, TTL_NANOSECONDS)?;
                 let mut node_handle = node.write().await;
-                let mut ttl = Utc::now();
-                let Some(delta) = TimeDelta::new(TTL_SECONDS, TTL_NANOSECONDS) else {
-                    return Err(anyhow!("an error occurred when attempting to create the TTL timestamp"));
-                };
-                ttl = ttl.add(delta);
 
                 // Convert file_string to logical path
                 node_handle.files.insert(LogicalFilePath::new(file_string), ttl);
@@ -260,4 +264,15 @@ pub async fn process_incoming_messages(
             }
         }
     }
+}
+
+pub fn get_ttl_timestamp(seconds: i64, nanoseconds: u32) -> anyhow::Result<DateTime<Utc>>
+{
+    let mut ttl = Utc::now();
+    let Some(delta) = TimeDelta::new(seconds, nanoseconds) else {
+        return Err(anyhow!("an error occurred when attempting to create the TTL timestamp"));
+    };
+    ttl = ttl.add(delta);
+
+    Ok(ttl)
 }
