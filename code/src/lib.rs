@@ -228,6 +228,8 @@ pub async fn process_incoming_messages(
 
                 // Start TCP client connection and attempt transfer.
                 info!("starting TCP connection");
+
+                // TODO: If download fails, remove the server node from the cache.
                 run_client(
                     target_addr,
                     path_to_file,
