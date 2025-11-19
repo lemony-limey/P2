@@ -9,6 +9,8 @@ use nom::{
     IResult,
     Parser,
 };
+use crate::logical_file_path::LogicalFilePath;
+use crate::parser::identifier::parse_identifier;
 
 /// Parser for the Requirement 3 messages.
 pub(crate) fn parse_download_message(input: &str) -> IResult<&str, DownloadMessage>
@@ -30,25 +32,36 @@ pub(crate) fn parse_download_message(input: &str) -> IResult<&str, DownloadMessa
 
 pub(crate) fn parse_download_request_message(input: &str) -> IResult<&str, DownloadMessage>
 {
-    let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
+    // Parse the identifier and teh delimiter that follows it
+    let (remaining_input, identifier) = parse_identifier(input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+
+    // Parse the logical filename
+    let (remaining_input, file_path) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
 
     Ok((
         remaining_input,
-        DownloadMessage::Request { file_string: file_string.to_string() },
+        DownloadMessage::Request {
+            identifier,
+            file_path: LogicalFilePath::new(file_path),
+        },
     ))
 }
 
 pub(crate) fn parse_download_result_message(input: &str) -> IResult<&str, DownloadMessage>
 {
-    let (remaining_input, _response_id) = parse_response_id(input)?;
+    // Get the response ID and consume the delimiter after it
+    let (remaining_input, response_id) = parse_response_id(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     // Get the file string, but don't consume the delimiter after it.
-    let (remaining_input, _file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
+    let (remaining_input, file_path) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
 
-    todo!()
-    // Ok((
-    //     remaining_input,
-    //
-    //     ))
+    Ok((
+        remaining_input,
+        DownloadMessage::Result {
+            response_id,
+            file_path: LogicalFilePath::new(file_path),
+        },
+    ))
 }

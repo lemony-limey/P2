@@ -1,5 +1,7 @@
+use crate::protocol::identifier::Identifier;
 use crate::protocol::message::ResponseID;
 use std::fmt::{self, Formatter};
+use crate::logical_file_path::LogicalFilePath;
 
 // R3 - Download
 #[derive(Clone, Debug)]
@@ -7,12 +9,13 @@ pub enum DownloadMessage
 {
     Request
     {
-        file_string: String,
+        identifier: Identifier,
+        file_path: LogicalFilePath,
     },
     Result
     {
         response_id: ResponseID,
-        file_string: String,
+        file_path: LogicalFilePath,
     },
 }
 
@@ -24,12 +27,11 @@ impl fmt::Display for DownloadMessage
 
         match self
         {
-            DownloadMessage::Request { file_string } => {
-                write!(f, "request:{}", file_string)
+            DownloadMessage::Request { identifier, file_path: file_string } => {
+                write!(f, "request:{}:{}", identifier, file_string)
             }
-            DownloadMessage::Result { response_id, file_string } => {
-                // write!(f, "result:{}:{}", response_id, file_string)
-                todo!()
+            DownloadMessage::Result { response_id, file_path: file_string } => {
+                write!(f, "result:{}:{}:complete", response_id, file_string)
             }
         }
     }

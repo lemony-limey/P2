@@ -79,11 +79,13 @@ TODO: Only respond on success?
 #### ####
 ## General payload format
 
-  <payload> := <advertisement-message> / <search-message> / <download-message> 
+  <payload> := <dscovery-message> / <search-message> / <download-message>
 
 
 #### ####
 ## R1: Discover -- Advertisement message
+
+  <discovery-message> := <advertisement-message> / <leaving-message>
 
   <advertisement-message> := "advertisement" ":" "(" <ipv6_link_local_addr> ")" ":" <server-port> ":" <services>
     # Example of a complete advertisement message, with header:
@@ -104,7 +106,6 @@ TODO: Only respond on success?
   <service-name> := "search" / "download"
 
   <service-status> := "true" / "false"
-
 
   <leaving-message> := "leaving"
 
@@ -160,5 +161,7 @@ TODO:    # Searches could generate multiple results, and these should be sent
 <download-response> := <download-result> / <download-error>
 
   # <download-request> := "request" ":" <identifier> ":" <file_name>
-  # <download-result> := "result" ":" <response-id> ":" <file_name> ":" "complete" ...
+
+  # We only send a download result if download completed successfully.
+  # <download-result> := "result" ":" <response-id> ":" <file_name>
 

@@ -88,20 +88,21 @@ pub async fn process_incoming_messages(
             },
             // If search, query storage then send message if no results have been returned.
             Payload::Search(SearchMessage::Request { search_string }) => {
-                // TODO: Check search is enabled
+                // Check search is enabled
                 if !ftb.read().await.config.search
                 {
                     debug!("search request dropped: search is disabled");
                     continue;
                 }
 
-                // Check if the requested file exists within the logical file directory.
+                // Check if any file within the logical file directory has a substring match
+                // with the search_string.
                 // Only respond if the file exists.
-                if !ftb.read().await.search_list(&*search_string).await?.is_none()
-                {
-                    debug!("search: file \"{}\" did not return any matches", search_string);
-                    continue;
-                }
+                // if !ftb.read().await.search_list_for_exact_path_match(&*search_string).await?.is_none()
+                // {
+                //     debug!("search: file \"{}\" did not return any matches", search_string);
+                //     continue;
+                // }
 
                 todo!()
             },
@@ -119,6 +120,7 @@ pub async fn process_incoming_messages(
                     continue;
                 };
 
+                // Get a write lock on the node reporting that is has the specified file
                 let mut node_handle = node.write().await;
                 let mut ttl = Utc::now();
                 let Some(delta) = TimeDelta::new(TTL_SECONDS, TTL_NANOSECONDS) else {
@@ -126,7 +128,7 @@ pub async fn process_incoming_messages(
                 };
                 ttl = ttl.add(delta);
 
-                // TODO: Convert file_string to logical path
+                // Convert file_string to logical path and store with ttl
                 node_handle.files.insert(LogicalFilePath::new(file_string), ttl);
 
                 todo!()
@@ -134,7 +136,7 @@ pub async fn process_incoming_messages(
             // If download, check if download is enabled then query storage,
             // then eventually spin up the TCP server.
             // TCP will be done asynchronously.
-            Payload::Download(DownloadMessage::Request { file_string }) => {
+            Payload::Download(DownloadMessage::Request { identifier, file_path }) => {
                 // Ensure download is enabled.
                 if !ftb.read().await.config.download
                 {
@@ -158,8 +160,14 @@ pub async fn process_incoming_messages(
                     let target_host_handle = target_host.read().await;
                     target_addr = target_host_handle.address;
                 }
-
-                todo!();
+                {
+                    let ftb_handle = ftb.read().await;
+                    let Ok(path) = ftb_handle.logical_path_to_absolute_path(file_path).await else {
+                        debug!("download request dropped: conversion from logical path to absolute path failed");
+                        continue;
+                    };
+                    path_to_file = path;
+                }
 
                 // Start TCP client connection and attempt transfer.
                 run_client(
@@ -169,16 +177,19 @@ pub async fn process_incoming_messages(
             },
             // A host is indicating to us that another host has successfully received a
             // download.
-            Payload::Download(DownloadMessage::Result { response_id, file_string }) => {
+            // Incoming file string will be treated as a logical path.
+            Payload::Download(DownloadMessage::Result { response_id, file_path: file_string }) => {
                 // Add file to the node, if it exists
                 let storage_handle = storage.write().await;
                 let mut nodes_handle = storage_handle.nodes.write().await;
 
+                // Get a mutable handle to the node
                 let Some(node) = nodes_handle.get_mut(response_id.identifier()) else {
                     debug!("search result dropped: unknown node");
                     continue;
                 };
 
+                // Add the file along with a time to live value.
                 let mut node_handle = node.write().await;
                 let mut ttl = Utc::now();
                 let Some(delta) = TimeDelta::new(TTL_SECONDS, TTL_NANOSECONDS) else {
@@ -188,8 +199,6 @@ pub async fn process_incoming_messages(
 
                 // Convert file_string to logical path
                 node_handle.files.insert(LogicalFilePath::new(file_string), ttl);
-
-                todo!()
             },
             // Remove specified entry from the cache
             Payload::Leaving => {

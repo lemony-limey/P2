@@ -3,16 +3,15 @@
 
 pub mod configuration;
 
-use std::fmt;
+use tokio::fs::DirEntry;
+use std::collections::VecDeque;
 use crate::anyhow;
 use std::collections::HashSet;
-use std::num::NonZeroU64;
-use crate::soft_state::Node;
 use crate::soft_state::FTBSoftState;
 use tokio::{
     sync::RwLock,
     fs,
-    io::AsyncWriteExt
+    io::AsyncWriteExt,
 };
 use std::{
     sync::Arc,
@@ -24,7 +23,6 @@ use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
-use std::fmt::Formatter;
 use std::io::BufRead;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
@@ -72,7 +70,7 @@ impl FileTreeBrowser
         }
     }
 
-    pub async fn logical_path_name(&self, path: &Path) -> anyhow::Result<LogicalFilePath>
+    pub async fn absolute_path_to_logical_path(&self, path: &Path) -> anyhow::Result<LogicalFilePath>
     {
         // This data has to be cloned since it doesn't have a static lifetime (&self and &path
         // could hypothetically be dropped before this task finishes).
@@ -92,13 +90,18 @@ impl FileTreeBrowser
         Ok(LogicalFilePath(result))
     }
 
-    // TODO: Potential source of bugs
     pub async fn logical_path_to_absolute_path(&self, logical_path: LogicalFilePath) -> anyhow::Result<PathBuf>
     {
         let root_path = &self.root_path;
-        let Some(root_path_str) = root_path.to_str() else {
+        let Some(mut root_path_str) = root_path.to_str() else {
             return Err(anyhow!("provided file path does not exist: {:#?}", root_path));
         };
+        // Logical file paths always begin with a "/", so remove a trailing "/" if one exists
+        // to avoid them being doubled up.
+        if let Some(result) = root_path_str.strip_suffix("/")
+        {
+            root_path_str = result;
+        }
         // Logical path will always at least contain "/", so we don't need to manually insert it.
         let absolute_path = format!("{}{}", root_path_str, logical_path);
 
@@ -111,7 +114,7 @@ impl FileTreeBrowser
         let mut entries = fs::read_dir(&self.this_dir).await?;
 
         println!("\n+++  id: {}", self.config.uid);
-        println!("+++ dir: {}", self.logical_path_name(&self.this_dir).await?.0);
+        println!("+++ dir: {}", self.absolute_path_to_logical_path(&self.this_dir).await?.0);
         println!("+++\tfilename:");
 
         let mut count = 0;
@@ -134,24 +137,85 @@ impl FileTreeBrowser
         Ok(())
     }
 
-    /// search for a file or directory by name in the current directory.
-    /// TODO: Return a Vec of results?
-    pub async fn search_list(&self, name: &str) -> anyhow::Result<Option<PathBuf>>
+    /// Search for a file or directory by name in the current directory.
+    /// Only the file name is required, not the full logical path, because we know the current
+    /// directory.
+    pub async fn search_pwd_for_file(&self, file_name: &str) -> anyhow::Result<Option<PathBuf>>
     {
-        debug!("Searching for: {}", name);
+        debug!("Searching for: {}", file_name);
         let mut entries = fs::read_dir(&self.this_dir).await?;
         while let Some(entry) = entries.next_entry().await?
         {
-            // TODO: We have replaced equals with substring match. Return a list
-            if entry.file_name().to_string_lossy().contains(name)
+            if entry.file_name().to_string_lossy() == file_name
             {
                 debug!("Found: {:?}", entry.path());
                 return Ok(Some(entry.path()));
             }
         }
-        warn!("Not found: {}", name);
+        warn!("Not found: {}", file_name);
         Ok(None)
     }
+
+    /// Use BFS to traverse all subdirectories.
+    /// Add any substring match to a results vec, which is returned.
+    pub async fn search_for_substring(&self, substring: &str) -> anyhow::Result<Vec<LogicalFilePath>>
+    {
+        let mut results: Vec<LogicalFilePath> = Vec::new();
+        let mut initial_entry = fs::read_dir(&self.root_path).await?;
+        let mut queue: VecDeque<DirEntry> = VecDeque::new();
+
+        while let Some(new_entry) = initial_entry.next_entry().await?
+        {
+            queue.push_back(new_entry);
+        }
+
+        // Recursively list all files in all directories
+        while !queue.is_empty()
+        {
+            let entry = queue.pop_front().unwrap().path();
+
+            if entry.is_dir()
+            {
+                while let Ok(mut new_entries) = fs::read_dir(&entry).await
+                {
+                    while let Some(new_entry) = new_entries.next_entry().await?
+                    {
+                        queue.push_back(new_entry);
+                    }
+                }
+            }
+            else
+            {
+                if let Some(entry) = entry.to_str()
+                {
+                    if entry.contains(substring)
+                    {
+                        results.push(LogicalFilePath::new(entry));
+                    }
+                }
+                debug!("search_for_substring: MATCH! substring: {}; string: {}", substring, entry.to_str().unwrap());
+            }
+        }
+
+        Ok(results)
+    }
+
+    // TODO: Currently only searches PWD.
+    // pub async fn search_list_for_exact_path_match(&self, path: &LogicalFilePath) -> anyhow::Result<Option<PathBuf>>
+    // {
+    //     debug!("Searching for: {}", path);
+    //     let mut entries = fs::read_dir(&self.this_dir).await?;
+    //     while let Some(entry) = entries.next_entry().await?
+    //     {
+    //         if *path == entry.path().to_string_lossy().to_string()
+    //         {
+    //             debug!("Found: {:?}", entry.path());
+    //             return Ok(Some(entry.path()));
+    //         }
+    //     }
+    //     warn!("Not found: {}", path);
+    //     Ok(None)
+    // }
 
     pub fn get_parent(&self) -> Option<PathBuf>
     {
@@ -396,8 +460,8 @@ pub async fn run_ftb_ui(
                 }
                 else if let Some(parent) = ftb_handle.get_parent()
                 {
-                    println!("<<< {}\n", ftb_handle.logical_path_name(&parent).await?);
-                    info!("Moving up to: {}", ftb_handle.logical_path_name(&parent).await?);
+                    println!("<<< {}\n", ftb_handle.absolute_path_to_logical_path(&parent).await?);
+                    info!("Moving up to: {}", ftb_handle.absolute_path_to_logical_path(&parent).await?);
                 }
             }
 
@@ -407,27 +471,29 @@ pub async fn run_ftb_ui(
 
             ":download" => download(ftb.clone()).await?,
 
+            // The user has not entered any of the above commands, so assume they are requesting the
+            // metadata for a specific file in the current working directory.
             _ => {
                 let ftb_handle = ftb.read().await;
-                if let Some(path) = ftb_handle.search_list(&user_cmd).await?
+                if let Some(path) = ftb_handle.search_pwd_for_file(&user_cmd).await?
                 {
                     if path.is_file()
                     {
-                        println!("file: {}", ftb_handle.logical_path_name(&path).await?);
+                        println!("file: {}", ftb_handle.absolute_path_to_logical_path(&path).await?);
                         if let Ok(metadata) = fs::metadata(&path).await
                         {
                             println!("size: {}", metadata.len());
                             info!(
                                 "File accessed: {} (size: {})",
-                                ftb_handle.logical_path_name(&path).await?,
+                                ftb_handle.absolute_path_to_logical_path(&path).await?,
                                 metadata.len()
                             );
                         }
                     }
                     else if path.is_dir()
                     {
-                        println!(">>> {}", ftb_handle.logical_path_name(&path).await?);
-                        info!("Entering directory: {}", ftb_handle.logical_path_name(&path).await?);
+                        println!(">>> {}", ftb_handle.absolute_path_to_logical_path(&path).await?);
+                        info!("Entering directory: {}", ftb_handle.absolute_path_to_logical_path(&path).await?);
                     }
                 }
                 else

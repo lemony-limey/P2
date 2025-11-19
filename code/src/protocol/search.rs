@@ -1,6 +1,6 @@
 use crate::protocol::message::ResponseID;
 use std::fmt::{self, Formatter};
-
+use crate::logical_file_path::LogicalFilePath;
 
 // R2 - Search
 #[derive(Clone, Debug)]
@@ -13,7 +13,7 @@ pub enum SearchMessage
     Result
     {
         response_id: ResponseID,
-        file_string: String,
+        file_string: LogicalFilePath,
     },
 }
 

@@ -9,6 +9,7 @@ use nom::{
     IResult,
     Parser,
 };
+use crate::logical_file_path::LogicalFilePath;
 
 /// Parser for the Requirement 2 messages.
 pub(crate) fn parse_search_message(input: &str) -> IResult<&str, SearchMessage>
@@ -49,6 +50,9 @@ pub(crate) fn parse_search_result_message(input: &str) -> IResult<&str, SearchMe
 
     Ok((
         remaining_input,
-        SearchMessage::Result { response_id, file_string: file_string.to_string() }
+        SearchMessage::Result {
+            response_id,
+            file_string: LogicalFilePath::new(file_string),
+        }
     ))
 }

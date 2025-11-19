@@ -17,14 +17,15 @@ async fn main() -> anyhow::Result<()>
         .format_timestamp_millis()
         .init();
 
+    // Get multicast configuration
     let config = get_multicast_configuration(MULTICAST_CONFIGURATION_FILE)?;
     let mut endpoint = MulticastEndpoint::new(config)?;
     endpoint.join()?;
     let socket = Arc::new(RwLock::new(MessageSocket::new(endpoint)));
 
+    // Get filetree browser configuration and create the filetree browser.
     let state = Arc::new(RwLock::new(FTBSoftState::new()));
     let ftb_config = FiletreeBrowserConfiguration::load(FILETREE_BROWSER_CONFIGURATION_FILE)?;
-
     let root_path = fs::canonicalize(&ftb_config.root_dir).await?;
     let ftb = Arc::new(RwLock::new(FileTreeBrowser::new(
         &root_path,

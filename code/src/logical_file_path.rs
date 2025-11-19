@@ -12,10 +12,10 @@ pub struct LogicalFilePath(pub String);
 
 impl LogicalFilePath
 {
-    /// TODO: Should this be a fallible conversion?
-    pub fn new(logical_path: String) -> Self
+    /// TODO: Should this be a fallible conversion? Probably not.
+    pub fn new(logical_path: impl ToString) -> Self
     {
-        Self(logical_path)
+        Self(logical_path.to_string())
     }
 }
 
@@ -32,6 +32,14 @@ impl PartialEq for LogicalFilePath
     fn eq(&self, other: &Self) -> bool
     {
         self.0.eq(&other.0)
+    }
+}
+
+impl PartialEq<String> for LogicalFilePath
+{
+    fn eq(&self, other: &String) -> bool
+    {
+        self.0.eq(other)
     }
 }
 
