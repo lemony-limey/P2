@@ -126,7 +126,8 @@ impl FileTreeBrowser
         let mut entries = fs::read_dir(&self.this_dir).await?;
         while let Some(entry) = entries.next_entry().await?
         {
-            if entry.file_name().to_string_lossy() == name
+            // TODO: We have replaced equals with substring match. Return a list
+            if entry.file_name().to_string_lossy().contains(name)
             {
                 debug!("Found: {:?}", entry.path());
                 return Ok(Some(entry.path()));

@@ -1,5 +1,7 @@
+use chrono::{TimeDelta, Utc};
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 use std::num::NonZeroU16;
+use std::ops::Add;
 use log::debug;
 use std::path::PathBuf;
 use crate::soft_state::Node;
@@ -10,6 +12,7 @@ use anyhow::{anyhow, Context};
 use std::sync::Arc;
 use log::info;
 use tokio::sync::RwLock;
+use crate::constants::{TTL_NANOSECONDS, TTL_SECONDS};
 use crate::filetree_browser::configuration::FiletreeBrowserConfiguration;
 use crate::filetree_browser::FileTreeBrowser;
 use crate::multicast::multicast_endpoint::PacketType;
@@ -83,16 +86,48 @@ pub async fn process_incoming_messages(
             },
             // If search, query storage then send message if no results have been returned.
             Payload::Search(SearchMessage::Request { search_string }) => {
-                // Check if the requested file exists within the logical file directory.
+                // TODO: Check search is enabled
+                if !ftb.read().await.config.search
+                {
+                    debug!("search request dropped: search is disabled");
+                    continue;
+                }
 
+                // Check if the requested file exists within the logical file directory.
+                // Only respond if the file exists.
+                if !ftb.read().await.search_list(&*search_string).await?.is_none()
+                {
+                    debug!("search: file \"{}\" did not return any matches", search_string);
+                    continue;
+                }
+
+                todo!()
             },
             // If this is a response to a search message initiated by the current user, add the
             // file name and size to the database for the node sending the response.
             // The other nodes should only ever respond if they do contain a file that matches
             // the pattern provided.
             Payload::Search(SearchMessage::Result { response_id, file_string }) => {
-                // TODO: Add file
+                // Add file to the node, if it exists
+                let storage_handle = storage.write().await;
+                let mut nodes_handle = storage_handle.nodes.write().await;
 
+                let Some(node) = nodes_handle.get_mut(response_id.identifier()) else {
+                    debug!("search result dropped: unknown node");
+                    continue;
+                };
+
+                let mut node_handle = node.write().await;
+                let mut ttl = Utc::now();
+                let Some(delta) = TimeDelta::new(TTL_SECONDS, TTL_NANOSECONDS) else {
+                    return Err(anyhow!("an error occurred when attempting to create the TTL timestamp"));
+                };
+                ttl = ttl.add(delta);
+
+                // TODO: Convert file_string to logical path
+                node_handle.files.insert(file_string, ttl);
+
+                todo!()
             },
             // If download, check if download is enabled then query storage,
             // then eventually spin up the TCP server.
@@ -101,13 +136,13 @@ pub async fn process_incoming_messages(
                 // Ensure download is enabled.
                 if !ftb.read().await.config.download
                 {
-                    info!("download is disabled, dropping packet");
+                    debug!("download request dropped: download is disabled");
                     continue;
                 }
 
                 // TODO: Check if the requested file is in storage by making a call to FileTreeBrowser,
                 //  which handles local files. It will return a PathBuf if found.
-                let path_to_file: String;
+                let path_to_file: PathBuf;
                 let target_addr: SocketAddr;
 
                 // Get the address of the host requesting the file transfer.
@@ -115,25 +150,27 @@ pub async fn process_incoming_messages(
                     let storage_handle = storage.read().await;
                     let nodes_handle = storage_handle.nodes.read().await;
                     let Some(target_host) = nodes_handle.get(&header.identifier) else {
-                        debug!("download message dropped: target host not found");
+                        debug!("download request dropped: target host not found");
                         continue;
                     };
                     let target_host_handle = target_host.read().await;
-
+                    target_addr = target_host_handle.address;
                 }
 
+                todo!();
 
-                // TODO: Start TCP client connection and attempt transfer.
-                // run_client(
-                //
-                // ).await?
+                // Start TCP client connection and attempt transfer.
+                run_client(
+                    target_addr,
+                    path_to_file,
+                ).await?
             },
-            // Indicate to everyone else that this host now has the file.
+            // A host is indicating to us that another host has successfully received a
+            // download.
             Payload::Download(DownloadMessage::Result { response_id, file_string }) => {
-
+                todo!()
             },
             // Remove specified entry from the cache
-            // TODO: Can we send leaving message when FTB is dropped?
             Payload::Leaving => {
                 let storage_handle = storage.write().await;
                 let mut nodes_handle = storage_handle.nodes.write().await;
