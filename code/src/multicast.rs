@@ -4,6 +4,7 @@
 pub mod multicast_configuration;
 pub mod multicast_endpoint;
 
+use log::debug;
 use log::info;
 use crate::message_socket::MessageSocket;
 use tokio::sync::RwLock;
@@ -42,6 +43,7 @@ pub async fn beacon(
         let socket_handle = socket.read().await;
         let endpoint = socket_handle.endpoint();
         let ipv6_addr_string = &socket_handle.endpoint().config.ip_addr6;
+        debug!("ipv6_addr_string: {}", &ipv6_addr_string);
         let ipv6_addr = ipv6_addr_string.parse::<Ipv6Addr>()?;
         beacon_interval = Duration::from_millis(endpoint.config.beacon_interval);
         identifier = Identifier::new(
