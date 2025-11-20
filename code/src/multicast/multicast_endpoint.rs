@@ -47,6 +47,8 @@ impl MulticastEndpoint
     /// * `config` - Application configuration
     pub fn new(config: MulticastConfiguration) -> anyhow::Result<Self>
     {
+        info!("multicast config: {:#?}", config);
+
         let mut endpoint = Self {
             socket_v4: None,
             socket_v6: None,

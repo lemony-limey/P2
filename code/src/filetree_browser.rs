@@ -36,11 +36,10 @@ use crate::{
         serial_number::SerialNumber,
     },
 };
+use crate::constants::FILETREE_BROWSER_CONFIGURATION_FILE;
 use crate::logical_file_path::LogicalFilePath;
 use crate::protocol::download::DownloadMessage;
 use crate::simple_tcp::server::run_server;
-
-const PROPERTIES_FILE: &str = "filetreebrowser.toml";
 
 pub struct FileTreeBrowser
 {
@@ -518,7 +517,7 @@ pub async fn run_ftb_ui(
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
-    let config = FiletreeBrowserConfiguration::load(PROPERTIES_FILE)?;
+    let config = FiletreeBrowserConfiguration::load(FILETREE_BROWSER_CONFIGURATION_FILE)?;
 
     println!("port: {}, ipv6 addr: {}", config.m_port, config.m_addr6);
 
