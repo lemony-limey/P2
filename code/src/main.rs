@@ -68,16 +68,16 @@ async fn main() -> anyhow::Result<()>
     let ftb_handle = ftb.clone();
     let state_handle = state.clone();
     tokio::select! {
-        // result = tokio::spawn(async move {
-        //     beacon(
-        //         socket_handle_1,
-        //         SearchAvailability(ftb_config.search),
-        //         DownloadAvailability(ftb_config.download),
-        //     ).await
-        // }) => {
-        //     info!("beacon returned");
-        //     println!("{:?}", result);
-        // },
+        result = tokio::spawn(async move {
+            beacon(
+                socket_handle_1,
+                SearchAvailability(ftb_config.search),
+                DownloadAvailability(ftb_config.download),
+            ).await
+        }) => {
+            info!("beacon returned");
+            println!("{:?}", result);
+        },
         result = tokio::spawn(async move {
                 process_incoming_messages(
                 socket_handle_2,
