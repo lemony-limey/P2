@@ -54,7 +54,11 @@ async fn main() -> anyhow::Result<()>
     });
 
     // Spin up a thread for the UI.
-    run_ftb_ui(ftb).await?;
+    let handle = std::thread::spawn(async || {
+        run_ftb_ui(ftb).await
+    });
+
+    let _ = handle.join();
 
     // On exit, tokio will stop the beacon and message processing tasks.
     Ok(())

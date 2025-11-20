@@ -532,7 +532,7 @@ pub async fn run_ftb_ui(
     loop
     {
         println!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
-        tokio::io::stdout().flush().await?;
+        // tokio::io::stdout().flush().await?;
 
         let user_cmd = loop
         {
