@@ -288,6 +288,7 @@ async fn nodes(
 ) -> anyhow::Result<()>
 {
     // Print all displayed
+    debug!("nodes(): making a request to storage to print all nodes");
     ftb.read().await.soft_state.read().await.print_all_nodes().await;
     Ok(())
 }
@@ -579,26 +580,28 @@ pub async fn run_ftb_ui(
             // The user has not entered any of the above commands, so assume they are requesting the
             // metadata for a specific file in the current working directory.
             _ => {
-                let ftb_handle = ftb.read().await;
+                let mut ftb_handle = ftb.write().await;
                 if let Some(path) = ftb_handle.search_pwd_for_file(&user_cmd).await?
                 {
+                    let logical_path = ftb_handle.absolute_path_to_logical_path(&path).await?;
                     if path.is_file()
                     {
-                        println!("file: {}", ftb_handle.absolute_path_to_logical_path(&path).await?);
+                        println!("file: {}", logical_path);
                         if let Ok(metadata) = fs::metadata(&path).await
                         {
                             println!("size: {}", metadata.len());
                             info!(
                                 "File accessed: {} (size: {})",
-                                ftb_handle.absolute_path_to_logical_path(&path).await?,
+                                logical_path,
                                 metadata.len()
                             );
                         }
                     }
                     else if path.is_dir()
                     {
-                        println!(">>> {}", ftb_handle.absolute_path_to_logical_path(&path).await?);
-                        info!("Entering directory: {}", ftb_handle.absolute_path_to_logical_path(&path).await?);
+                        println!(">>> {}", logical_path);
+                        info!("Entering directory: {}", logical_path);
+                        ftb_handle.this_dir = path;
                     }
                 }
                 else
