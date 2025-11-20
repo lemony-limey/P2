@@ -3,6 +3,7 @@ name = "code"
 version = "0.1.0"
 edition = "2024"
 authors = ["220017916"]
+default-run = "code"
 
 [dependencies]
 anyhow = "1.0.100"

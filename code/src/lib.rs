@@ -12,6 +12,7 @@ use crate::protocol::message::Header;
 use crate::message_socket::MessageSocket;
 use anyhow::{anyhow, Context};
 use std::sync::Arc;
+use std::time::Duration;
 use log::info;
 use tokio::sync::RwLock;
 use crate::constants::{TTL_NANOSECONDS, TTL_SECONDS};
@@ -258,10 +259,15 @@ pub async fn process_incoming_messages(
             },
             // Remove specified entry from the cache
             Payload::Leaving => {
-                let soft_state_handle = soft_state.write().await;
-                let mut nodes_handle = soft_state_handle.nodes.write().await;
+                tokio::spawn(async move {
+                    let soft_state_handle = soft_state.write().await;
+                    let mut nodes_handle = soft_state_handle.nodes.write().await;
 
-                nodes_handle.remove(&header.identifier);
+                    // As per RFC 6762 (Multicast DNS), Section 10.1 - Goodbye Packets
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+
+                    nodes_handle.remove(&header.identifier);
+                });
             }
         }
     }
