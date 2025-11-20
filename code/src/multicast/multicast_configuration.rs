@@ -76,14 +76,15 @@ impl MulticastConfiguration
             MulticastConfiguration::default()
         });
 
+        // This sets the values of ip_addr4 and ip_addr6
         config.detect_network_info()?;
 
         log::info!("Configuration loaded from {}", properties_file);
         log::info!(
-            "Detected: {} {} {}",
+            "Detected: {:#?} {:#?} {:#?}",
             config.host_name,
-            config.ip_addr4,
-            config.ip_addr6
+            config.m_addr4,
+            config.m_addr6
         );
         log::debug!("Config details: {:?}", config);
 
@@ -102,15 +103,19 @@ impl MulticastConfiguration
         {
             match ip
             {
-                IpAddr::V4(addr) => self.ip_addr4 = addr.to_string(),
-                IpAddr::V6(addr) => self.ip_addr6 = addr.to_string(),
+                IpAddr::V4(addr) => self.ip_addr4 = Some(addr),
+                IpAddr::V6(addr) => self.ip_addr6 = Some(addr),
             }
         }
 
         // grab link-local IPv6 address
         if let Ok(ip) = local_ip_address::local_ipv6()
         {
-            self.ip_addr6 = ip.to_string();
+            match ip
+            {
+                IpAddr::V4(addr) => self.ip_addr4 = Some(addr),
+                IpAddr::V6(addr) => self.ip_addr6 = Some(addr),
+            }
         }
 
         Ok(())
