@@ -83,6 +83,7 @@ pub async fn beacon(
         // Get the next serial number from the configuration.
         let next_serial_number: NonZeroU64;
         {
+            info!("requesting socket write lock");
             next_serial_number = socket.write().await.endpoint_mut().config.get_next_serial_number();
             info!("got serial number");
         }

@@ -50,23 +50,23 @@ async fn main() -> anyhow::Result<()>
     });
 
     // Process all incoming messages
-    let socket_handle_2 = socket.clone();
-    let ftb_handle = ftb.clone();
-    let state_handle = state.clone();
-    tokio::spawn(async move {
-        process_incoming_messages(socket_handle_2, state_handle, ftb_handle).await
-    });
-
-    // Spin up a thread for the UI.
-    let ftb_handle = ftb.clone();
-    tokio::spawn(async move {
-        run_ftb_ui(ftb_handle).await
-    });
-
+    // let socket_handle_2 = socket.clone();
+    // let ftb_handle = ftb.clone();
+    // let state_handle = state.clone();
+    // tokio::spawn(async move {
+    //     process_incoming_messages(socket_handle_2, state_handle, ftb_handle).await
+    // });
+    //
+    // // Spin up a thread for the UI.
+    // let ftb_handle = ftb.clone();
+    // tokio::spawn(async move {
+    //     run_ftb_ui(ftb_handle).await
+    // });
+    //
     let socket_handle_1 = socket.clone();
-    let socket_handle_2 = socket.clone();
-    let ftb_handle = ftb.clone();
-    let state_handle = state.clone();
+    // let socket_handle_2 = socket.clone();
+    // let ftb_handle = ftb.clone();
+    // let state_handle = state.clone();
     tokio::select! {
         thing = beacon(
             socket_handle_1,
@@ -76,14 +76,14 @@ async fn main() -> anyhow::Result<()>
             info!("beacon returned");
             println!("{:?}", thing);
         },
-        thing = process_incoming_messages(socket_handle_2, state_handle, ftb_handle) => {
-            info!("listener returned");
-            println!("{:?}", thing);
-        },
-        thing = run_ftb_ui(ftb) => {
-            info!("ui returned");
-            println!("{:?}", thing);
-        }
+        // thing = process_incoming_messages(socket_handle_2, state_handle, ftb_handle) => {
+        //     info!("listener returned");
+        //     println!("{:?}", thing);
+        // },
+        // thing = run_ftb_ui(ftb) => {
+        //     info!("ui returned");
+        //     println!("{:?}", thing);
+        // }
     };
 
     // On exit, tokio will stop the beacon and message processing tasks.
