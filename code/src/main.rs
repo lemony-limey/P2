@@ -88,10 +88,10 @@ async fn main() -> anyhow::Result<()>
             info!("listener returned");
             println!("{:?}", result);
         },
-        // thing = run_ftb_ui(ftb) => {
-        //     info!("ui returned");
-        //     println!("{:?}", thing);
-        // }
+        result = run_ftb_ui(ftb) => {
+            info!("ui returned");
+            println!("{:?}", result);
+        }
     };
 
     // On exit, tokio will stop the beacon and message processing tasks.
