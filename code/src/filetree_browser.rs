@@ -361,7 +361,7 @@ async fn search(
     // Wait for received messages
     tokio::time::sleep(Duration::from_millis(sleep_time)).await;
 
-    // Query storage and check to see if we already know who has what file.
+    // Query storage and check to see who has what file.
     let mut nodes_with_file = HashSet::new();
     if let Some(results) = ftb.read().await.soft_state.read().await.find_file(&target_file).await
     {
