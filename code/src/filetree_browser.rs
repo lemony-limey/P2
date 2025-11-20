@@ -520,7 +520,7 @@ pub async fn run_ftb_ui(
 
     loop
     {
-        print!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
+        println!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
         tokio::io::stdout().flush().await?;
 
         let user_cmd = loop
