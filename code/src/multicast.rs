@@ -49,11 +49,6 @@ pub async fn beacon(
             return Err(anyhow!("config.ip_addr6 is None"));
         };
         debug!("ipv6_addr: {}", ipv6_addr);
-        // if !ipv6_addr.ip
-        // {
-        //     error!("ipv6 link local address {} is not ipv6", ipv6_addr);
-        //     return Err(anyhow!("ipv6 link local address is not ipv6"));
-        // }
         beacon_interval = Duration::from_millis(endpoint.config.beacon_interval);
         identifier = Identifier::new(
             UID(endpoint.config.username.clone()),
@@ -91,6 +86,7 @@ pub async fn beacon(
             next_serial_number = socket.write().await.endpoint_mut().config.get_next_serial_number();
             info!("got serial number");
         }
+        info!("write lock dropped");
 
         // Header must be different each iteration because timestamp is constantly changing.
         let message = Message::new(
@@ -105,8 +101,10 @@ pub async fn beacon(
 
         // Send the beacon message.
         {
+            info!("requesting socket read lock");
             socket.read().await.tx_message(message).await?;
             info!("sent beacon {}", next_serial_number);
         }
+        info!("read lock dropped");
     }
 }

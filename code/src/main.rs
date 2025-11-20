@@ -40,7 +40,7 @@ async fn main() -> anyhow::Result<()>
     )));
 
     // Spin up a thread to run the beacon program.
-    let socket_handle_1 = socket.clone();
+    // let socket_handle_1 = socket.clone();
     // tokio::spawn(async move {
     //     beacon(
     //         socket_handle_1,
@@ -63,23 +63,31 @@ async fn main() -> anyhow::Result<()>
     //     run_ftb_ui(ftb_handle).await
     // });
     //
-    // let socket_handle_1 = socket.clone();
-    // let socket_handle_2 = socket.clone();
-    // let ftb_handle = ftb.clone();
-    // let state_handle = state.clone();
+    let socket_handle_1 = socket.clone();
+    let socket_handle_2 = socket.clone();
+    let ftb_handle = ftb.clone();
+    let state_handle = state.clone();
     tokio::select! {
-        thing = beacon(
-            socket_handle_1,
-            SearchAvailability(ftb_config.search),
-            DownloadAvailability(ftb_config.download),
-        ) => {
-            info!("beacon returned");
-            println!("{:?}", thing);
-        },
-        // thing = process_incoming_messages(socket_handle_2, state_handle, ftb_handle) => {
-        //     info!("listener returned");
-        //     println!("{:?}", thing);
+        // result = tokio::spawn(async move {
+        //     beacon(
+        //         socket_handle_1,
+        //         SearchAvailability(ftb_config.search),
+        //         DownloadAvailability(ftb_config.download),
+        //     ).await
+        // }) => {
+        //     info!("beacon returned");
+        //     println!("{:?}", result);
         // },
+        result = tokio::spawn(async move {
+                process_incoming_messages(
+                socket_handle_2,
+                state_handle,
+                ftb_handle
+            ).await
+        }) => {
+            info!("listener returned");
+            println!("{:?}", result);
+        },
         // thing = run_ftb_ui(ftb) => {
         //     info!("ui returned");
         //     println!("{:?}", thing);

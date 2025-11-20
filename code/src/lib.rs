@@ -44,6 +44,8 @@ pub async fn process_incoming_messages(
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
+    info!("starting listener");
+
     // Process incoming messages
     loop
     {
