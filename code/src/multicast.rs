@@ -4,6 +4,7 @@
 pub mod multicast_configuration;
 pub mod multicast_endpoint;
 
+use std::net::IpAddr;
 use anyhow::anyhow;
 use log::error;
 use log::debug;
@@ -46,7 +47,16 @@ pub async fn beacon(
             error!("config.ip_addr6 is None");
             return Err(anyhow!("config.ip_addr6 is None"));
         };
-        debug!("ipv6_addr_string: {}", ipv6_addr);
+        debug!("ipv6_addr: {}", ipv6_addr);
+        if !ipv6_addr.is_ipv6()
+        {
+            error!("ipv6 link local address {} is not ipv6", ipv6_addr);
+            return Err(anyhow!("ipv6 link local address is not ipv6"));
+        }
+        let IpAddr::V6(addr) = ipv6_addr else {
+            error!("ipv6 link local address {} is not ipv6", ipv6_addr);
+            return Err(anyhow!("ipv6 link local address is not ipv6"));
+        };
         beacon_interval = Duration::from_millis(endpoint.config.beacon_interval);
         identifier = Identifier::new(
             UID(endpoint.config.username.clone()),
@@ -54,7 +64,7 @@ pub async fn beacon(
         );
         payload = Payload::Advertisement(
             AdvertisementMessage::new(
-                *ipv6_addr,
+                *addr,
                 NonZeroU16::new(endpoint.config.m_port)
                     .with_context(|| "beacon(): invalid port number")?,
                 Services::new(

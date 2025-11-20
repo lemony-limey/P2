@@ -1,6 +1,7 @@
 //! Configuration handling for the beacon application.
 //! Rust version based on saleem's original Java version
 
+use anyhow::anyhow;
 use log::debug;
 use log::info;
 use std::num::NonZeroU64;
@@ -32,7 +33,7 @@ pub struct MulticastConfiguration
     #[serde(skip)]
     pub ip_addr4: Option<Ipv4Addr>,
     #[serde(skip)]
-    pub ip_addr6: Option<Ipv6Addr>,
+    pub ip_addr6: Option<IpAddr>,
     #[serde(skip)]
     pub username: String,
     #[serde(skip)]
@@ -96,7 +97,7 @@ impl MulticastConfiguration
             "Detected: {:#?} {:#?} {:#?}",
             config.host_name,
             config.ip_addr4,
-            config.m_addr6.parse::<Ipv6Addr>(),
+            config.ip_addr6,
         );
 
         Ok(config)
@@ -117,19 +118,19 @@ impl MulticastConfiguration
             match ip
             {
                 IpAddr::V4(addr) => self.ip_addr4 = Some(addr),
-                IpAddr::V6(addr) => self.ip_addr6 = Some(addr),
+                IpAddr::V6(_addr) => self.ip_addr6 = Some(ip),
             }
         }
 
         // grab link-local IPv6 address
-        if let Ok(ip) = local_ip_address::local_ipv6()
+        let local_ipv6_result = local_ip_address::local_ipv6();
+        if let Ok(ip) = &local_ipv6_result
         {
             info!("ipv6: {}", ip);
-            match ip
-            {
-                IpAddr::V4(addr) => self.ip_addr4 = Some(addr),
-                IpAddr::V6(addr) => self.ip_addr6 = Some(addr),
-            }
+            self.ip_addr6 = Some(*ip);
+        }
+        else {
+            return Err(anyhow!(local_ipv6_result?))
         }
 
         Ok(())
