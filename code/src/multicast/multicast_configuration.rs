@@ -96,7 +96,7 @@ impl MulticastConfiguration
             "Detected: {:#?} {:#?} {:#?}",
             config.host_name,
             config.ip_addr4,
-            config.ip_addr6,
+            config.m_addr6.parse::<Ipv6Addr>(),
         );
 
         Ok(config)
