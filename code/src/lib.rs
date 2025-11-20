@@ -259,8 +259,9 @@ pub async fn process_incoming_messages(
             },
             // Remove specified entry from the cache
             Payload::Leaving => {
+                let soft_state_handle_clone = soft_state.clone();
                 tokio::spawn(async move {
-                    let soft_state_handle = soft_state.write().await;
+                    let soft_state_handle = soft_state_handle_clone.write().await;
                     let mut nodes_handle = soft_state_handle.nodes.write().await;
 
                     // As per RFC 6762 (Multicast DNS), Section 10.1 - Goodbye Packets
