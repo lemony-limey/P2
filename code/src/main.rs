@@ -41,13 +41,13 @@ async fn main() -> anyhow::Result<()>
 
     // Spin up a thread to run the beacon program.
     let socket_handle_1 = socket.clone();
-    tokio::spawn(async move {
-        beacon(
-            socket_handle_1,
-            SearchAvailability(ftb_config.search),
-            DownloadAvailability(ftb_config.download),
-        ).await
-    });
+    // tokio::spawn(async move {
+    //     beacon(
+    //         socket_handle_1,
+    //         SearchAvailability(ftb_config.search),
+    //         DownloadAvailability(ftb_config.download),
+    //     ).await
+    // });
 
     // Process all incoming messages
     // let socket_handle_2 = socket.clone();
@@ -63,7 +63,7 @@ async fn main() -> anyhow::Result<()>
     //     run_ftb_ui(ftb_handle).await
     // });
     //
-    let socket_handle_1 = socket.clone();
+    // let socket_handle_1 = socket.clone();
     // let socket_handle_2 = socket.clone();
     // let ftb_handle = ftb.clone();
     // let state_handle = state.clone();
