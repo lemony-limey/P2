@@ -24,6 +24,7 @@ async fn main() -> anyhow::Result<()>
     let config = get_multicast_configuration(MULTICAST_CONFIGURATION_FILE)?;
     let mut endpoint = MulticastEndpoint::new(config)?;
     endpoint.join()?;
+    info!("{}", endpoint);
     let socket = Arc::new(RwLock::new(MessageSocket::new(endpoint)));
 
     // Get filetree browser configuration and create the filetree browser.
