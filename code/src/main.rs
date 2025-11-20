@@ -16,7 +16,7 @@ use code::protocol::services::{DownloadAvailability, SearchAvailability};
 #[tokio::main]
 async fn main() -> anyhow::Result<()>
 {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug"))
         .format_timestamp_millis()
         .init();
 
@@ -39,7 +39,6 @@ async fn main() -> anyhow::Result<()>
     )));
 
     // Spin up a thread to run the beacon program.
-    // TODO: Potentially blocking thread or std thread here
     let socket_handle_1 = socket.clone();
     tokio::spawn(async move {
         beacon(
