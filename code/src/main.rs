@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()>
     // Spin up a thread to run the beacon program.
     // TODO: Potentially blocking thread or std thread here
     let socket_handle = socket.clone();
-    std::thread::spawn(async move {
+    tokio::spawn(async move {
         beacon(
             socket_handle,
             SearchAvailability(ftb_config.search),

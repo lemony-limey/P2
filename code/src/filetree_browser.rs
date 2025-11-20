@@ -14,6 +14,7 @@ use tokio::{
     fs,
     io::AsyncWriteExt,
 };
+use tokio::io::{AsyncBufRead, AsyncBufReadExt, BufReader};
 use std::{
     sync::Arc,
     io::{
@@ -26,7 +27,6 @@ use std::io::BufRead;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
 use log::{debug, info, warn};
-use tokio::io::AsyncBufReadExt;
 use crate::{
     message_socket::MessageSocket,
     protocol::{
@@ -530,6 +530,8 @@ pub async fn run_ftb_ui(
         ftb.read().await.print_list().await?;
     }
 
+    let mut stdin_reader = BufReader::new(tokio::io::stdin());
+
     loop
     {
         println!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
@@ -538,7 +540,7 @@ pub async fn run_ftb_ui(
         let user_cmd = loop
         {
             let mut line_buffer = String::new();
-            let num_bytes = tokio::io::stdin().read_line(&mut line_buffer).await?;
+            let num_bytes = stdin_reader.read_line(&mut line_buffer).await?;
             {
                 if !line_buffer.is_empty()
                 {
