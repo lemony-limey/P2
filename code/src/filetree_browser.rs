@@ -115,7 +115,7 @@ impl FileTreeBrowser
         let mut entries = fs::read_dir(&self.this_dir).await?;
 
         println!("\n+++  id: {}", self.config.uid);
-        println!("+++ dir: {}", self.absolute_path_to_logical_path(&self.this_dir).await?.0);
+        println!("+++ pwd: {}", self.absolute_path_to_logical_path(&self.this_dir).await?.0);
         println!("+++\tfilename:");
 
         let mut count = 0;
