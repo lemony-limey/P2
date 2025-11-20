@@ -5,7 +5,7 @@ use std::net::{IpAddr, SocketAddr};
 use std::ops::Add;
 use log::debug;
 use std::path::PathBuf;
-use crate::soft_state::Node;
+use crate::soft_state::{FileMetadata, Node};
 use crate::protocol::message::{Message, Payload, ResponseID, Timestamp};
 use crate::protocol::message::Header;
 use crate::message_socket::MessageSocket;
@@ -113,6 +113,7 @@ pub async fn process_incoming_messages(
                     let serial_number: SerialNumber;
                     let uid: UID;
                     let fqdn: FQDN;
+                    let file_size: u64;
                     // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
                     {
                         let mut ftb_handle = ftb.write().await;
@@ -122,6 +123,7 @@ pub async fn process_incoming_messages(
                         let ftb_handle = ftb.read().await;
                         uid = UID(ftb_handle.config.uid.to_string());
                         fqdn = FQDN(ftb_handle.config.fqdn.to_string());
+                        file_size = ftb_handle.get_file_size(&file_match).await?;
                     }
 
                     let search_response = Message::new(
@@ -139,7 +141,8 @@ pub async fn process_incoming_messages(
                                     header.identifier.clone(),
                                     header.serial_number.clone(),
                                 ),
-                                file_string: file_match,
+                                file_path: file_match,
+                                file_size,
                             },
                         ),
                     );
@@ -151,7 +154,7 @@ pub async fn process_incoming_messages(
             // file name and size to the database for the node sending the response.
             // The other nodes should only ever respond if they do contain a file that matches
             // the pattern provided.
-            Payload::Search(SearchMessage::Result { response_id, file_string }) => {
+            Payload::Search(SearchMessage::Result { response_id, file_path: file_string, file_size }) => {
                 // Add file to the node, if it exists
                 let soft_state_handle = soft_state.write().await;
                 let mut nodes_handle = soft_state_handle.nodes.write().await;
@@ -170,17 +173,24 @@ pub async fn process_incoming_messages(
                 ttl = ttl.add(delta);
 
                 // Convert file_string to logical path and store with ttl
-                node_handle.files.insert(LogicalFilePath::new(file_string), ttl);
+                node_handle.files.insert(
+                    LogicalFilePath::new(file_string),
+                    FileMetadata::new(
+                        file_size,
+                        ttl,
+                    ),
+                );
             },
             // If download, check if download is enabled then query storage,
             // then eventually spin up the TCP server.
             // TCP will be done asynchronously.
             Payload::Download(DownloadMessage::Request { identifier, logical_file_path: file_path }) => {
-                // TODO: Ensure the download request is actually for this endpoint
-                // if
-                // {
-                //
-                // }
+                // Ensure the download request is actually for this endpoint
+                if ftb.read().await.get_current_identifier() != identifier
+                {
+                    debug!("download request dropped: not intended for this node");
+                    continue;
+                }
 
                 // Ensure download is enabled.
                 if !ftb.read().await.config.download
@@ -224,7 +234,7 @@ pub async fn process_incoming_messages(
                 // Lock the file tree browser.
                 {
                     let ftb_handle = ftb.read().await;
-                    let Ok(path) = ftb_handle.logical_path_to_absolute_path(file_path).await else {
+                    let Ok(path) = ftb_handle.logical_path_to_absolute_path(&file_path).await else {
                         info!("download request dropped: conversion from logical path to absolute path failed");
                         continue;
                     };
@@ -243,7 +253,7 @@ pub async fn process_incoming_messages(
             // A host is indicating to us that another host has successfully received a
             // download.
             // Incoming file string will be treated as a logical path.
-            Payload::Download(DownloadMessage::Result { response_id, logical_file_path: file_string }) => {
+            Payload::Download(DownloadMessage::Result { response_id, logical_file_path: file_string, file_size }) => {
                 // Add file to the node, if it exists
                 let soft_state_handle = soft_state.write().await;
                 let mut nodes_handle = soft_state_handle.nodes.write().await;
@@ -259,7 +269,13 @@ pub async fn process_incoming_messages(
                 let mut node_handle = node.write().await;
 
                 // Convert file_string to logical path
-                node_handle.files.insert(LogicalFilePath::new(file_string), ttl);
+                node_handle.files.insert(
+                    LogicalFilePath::new(file_string),
+                    FileMetadata::new(
+                        file_size,
+                        ttl,
+                    ),
+                );
             },
             // Remove specified entry from the cache
             Payload::Leaving => {

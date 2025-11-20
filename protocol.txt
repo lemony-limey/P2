@@ -79,7 +79,7 @@ TODO: Only respond on success?
 #### ####
 ## General payload format
 
-  <payload> := <dscovery-message> / <search-message> / <download-message>
+  <payload> := <discovery-message> / <search-message> / <download-message>
 
 
 #### ####
@@ -130,7 +130,7 @@ TODO: Only respond on success?
     #
     #   :sjm55@my.host1.net:1001:20240912-170101.001:search-request:hello:
 
-  <search-result> := "result" : <response-id> : file-string
+  <search-result> := "result" : <response-id> : <file-string> : <file-size>
     #
     # file-string is any group of characters that can be is the full
     # logical filepath for the logical filespace for your application.
@@ -160,8 +160,8 @@ TODO:    # Searches could generate multiple results, and these should be sent
 
 <download-response> := <download-result> / <download-error>
 
-  # <download-request> := "request" ":" <identifier> ":" <file_name>
+  # <download-request> := "request" ":" <identifier> ":" <file-name>
 
   # We only send a download result if download completed successfully.
-  # <download-result> := "result" ":" <response-id> ":" <file_name>
+  # <download-result> := "result" ":" <response-id> ":" <file-name> ":" <file-size>
 

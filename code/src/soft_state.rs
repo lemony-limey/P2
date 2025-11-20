@@ -130,10 +130,10 @@ impl FTBSoftState
         if let Some(node) = self.nodes.read().await.get(identifier)
         {
             let mut node_handle = node.write().await;
-            if let Some(ttl) = node_handle.files.get(target_file)
+            if let Some(metadata) = node_handle.files.get(target_file)
             {
                 // If the entry is still valid (i.e., it expires at a later time), return true.
-                if *ttl > Utc::now()
+                if metadata.ttl > Utc::now()
                 {
                     return true;
                 }
@@ -158,7 +158,7 @@ pub struct Node
     pub identifier: Identifier,
     pub address: SocketAddr,
     pub services: Services,
-    pub files: HashMap<LogicalFilePath, DateTime<Utc>>,
+    pub files: HashMap<LogicalFilePath, FileMetadata>,
     pub ttl: DateTime<Utc>,
 }
 
@@ -210,5 +210,24 @@ impl Node
                 ),
             }
         )
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct FileMetadata
+{
+    pub size: u64,
+    pub ttl: DateTime<Utc>,
+}
+
+impl FileMetadata
+{
+    pub fn new(size: u64, ttl: DateTime<Utc>) -> Self
+    {
+        Self
+        {
+            size,
+            ttl,
+        }
     }
 }

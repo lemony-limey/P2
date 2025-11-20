@@ -9,6 +9,8 @@ use nom::{
     IResult,
     Parser,
 };
+use nom::character::complete::digit1;
+use nom::combinator::map_res;
 use crate::logical_file_path::LogicalFilePath;
 
 /// Parser for the Requirement 2 messages.
@@ -45,14 +47,19 @@ pub(crate) fn parse_search_result_message(input: &str) -> IResult<&str, SearchMe
     let (remaining_input, response_id) = parse_response_id(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
-    // Get the file string, but don't consume the delimiter after it.
-    let (remaining_input, file_string) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
+    // Get the file string and consume the following delimiter.
+    let (remaining_input, file_path) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+
+    // Get the size of the file, but don't consume the following delimiter
+    let (remaining_input, file_size) = map_res(digit1, str::parse::<u64>).parse(remaining_input)?;
 
     Ok((
         remaining_input,
         SearchMessage::Result {
             response_id,
-            file_string: LogicalFilePath::new(file_string),
+            file_path: LogicalFilePath::new(file_path),
+            file_size,
         }
     ))
 }

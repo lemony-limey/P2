@@ -91,7 +91,7 @@ impl FileTreeBrowser
         Ok(LogicalFilePath(result))
     }
 
-    pub async fn logical_path_to_absolute_path(&self, logical_path: LogicalFilePath) -> anyhow::Result<PathBuf>
+    pub async fn logical_path_to_absolute_path(&self, logical_path: &LogicalFilePath) -> anyhow::Result<PathBuf>
     {
         let root_path = &self.root_path;
         let Some(mut root_path_str) = root_path.to_str() else {
@@ -207,7 +207,7 @@ impl FileTreeBrowser
     /// If it does not, a call to open() will return an error.
     pub async fn does_file_exist(&self, logical_file_path: &LogicalFilePath) -> anyhow::Result<bool>
     {
-        let absolute_path = self.logical_path_to_absolute_path(logical_file_path.clone()).await?;
+        let absolute_path = self.logical_path_to_absolute_path(logical_file_path).await?;
 
         if let Ok(_) = File::open(&absolute_path).await
         {
@@ -219,9 +219,25 @@ impl FileTreeBrowser
         }
     }
 
+    pub async fn get_file_size(&self, logical_file_path: &LogicalFilePath) -> anyhow::Result<u64>
+    {
+        let absolute_path = self.logical_path_to_absolute_path(logical_file_path).await?;
+        let metadata = fs::metadata(absolute_path).await?;
+
+        Ok(metadata.len())
+    }
+
     pub fn get_parent(&self) -> Option<PathBuf>
     {
         self.this_dir.parent().map(|p| p.to_path_buf())
+    }
+
+    pub fn get_current_identifier(&self) -> Identifier
+    {
+        Identifier::new(
+            UID(self.config.uid.clone()),
+            FQDN(self.config.fqdn.clone()),
+        )
     }
 }
 
@@ -411,7 +427,7 @@ async fn download(
     let target_file = LogicalFilePath(target_file);
     let target_file_absolute_path: PathBuf;
     {
-        target_file_absolute_path = ftb.read().await.logical_path_to_absolute_path(target_file.clone()).await?;
+        target_file_absolute_path = ftb.read().await.logical_path_to_absolute_path(&target_file).await?;
     }
 
     // Get the identifier of the node we wish to download the file from.
@@ -483,6 +499,9 @@ async fn download(
     }
 
     info!("download of {} succeeded!", &target_file);
+
+    // TODO: On download success, sent a download result message out
+
     Ok(())
 }
 
@@ -502,10 +521,6 @@ pub async fn run_ftb_ui(
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
-    // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-    //     .format_timestamp_millis()
-    //     .init();
-
     let config = FiletreeBrowserConfiguration::load(PROPERTIES_FILE)?;
 
     println!("port: {}, ipv6 addr: {}", config.m_port, config.m_addr6);
@@ -557,7 +572,7 @@ pub async fn run_ftb_ui(
             "." => ftb.read().await.print_list().await?,
 
             ".." => {
-                let ftb_handle = ftb.read().await;
+                let mut ftb_handle = ftb.write().await;
                 if ftb_handle.this_dir == ftb_handle.root_path
                 {
                     println!("At root : cannot move up.\n");
@@ -567,6 +582,7 @@ pub async fn run_ftb_ui(
                 {
                     println!("<<< {}\n", ftb_handle.absolute_path_to_logical_path(&parent).await?);
                     info!("Moving up to: {}", ftb_handle.absolute_path_to_logical_path(&parent).await?);
+                    ftb_handle.this_dir = parent;
                 }
             }
 
@@ -586,15 +602,13 @@ pub async fn run_ftb_ui(
                     if path.is_file()
                     {
                         println!("file: {}", logical_path);
-                        if let Ok(metadata) = fs::metadata(&path).await
-                        {
-                            println!("size: {}", metadata.len());
-                            info!(
-                                "File accessed: {} (size: {})",
-                                logical_path,
-                                metadata.len()
-                            );
-                        }
+                        let file_size = ftb_handle.get_file_size(&logical_path).await?;
+                        println!("size: {}", file_size);
+                        info!(
+                            "File accessed: {} (size: {})",
+                            logical_path,
+                            file_size,
+                        );
                     }
                     else if path.is_dir()
                     {

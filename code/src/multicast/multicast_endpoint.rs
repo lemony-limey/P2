@@ -2,12 +2,8 @@
 //! Rust version based on saleem's original Java
 
 use crate::{
-    protocol::message::{Message, Payload, Timestamp},
+    protocol::message::{Message},
     parser::message::parse_message,
-    protocol::discovery::AdvertisementMessage,
-    protocol::identifier::{Identifier, FQDN, UID},
-    protocol::serial_number::SerialNumber,
-    protocol::services::{DownloadAvailability, SearchAvailability, Services},
     multicast::multicast_configuration::MulticastConfiguration,
 };
 use anyhow::anyhow;
@@ -21,7 +17,6 @@ use std::{
 use bytes::BytesMut;
 use tokio::{
     net::UdpSocket,
-    sync::{Mutex}
 };
 
 /// type of packet.

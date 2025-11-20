@@ -13,7 +13,8 @@ pub enum SearchMessage
     Result
     {
         response_id: ResponseID,
-        file_string: LogicalFilePath,
+        file_path: LogicalFilePath,
+        file_size: u64,
     },
 }
 
@@ -28,8 +29,8 @@ impl fmt::Display for SearchMessage
             SearchMessage::Request{ search_string } => {
                 write!(f, "request:{}", search_string)
             }
-            SearchMessage::Result { response_id, file_string } => {
-                write!(f, "result:{}:{}", response_id, file_string)
+            SearchMessage::Result { response_id, file_path, file_size } => {
+                write!(f, "result:{}:{}:{}", response_id, file_path, file_size)
             }
         }
     }

@@ -6,7 +6,6 @@ use anyhow::anyhow;
 use std::{
     io::{self},
     net::{SocketAddr},
-    str::FromStr
 };
 use tokio::{
     fs::File,
@@ -71,6 +70,4 @@ pub async fn run_client(
             },
         }
     }
-
-    Ok(())
 }
