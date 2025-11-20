@@ -1,3 +1,4 @@
+use log::info;
 use code::constants::{FILETREE_BROWSER_CONFIGURATION_FILE, MULTICAST_CONFIGURATION_FILE};
 use code::filetree_browser::{configuration::FiletreeBrowserConfiguration, run_ftb_ui, FileTreeBrowser};
 use code::message_socket::MessageSocket;
@@ -9,7 +10,7 @@ use code::process_incoming_messages;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::fs;
-use tokio::task::spawn_blocking;
+use tokio::task::{spawn_blocking, JoinSet};
 use code::protocol::services::{DownloadAvailability, SearchAvailability};
 
 #[tokio::main]
@@ -39,26 +40,51 @@ async fn main() -> anyhow::Result<()>
 
     // Spin up a thread to run the beacon program.
     // TODO: Potentially blocking thread or std thread here
-    let socket_handle = socket.clone();
+    let socket_handle_1 = socket.clone();
     tokio::spawn(async move {
         beacon(
-            socket_handle,
+            socket_handle_1,
             SearchAvailability(ftb_config.search),
             DownloadAvailability(ftb_config.download),
         ).await
-    }).await??;
+    });
 
     // Process all incoming messages
-    let socket_handle = socket.clone();
+    let socket_handle_2 = socket.clone();
     let ftb_handle = ftb.clone();
+    let state_handle = state.clone();
     tokio::spawn(async move {
-        process_incoming_messages(socket_handle, state.clone(), ftb_handle).await
-    }).await??;
+        process_incoming_messages(socket_handle_2, state_handle, ftb_handle).await
+    });
 
     // Spin up a thread for the UI.
+    let ftb_handle = ftb.clone();
     tokio::spawn(async move {
-        run_ftb_ui(ftb).await
-    }).await??;
+        run_ftb_ui(ftb_handle).await
+    });
+
+    let socket_handle_1 = socket.clone();
+    let socket_handle_2 = socket.clone();
+    let ftb_handle = ftb.clone();
+    let state_handle = state.clone();
+    tokio::select! {
+        thing = beacon(
+            socket_handle_1,
+            SearchAvailability(ftb_config.search),
+            DownloadAvailability(ftb_config.download),
+        ) => {
+            info!("beacon returned");
+            println!("{:?}", thing);
+        },
+        thing = process_incoming_messages(socket_handle_2, state_handle, ftb_handle) => {
+            info!("listener returned");
+            println!("{:?}", thing);
+        },
+        thing = run_ftb_ui(ftb) => {
+            info!("ui returned");
+            println!("{:?}", thing);
+        }
+    };
 
     // On exit, tokio will stop the beacon and message processing tasks.
     Ok(())
