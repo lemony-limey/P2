@@ -26,7 +26,6 @@ async fn main() -> anyhow::Result<()>
     endpoint.join()?;
     info!("{:#?}", endpoint);
     let message_socket = MessageSocket::new(endpoint);
-    let socket_arc = Arc::new(RwLock::new(message_socket.clone()));
 
     // Get filetree browser configuration and create the filetree browser.
     let state = Arc::new(RwLock::new(FTBSoftState::new()));
