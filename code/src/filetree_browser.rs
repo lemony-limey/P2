@@ -26,6 +26,7 @@ use std::io::BufRead;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
 use log::{debug, info, warn};
+use tokio::task::spawn_blocking;
 use crate::{
     message_socket::MessageSocket,
     protocol::{
@@ -508,9 +509,9 @@ async fn read_line() -> anyhow::Result<String>
         let mut line = String::new();
         stdin.lock().read_line(&mut line)?;
         Ok(line.trim().to_string())
-    }).await;
+    });
 
-    result?
+    result.await?
 }
 
 pub async fn run_ftb_ui(

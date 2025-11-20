@@ -46,24 +46,19 @@ async fn main() -> anyhow::Result<()>
             SearchAvailability(ftb_config.search),
             DownloadAvailability(ftb_config.download),
         ).await
-    });
+    }).await??;
 
     // Process all incoming messages
     let socket_handle = socket.clone();
     let ftb_handle = ftb.clone();
     tokio::spawn(async move {
         process_incoming_messages(socket_handle, state.clone(), ftb_handle).await
-    });
+    }).await??;
 
     // Spin up a thread for the UI.
-    let ui_thread_handle = spawn_blocking(async move || {
+    tokio::spawn(async move {
         run_ftb_ui(ftb).await
-    });
-
-    // Wait for the UI to exit
-    tokio::join!{
-        ui_thread_handle
-    };
+    }).await??;
 
     // On exit, tokio will stop the beacon and message processing tasks.
     Ok(())
