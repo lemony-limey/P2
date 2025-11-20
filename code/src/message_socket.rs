@@ -1,3 +1,4 @@
+use log::debug;
 use anyhow::anyhow;
 use log::info;
 use crate::multicast::multicast_endpoint::{MulticastEndpoint, PacketType};
@@ -17,9 +18,6 @@ impl MessageSocket
 {
     pub fn new(endpoint: MulticastEndpoint) -> Self
     {
-        // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        //     .format_timestamp_millis()
-        //     .init();
         debug!("Created new message socket for endpoint: {:#?}", &endpoint);
 
         Self { endpoint }
