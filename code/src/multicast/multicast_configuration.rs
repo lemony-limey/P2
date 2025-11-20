@@ -1,10 +1,12 @@
 //! Configuration handling for the beacon application.
 //! Rust version based on saleem's original Java version
 
+use log::debug;
 use log::info;
 use std::num::NonZeroU64;
 use serde::Deserialize;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use anyhow::Context;
 use crate::protocol::serial_number::SerialNumberGenerator;
 
 /// Beacon application configuration.
@@ -73,21 +75,29 @@ impl MulticastConfiguration
             .build()?;
 
         let mut config: MulticastConfiguration = settings.try_deserialize().unwrap_or_else(|_| {
-            log::info!("Using default configuration");
+            info!("Using default configuration");
             MulticastConfiguration::default()
         });
 
         // This sets the values of ip_addr4 and ip_addr6
-        config.detect_network_info()?;
+        config.detect_network_info()
+            .with_context(|| "couldn't call detect network info".to_string())?;
 
-        log::info!("Configuration loaded from {}", properties_file);
-        log::info!(
+        info!("Configuration loaded from {}", properties_file);
+        info!(
             "Detected: {:#?} {:#?} {:#?}",
             config.host_name,
             config.m_addr4,
             config.m_addr6
         );
-        log::debug!("Config details: {:?}", config);
+        debug!("Config details: {:?}", config);
+
+        info!(
+            "Detected: {:#?} {:#?} {:#?}",
+            config.host_name,
+            config.ip_addr4,
+            config.ip_addr6,
+        );
 
         Ok(config)
     }
@@ -95,7 +105,8 @@ impl MulticastConfiguration
     fn detect_network_info(&mut self) -> anyhow::Result<()>
     {
         // grab hostname
-        self.host_name = hostname::get()?
+        self.host_name = hostname::get()
+            .with_context(|| "could not get host name")?
             .into_string()
             .unwrap_or_else(|_| "unknown".to_string());
 
