@@ -1,6 +1,7 @@
 //! Configuration handling for the beacon application.
 //! Rust version based on saleem's original Java version
 
+use log::info;
 use std::num::NonZeroU64;
 use serde::Deserialize;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
@@ -44,7 +45,7 @@ impl Default for MulticastConfiguration
         {
             log_file: "beacon.log".to_string(),
             m_addr4: "239.0.98.76".to_string(),
-            m_addr6: "ff02::9876:9876".to_string(),
+            m_addr6: "ff02::2:3756".to_string(),
             m_port: 9876,
             m_ttl: 2,
             loopback: false,
@@ -101,6 +102,7 @@ impl MulticastConfiguration
         // grab local IPv4 address
         if let Ok(ip) = local_ip_address::local_ip()
         {
+            info!("ipv4: {}", ip);
             match ip
             {
                 IpAddr::V4(addr) => self.ip_addr4 = Some(addr),
@@ -111,6 +113,7 @@ impl MulticastConfiguration
         // grab link-local IPv6 address
         if let Ok(ip) = local_ip_address::local_ipv6()
         {
+            info!("ipv6: {}", ip);
             match ip
             {
                 IpAddr::V4(addr) => self.ip_addr4 = Some(addr),
