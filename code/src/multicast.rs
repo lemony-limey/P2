@@ -76,17 +76,14 @@ pub async fn beacon(
 
     // The beacon will send an advertisement message once every [interval] milliseconds.
     let mut interval = tokio::time::interval(beacon_interval);
-    interval.tick().await;
     info!("tokio interval of {:#?} milliseconds", beacon_interval);
     loop
     {
-        info!("entered beacon loop");
-
         // Pause to avoid excess traffic.
-        info!("awaiting interval tick");
         interval.tick().await;
         info!("interval tick registered");
 
+        info!("entered beacon loop");
         // Get the next serial number from the configuration.
         let next_serial_number: NonZeroU64;
         {
