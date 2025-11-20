@@ -61,7 +61,7 @@ async fn main() -> anyhow::Result<()>
     });
 
     // Wait for the UI to exit
-    let _ui = tokio::join!{
+    tokio::join!{
         ui_thread_handle
     };
 
