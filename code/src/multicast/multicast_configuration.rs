@@ -119,15 +119,15 @@ impl MulticastConfiguration
         }
 
         // grab link-local IPv6 address
-        let local_ipv6_result = local_ip_address::local_ipv6();
-        if let Ok(IpAddr::V6(ip)) = local_ipv6_result
-        {
-            info!("ipv6: {}", ip);
-            self.ip_addr6 = Some(ip);
-        }
-        else {
-            return Err(anyhow!(local_ipv6_result?))
-        }
+        // let local_ipv6_result = local_ip_address::local_ipv6();
+        // if let Ok(IpAddr::V6(ip)) = local_ipv6_result
+        // {
+        //     info!("ipv6: {}", ip);
+        //     self.ip_addr6 = Some(ip);
+        // }
+        // else {
+        //     return Err(anyhow!(local_ipv6_result?))
+        // }
 
         Ok(())
     }
