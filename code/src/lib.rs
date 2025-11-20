@@ -1,3 +1,4 @@
+use log::warn;
 use chrono::DateTime;
 use crate::protocol::identifier::Identifier;
 use chrono::{TimeDelta, Utc};
@@ -188,7 +189,7 @@ pub async fn process_incoming_messages(
                 // Ensure the download request is actually for this endpoint
                 if ftb.read().await.get_current_identifier() != identifier
                 {
-                    debug!("download request dropped: not intended for this node");
+                    info!("download request dropped: not intended for this node");
                     continue;
                 }
 
@@ -235,7 +236,7 @@ pub async fn process_incoming_messages(
                 {
                     let ftb_handle = ftb.read().await;
                     let Ok(path) = ftb_handle.logical_path_to_absolute_path(&file_path).await else {
-                        info!("download request dropped: conversion from logical path to absolute path failed");
+                        warn!("download request dropped: conversion from logical path to absolute path failed");
                         continue;
                     };
                     path_to_file = path;
@@ -253,14 +254,14 @@ pub async fn process_incoming_messages(
             // A host is indicating to us that another host has successfully received a
             // download.
             // Incoming file string will be treated as a logical path.
-            Payload::Download(DownloadMessage::Result { response_id, logical_file_path: file_string, file_size }) => {
+            Payload::Download(DownloadMessage::Result { response_id, logical_file_path, file_size }) => {
                 // Add file to the node, if it exists
                 let soft_state_handle = soft_state.write().await;
                 let mut nodes_handle = soft_state_handle.nodes.write().await;
 
                 // Get a mutable handle to the node
                 let Some(node) = nodes_handle.get_mut(response_id.identifier()) else {
-                    debug!("search result dropped: unknown node");
+                    info!("search result dropped: unknown node");
                     continue;
                 };
 
@@ -270,7 +271,7 @@ pub async fn process_incoming_messages(
 
                 // Convert file_string to logical path
                 node_handle.files.insert(
-                    LogicalFilePath::new(file_string),
+                    LogicalFilePath::new(logical_file_path),
                     FileMetadata::new(
                         file_size,
                         ttl,
