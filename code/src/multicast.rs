@@ -4,6 +4,7 @@
 pub mod multicast_configuration;
 pub mod multicast_endpoint;
 
+use log::info;
 use crate::message_socket::MessageSocket;
 use tokio::sync::RwLock;
 use anyhow::{Context};
@@ -31,6 +32,8 @@ pub async fn beacon(
     download_availability: DownloadAvailability,
 ) -> anyhow::Result<()>
 {
+    info!("started beacon");
+
     // Predefine all info that does not have to be redefined later in the critical section.
     let beacon_interval: Duration;
     let identifier: Identifier;
@@ -81,6 +84,7 @@ pub async fn beacon(
         // Send the beacon message.
         {
             socket.read().await.tx_message(message).await?;
+            info!("sent beacon {}", next_serial_number);
         }
 
         // Pause to avoid excess traffic.
