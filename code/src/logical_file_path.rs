@@ -1,3 +1,4 @@
+use log::debug;
 use std::hash::{Hash, Hasher};
 use std::fmt;
 use std::fmt::Formatter;
@@ -8,12 +9,22 @@ use std::fmt::Formatter;
 /// For example, "/" refers to "/{path_to_root_dir}/", and so "/dir1/hello.txt" refers to
 /// "/{path_to_root_dir}/dir1/hello.txt"
 #[derive(Clone, Debug)]
-pub struct LogicalFilePath(pub String);
+pub struct LogicalFilePath(String);
 
 impl LogicalFilePath
 {
     pub fn new(logical_path: impl ToString) -> Self
     {
+        let mut logical_path = logical_path.to_string();
+        if !logical_path.starts_with("/")
+        {
+            debug!("logical path \"{}\" requires correction", &logical_path);
+            let mut logical_path_corrected = String::from("/");
+            logical_path_corrected.push_str(&logical_path);
+            logical_path = logical_path_corrected;
+        }
+
+        debug!("logical path: \"{}\"", logical_path);
         Self(logical_path.to_string())
     }
 }
