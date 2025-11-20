@@ -25,7 +25,8 @@ async fn main() -> anyhow::Result<()>
     let mut endpoint = MulticastEndpoint::new(config)?;
     endpoint.join()?;
     info!("{:#?}", endpoint);
-    let socket = Arc::new(RwLock::new(MessageSocket::new(endpoint)));
+    let message_socket = MessageSocket::new(endpoint);
+    let socket_arc = Arc::new(RwLock::new(message_socket.clone()));
 
     // Get filetree browser configuration and create the filetree browser.
     let state = Arc::new(RwLock::new(FTBSoftState::new()));
@@ -35,7 +36,7 @@ async fn main() -> anyhow::Result<()>
         &root_path,
         root_path.clone(),
         ftb_config.clone(),
-        socket.clone(),
+        message_socket.clone(),
         state.clone(),
     )));
 
@@ -63,14 +64,14 @@ async fn main() -> anyhow::Result<()>
     //     run_ftb_ui(ftb_handle).await
     // });
     //
-    let socket_handle_1 = socket.clone();
-    let socket_handle_2 = socket.clone();
+    let cloned_socket_1 = message_socket.clone();
+    let cloned_socket_2 = message_socket.clone();
     let ftb_handle = ftb.clone();
     let state_handle = state.clone();
     tokio::select! {
         result = tokio::spawn(async move {
             beacon(
-                socket_handle_1,
+                cloned_socket_1,
                 SearchAvailability(ftb_config.search),
                 DownloadAvailability(ftb_config.download),
             ).await
@@ -79,8 +80,8 @@ async fn main() -> anyhow::Result<()>
             println!("{:?}", result);
         },
         result = tokio::spawn(async move {
-                process_incoming_messages(
-                socket_handle_2,
+            process_incoming_messages(
+                cloned_socket_2,
                 state_handle,
                 ftb_handle
             ).await

@@ -84,3 +84,15 @@ impl MessageSocket
         Ok(())
     }
 }
+
+pub struct MessageTransmitter
+{
+
+}
+
+
+
+pub struct MessageReceiver
+{
+
+}

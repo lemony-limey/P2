@@ -4,7 +4,7 @@
 pub mod configuration;
 
 use log::error;
-use tokio::fs::{DirEntry, File};
+use tokio::fs::{DirEntry};
 use std::collections::VecDeque;
 use crate::anyhow;
 use std::collections::HashSet;
@@ -26,7 +26,6 @@ use std::io::BufRead;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
 use log::{debug, info, warn};
-use tokio::task::spawn_blocking;
 use crate::{
     message_socket::MessageSocket,
     protocol::{
@@ -46,7 +45,7 @@ pub struct FileTreeBrowser
     root_path: PathBuf,
     pub this_dir: PathBuf,
     pub config: FiletreeBrowserConfiguration,
-    socket: Arc<RwLock<MessageSocket>>,
+    socket: MessageSocket,
     soft_state: Arc<RwLock<FTBSoftState>>,
 }
 
@@ -56,7 +55,7 @@ impl FileTreeBrowser
         path: impl AsRef<Path>,
         root_path: PathBuf,
         config: FiletreeBrowserConfiguration,
-        socket: Arc<RwLock<MessageSocket>>,
+        socket: MessageSocket,
         storage: Arc<RwLock<FTBSoftState>>,
     ) -> Self
     {
@@ -353,9 +352,7 @@ async fn search(
     // Send message
     {
         let ftb_handle = ftb.read().await;
-        let socket_handle = ftb_handle.socket.read().await;
-
-        socket_handle.tx_message(message).await?;
+        ftb_handle.socket.tx_message(message).await?;
     }
 
     // Wait for received messages
@@ -483,7 +480,7 @@ async fn download(
 
     // Send download message
     {
-        ftb.read().await.socket.read().await.tx_message(message).await?;
+        ftb.read().await.socket.tx_message(message).await?;
     }
 
     // Start server and report what happens

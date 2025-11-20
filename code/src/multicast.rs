@@ -30,7 +30,7 @@ use std::{
 
 /// Send a beacon ping out every so often
 pub async fn beacon(
-    socket: Arc<RwLock<MessageSocket>>,
+    mut socket: MessageSocket,
     search_availability: SearchAvailability,
     download_availability: DownloadAvailability,
 ) -> anyhow::Result<()>
@@ -42,22 +42,20 @@ pub async fn beacon(
     let identifier: Identifier;
     let payload: Payload;
     {
-        let socket_handle = socket.read().await;
-        let endpoint = socket_handle.endpoint();
-        let Some(ipv6_addr) = &socket_handle.endpoint().config.ip_addr6 else {
+        let Some(ipv6_addr) = &socket.endpoint().config.ip_addr6 else {
             error!("config.ip_addr6 is None");
             return Err(anyhow!("config.ip_addr6 is None"));
         };
         debug!("ipv6_addr: {}", ipv6_addr);
-        beacon_interval = Duration::from_millis(endpoint.config.beacon_interval);
+        beacon_interval = Duration::from_millis(socket.endpoint().config.beacon_interval);
         identifier = Identifier::new(
-            UID(endpoint.config.username.clone()),
-            FQDN(endpoint.config.host_name.clone()),
+            UID(socket.endpoint().config.username.clone()),
+            FQDN(socket.endpoint().config.host_name.clone()),
         );
         payload = Payload::Advertisement(
             AdvertisementMessage::new(
                 *ipv6_addr,
-                NonZeroU16::new(endpoint.config.m_port)
+                NonZeroU16::new(socket.endpoint().config.m_port)
                     .with_context(|| "beacon(): invalid port number")?,
                 Services::new(
                     search_availability,
@@ -79,14 +77,11 @@ pub async fn beacon(
         info!("interval tick registered");
 
         info!("entered beacon loop");
+
         // Get the next serial number from the configuration.
         let next_serial_number: NonZeroU64;
-        {
-            info!("requesting socket write lock");
-            next_serial_number = socket.write().await.endpoint_mut().config.get_next_serial_number();
-            info!("got serial number");
-        }
-        info!("write lock dropped");
+        next_serial_number = socket.endpoint_mut().config.get_next_serial_number();
+        info!("got serial number");
 
         // Header must be different each iteration because timestamp is constantly changing.
         let message = Message::new(
@@ -100,11 +95,7 @@ pub async fn beacon(
         info!("created message");
 
         // Send the beacon message.
-        {
-            info!("requesting socket read lock");
-            socket.read().await.tx_message(message).await?;
-            info!("sent beacon {}", next_serial_number);
-        }
-        info!("read lock dropped");
+        socket.tx_message(message).await?;
+        info!("sent beacon {}", next_serial_number);
     }
 }

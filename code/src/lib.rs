@@ -39,7 +39,7 @@ pub mod soft_state;
 pub mod ui;
 
 pub async fn process_incoming_messages(
-    socket: Arc<RwLock<MessageSocket>>,
+    socket: MessageSocket,
     soft_state: Arc<RwLock<FTBSoftState>>,
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
@@ -49,11 +49,7 @@ pub async fn process_incoming_messages(
     // Process incoming messages
     loop
     {
-        let result: (PacketType, Option<Message>);
-        {
-            info!("requesting socket read lock");
-            result = socket.read().await.rx_message().await?;
-        }
+        let result = socket.rx_message().await?;
 
         let (header, payload): (Header, Payload);
         match result
@@ -152,7 +148,7 @@ pub async fn process_incoming_messages(
                         ),
                     );
 
-                    socket.write().await.tx_message(search_response).await?;
+                    socket.tx_message(search_response).await?;
                 }
             },
             // If this is a response to a search message initiated by the current user, add the
