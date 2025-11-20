@@ -27,6 +27,11 @@ impl LogicalFilePath
         debug!("logical path: \"{}\"", logical_path);
         Self(logical_path.to_string())
     }
+
+    pub fn get(&self) -> &String
+    {
+        &self.0
+    }
 }
 
 impl fmt::Display for LogicalFilePath

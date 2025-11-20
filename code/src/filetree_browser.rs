@@ -88,7 +88,7 @@ impl FileTreeBrowser
                 .to_string()
         }).await?;
 
-        Ok(LogicalFilePath(result))
+        Ok(LogicalFilePath::new(result))
     }
 
     pub async fn logical_path_to_absolute_path(&self, logical_path: &LogicalFilePath) -> anyhow::Result<PathBuf>
@@ -115,7 +115,7 @@ impl FileTreeBrowser
         let mut entries = fs::read_dir(&self.this_dir).await?;
 
         println!("\n+++  id: {}", self.config.uid);
-        println!("+++ pwd: {}", self.absolute_path_to_logical_path(&self.this_dir).await?.0);
+        println!("+++ pwd: {}", self.absolute_path_to_logical_path(&self.this_dir).await?.get());
         println!("+++\tfilename:");
 
         let mut count = 0;
@@ -209,14 +209,8 @@ impl FileTreeBrowser
     {
         let absolute_path = self.logical_path_to_absolute_path(logical_file_path).await?;
 
-        if let Ok(_) = File::open(&absolute_path).await
-        {
-            Ok(true)
-        }
-        else
-        {
-            Ok(false)
-        }
+        // Do not allow LogicalFilePaths to store paths to directories.
+        Ok(absolute_path.is_file())
     }
 
     pub async fn get_file_size(&self, logical_file_path: &LogicalFilePath) -> anyhow::Result<u64>
@@ -426,7 +420,7 @@ async fn download(
         stdin().lock().read_line(&mut target_file)
             .with_context(|| "search(): could not get search string from stdin")?;
     }
-    let target_file = LogicalFilePath(target_file);
+    let target_file = LogicalFilePath::new(target_file);
     let target_file_absolute_path: PathBuf;
     {
         target_file_absolute_path = ftb.read().await.logical_path_to_absolute_path(&target_file).await?;
