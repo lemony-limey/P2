@@ -18,7 +18,7 @@ root_dir = "root_dir"
 # ff02:: is link-local scope
 # "split" u across the lower 32 bits, e.g. 'id -u' gives 414243:
 # m_addr6 = "ff02::41:4243"
-m_addr6 = "ff02::4105:4105"
+m_addr6 = "ff02::4123:7560"
 
 # hopefully not used by anyone else! set this to your uid (see above)
 m_port = 23756

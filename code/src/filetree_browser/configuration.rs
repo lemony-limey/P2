@@ -1,3 +1,4 @@
+use log::debug;
 use crate::protocol::serial_number::SerialNumberGenerator;
 use serde::Deserialize;
 use std::num::NonZeroU64;
@@ -89,8 +90,8 @@ impl FiletreeBrowserConfiguration
             config.log_file = format!("{}-log.log", config.uid);
         }
 
-        log::info!("Configuration loaded from {}", properties_file);
-        log::debug!("Config details: {:?}", config);
+        debug!("Configuration loaded from {}", properties_file);
+        debug!("Config details: {:?}", config);
 
         Ok(config)
     }

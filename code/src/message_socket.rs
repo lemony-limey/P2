@@ -20,7 +20,7 @@ impl MessageSocket
         // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
         //     .format_timestamp_millis()
         //     .init();
-        info!("Created new message socket for endpoint: {:#?}", &endpoint);
+        debug!("Created new message socket for endpoint: {:#?}", &endpoint);
 
         Self { endpoint }
     }
