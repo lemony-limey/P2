@@ -26,6 +26,7 @@ use std::io::BufRead;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
 use log::{debug, info, warn};
+use tokio::io::AsyncBufReadExt;
 use crate::{
     message_socket::MessageSocket,
     protocol::{
@@ -536,11 +537,12 @@ pub async fn run_ftb_ui(
 
         let user_cmd = loop
         {
-            if let Ok(line) = read_line().await
+            let mut line_buffer = String::new();
+            let num_bytes = tokio::io::stdin().read_line(&mut line_buffer).await?;
             {
-                if !line.is_empty()
+                if !line_buffer.is_empty()
                 {
-                    break line;
+                    break line_buffer;
                 }
             }
 
