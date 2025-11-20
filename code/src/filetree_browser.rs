@@ -14,7 +14,6 @@ use tokio::{
     fs,
     io::AsyncWriteExt,
 };
-use tokio::io::{AsyncBufRead, AsyncBufReadExt, BufReader};
 use std::{
     sync::Arc,
     io::{
@@ -530,21 +529,18 @@ pub async fn run_ftb_ui(
         ftb.read().await.print_list().await?;
     }
 
-    let mut stdin_reader = BufReader::new(tokio::io::stdin());
-
     loop
     {
         println!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
-        // tokio::io::stdout().flush().await?;
+        tokio::io::stdout().flush().await?;
 
         let user_cmd = loop
         {
-            let mut line_buffer = String::new();
-            let num_bytes = stdin_reader.read_line(&mut line_buffer).await?;
+            if let Ok(line) = read_line().await
             {
-                if !line_buffer.is_empty()
+                if !line.is_empty()
                 {
-                    break line_buffer;
+                    break line;
                 }
             }
 

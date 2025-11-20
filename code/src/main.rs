@@ -9,6 +9,7 @@ use code::process_incoming_messages;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::fs;
+use tokio::task::spawn_blocking;
 use code::protocol::services::{DownloadAvailability, SearchAvailability};
 
 #[tokio::main]
@@ -55,7 +56,14 @@ async fn main() -> anyhow::Result<()>
     });
 
     // Spin up a thread for the UI.
-    run_ftb_ui(ftb).await?;
+    let ui_thread_handle = spawn_blocking(async move || {
+        run_ftb_ui(ftb).await
+    });
+
+    // Wait for the UI to exit
+    let _ui = tokio::join!{
+        ui_thread_handle
+    };
 
     // On exit, tokio will stop the beacon and message processing tasks.
     Ok(())
