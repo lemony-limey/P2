@@ -4,14 +4,11 @@
 use tokio::io::{BufReader, BufWriter};
 use tokio::fs::File;
 use crate::{
-    constants::{BUFFER_SIZE, SLEEP_TIME_MS, SO_TIMEOUT_MS},
+    constants::{BUFFER_SIZE},
     simple_tcp::{anyhow, self},
 };
 use std::{
-    // io::{Read, Write},
     net::{SocketAddr, IpAddr, Ipv6Addr},
-    thread,
-    time::Duration,
 };
 use std::path::PathBuf;
 use log::{info, error};
@@ -89,6 +86,7 @@ pub async fn run_server(
             }
             Ok(bytes_read) => {
                 let received = String::from_utf8_lossy(&buffer[..bytes_read]);
+                total_bytes_received += bytes_read;
                 info!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
 
                 // Write to file

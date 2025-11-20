@@ -1,13 +1,11 @@
 use crate::parser::identifier::parse_identifier;
 use anyhow::anyhow;
-use bytes::{Bytes, BytesMut};
+use bytes::{BytesMut};
 use crate::{
     constants::{
         ADVERTISEMENT,
         DOWNLOAD,
         FOUR_DIGITS,
-        IDENTIFIER_DELIMITER_CHAR,
-        IDENTIFIER_DELIMITER_STR,
         LEAVING,
         PROTOCOL_DELIMITER_CHAR,
         PROTOCOL_DELIMITER_STR,

@@ -17,7 +17,6 @@ use tokio::{
 use std::{
     sync::Arc,
     io::{
-        self,
         stdin
     },
     path::{Path, PathBuf},
@@ -37,7 +36,6 @@ use crate::{
     },
 };
 use crate::logical_file_path::LogicalFilePath;
-use crate::parser::identifier::parse_identifier;
 use crate::protocol::download::DownloadMessage;
 use crate::simple_tcp::server::run_server;
 
@@ -342,7 +340,10 @@ async fn search(
 
     // Send message
     {
-        ftb.read().await.socket.read().await.tx_message(message).await?;
+        let ftb_handle = ftb.read().await;
+        let socket_handle = ftb_handle.socket.read().await;
+
+        socket_handle.tx_message(message).await?;
     }
 
     // Wait for received messages
@@ -488,7 +489,7 @@ async fn download(
 async fn read_line() -> anyhow::Result<String>
 {
     let result = tokio::task::spawn_blocking(move || {
-        let stdin = io::stdin();
+        let stdin = stdin();
         let mut line = String::new();
         stdin.lock().read_line(&mut line)?;
         Ok(line.trim().to_string())
@@ -505,7 +506,7 @@ pub async fn run_ftb_ui(
     //     .format_timestamp_millis()
     //     .init();
 
-    let mut config = FiletreeBrowserConfiguration::load(PROPERTIES_FILE)?;
+    let config = FiletreeBrowserConfiguration::load(PROPERTIES_FILE)?;
 
     println!("port: {}, ipv6 addr: {}", config.m_port, config.m_addr6);
 
@@ -517,9 +518,7 @@ pub async fn run_ftb_ui(
         ftb.read().await.print_list().await?;
     }
 
-    let mut quit_browser = false;
-
-    while !quit_browser
+    loop
     {
         print!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
         tokio::io::stdout().flush().await?;
@@ -548,7 +547,7 @@ pub async fn run_ftb_ui(
         {
             ":quit" => {
                 info!("Quitting application");
-                quit_browser = true;
+                break;
             }
 
             ":help" => display_help().await?,

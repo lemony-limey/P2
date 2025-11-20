@@ -1,8 +1,7 @@
 use chrono::DateTime;
 use crate::protocol::identifier::Identifier;
 use chrono::{TimeDelta, Utc};
-use std::net::{IpAddr, Ipv6Addr, SocketAddr};
-use std::num::NonZeroU16;
+use std::net::{IpAddr, SocketAddr};
 use std::ops::Add;
 use log::debug;
 use std::path::PathBuf;
@@ -10,13 +9,12 @@ use crate::soft_state::Node;
 use crate::protocol::message::{Message, Payload, ResponseID, Timestamp};
 use crate::protocol::message::Header;
 use crate::message_socket::MessageSocket;
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow};
 use std::sync::Arc;
 use std::time::Duration;
 use log::info;
 use tokio::sync::RwLock;
 use crate::constants::{TTL_NANOSECONDS, TTL_SECONDS};
-use crate::filetree_browser::configuration::FiletreeBrowserConfiguration;
 use crate::filetree_browser::FileTreeBrowser;
 use crate::logical_file_path::LogicalFilePath;
 use crate::multicast::multicast_endpoint::PacketType;
@@ -178,6 +176,12 @@ pub async fn process_incoming_messages(
             // then eventually spin up the TCP server.
             // TCP will be done asynchronously.
             Payload::Download(DownloadMessage::Request { identifier, logical_file_path: file_path }) => {
+                // TODO: Ensure the download request is actually for this endpoint
+                // if
+                // {
+                //
+                // }
+
                 // Ensure download is enabled.
                 if !ftb.read().await.config.download
                 {

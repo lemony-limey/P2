@@ -1,5 +1,5 @@
 use crate::{
-    constants::{ERROR, PROTOCOL_DELIMITER_STR, REQUEST, RESULT},
+    constants::{PROTOCOL_DELIMITER_STR, REQUEST, RESULT},
     parser::message::{parse_delimiter, parse_response_id},
     protocol::download::DownloadMessage,
 };

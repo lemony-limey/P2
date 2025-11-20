@@ -4,8 +4,6 @@
 use log::info;
 use anyhow::anyhow;
 use std::{
-    env,
-    ffi::CString,
     io::{self},
     net::{Ipv6Addr, SocketAddr, SocketAddrV6},
     str::FromStr

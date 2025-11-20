@@ -1,5 +1,4 @@
 use log::debug;
-use anyhow::anyhow;
 use log::info;
 use crate::multicast::multicast_endpoint::{MulticastEndpoint, PacketType};
 use crate::protocol::message::Message;

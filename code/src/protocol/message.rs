@@ -18,7 +18,6 @@ use std::{
     fmt::{self, Formatter},
     marker::PhantomData,
 };
-use crate::protocol::identifier::{FQDN, UID};
 
 /// General Message Format
 #[derive(Clone, Debug)]

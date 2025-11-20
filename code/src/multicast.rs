@@ -6,63 +6,22 @@ pub mod multicast_endpoint;
 
 use crate::message_socket::MessageSocket;
 use tokio::sync::RwLock;
-use anyhow::{anyhow, Context};
-use multicast_configuration::MulticastConfiguration;
+use anyhow::{Context};
 use crate::{
     protocol::{
         discovery::AdvertisementMessage,
         identifier::{UID, FQDN, Identifier},
         message::{Header, Timestamp, Payload, Message},
-        process_status::ProcessStatus,
         serial_number::SerialNumber,
         services::{DownloadAvailability, SearchAvailability, Services},
     },
 };
-use log::info;
-use multicast_endpoint::{MulticastEndpoint, PacketType};
 use std::{
-    sync::mpsc::Receiver,
     time::Duration,
     sync::{Arc},
     num::{NonZeroU64, NonZeroU16}
 };
 use std::net::Ipv6Addr;
-use tokio::{
-    sync::{Mutex, mpsc, watch},
-};
-use tokio::time::Interval;
-
-
-pub async fn run(
-    rx_shutdown: tokio::sync::watch::Receiver<ProcessStatus>,
-) -> anyhow::Result<()>
-{
-    // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-    //     .format_timestamp_millis()
-    //     .init();
-    info!("Starting Beacon application");
-
-    let mut config = MulticastConfiguration::load("beacon.toml")?;
-    let username = std::env::var("USER")
-        .or_else(|_| std::env::var("USERNAME"))
-        .unwrap_or_else(|_| "user".to_string());
-    config.username = username;
-
-    let mut endpoint = MulticastEndpoint::new(config)?;
-    endpoint.join()?;
-    let endpoint = Arc::new(Mutex::new(endpoint));
-
-    // Spawn the receiving thread. This is a listener that will receive messages as they come in,
-    // parse them, and return them to the main thread for storage.
-
-    // let mut threads = tokio::task::JoinSet::new();
-    // threads.j
-
-
-    info!("Beacon application terminated");
-
-    Ok(())
-}
 
 
 /// Send a beacon ping out every so often

@@ -2,7 +2,7 @@
 //! Rust version based on saleem's original Java
 
 use crate::{
-    protocol::message::{Header, Message, Payload, Timestamp},
+    protocol::message::{Message, Payload, Timestamp},
     parser::message::parse_message,
     protocol::discovery::AdvertisementMessage,
     protocol::identifier::{Identifier, FQDN, UID},
@@ -15,14 +15,13 @@ use log::{debug, error, info};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::{
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
-    num::{NonZeroU16, NonZeroU64},
     sync::Arc,
     time::Duration
 };
 use bytes::BytesMut;
 use tokio::{
     net::UdpSocket,
-    sync::{mpsc, Mutex}
+    sync::{Mutex}
 };
 
 /// type of packet.
