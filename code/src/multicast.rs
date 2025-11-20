@@ -43,8 +43,9 @@ pub async fn beacon(
         let socket_handle = socket.read().await;
         let endpoint = socket_handle.endpoint();
         let ipv6_addr_string = &socket_handle.endpoint().config.ip_addr6;
-        debug!("ipv6_addr_string: {}", &ipv6_addr_string);
-        let ipv6_addr = ipv6_addr_string.parse::<Ipv6Addr>()?;
+        debug!("ipv6_addr_string: {}", ipv6_addr_string);
+        let ipv6_addr = ipv6_addr_string.parse::<Ipv6Addr>()
+            .with_context(|| "attempting to parse the multicast config ipv6 address")?;
         beacon_interval = Duration::from_millis(endpoint.config.beacon_interval);
         identifier = Identifier::new(
             UID(endpoint.config.username.clone()),
