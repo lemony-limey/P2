@@ -222,6 +222,8 @@ impl FileTreeBrowser
     pub async fn get_file_size(&self, logical_file_path: &LogicalFilePath) -> anyhow::Result<u64>
     {
         let absolute_path = self.logical_path_to_absolute_path(logical_file_path).await?;
+        info!("logical_file_path: {}", logical_file_path);
+        info!("absolute file path: {:#?}", absolute_path);
         let metadata = fs::metadata(absolute_path).await?;
 
         Ok(metadata.len())
