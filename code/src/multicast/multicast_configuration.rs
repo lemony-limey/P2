@@ -3,7 +3,7 @@
 
 use std::num::NonZeroU64;
 use serde::Deserialize;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use crate::protocol::serial_number::SerialNumberGenerator;
 
 /// Beacon application configuration.
@@ -27,9 +27,9 @@ pub struct MulticastConfiguration
     #[serde(skip)]
     pub host_name: String,
     #[serde(skip)]
-    pub ip_addr4: String,
+    pub ip_addr4: Option<Ipv4Addr>,
     #[serde(skip)]
-    pub ip_addr6: String,
+    pub ip_addr6: Option<Ipv6Addr>,
     #[serde(skip)]
     pub username: String,
     #[serde(skip)]
@@ -54,8 +54,8 @@ impl Default for MulticastConfiguration
             beacon_interval: 10000,
             beacon: 10,
             host_name: String::new(),
-            ip_addr4: String::new(),
-            ip_addr6: String::new(),
+            ip_addr4: None,
+            ip_addr6: None,
             username: String::new(),
             serial_number_generator: Default::default(),
         }

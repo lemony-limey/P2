@@ -18,7 +18,7 @@ log_file = "beacon.log"
 # set values to "null" to disable use of IPv4 or IPv6, as required
 m_addr4 = "239.255.4.105"
 #m_addr4 = "null"
-mAddr6 = "ff02::4123:7560"
+mAddr6 = "ff02::2:3756"
 #m_addr6 = "null"
 
 # hopefully not used by anyone else!
