@@ -5,7 +5,7 @@ use log::info;
 use anyhow::anyhow;
 use std::{
     io::{self},
-    net::{Ipv6Addr, SocketAddr, SocketAddrV6},
+    net::{SocketAddr},
     str::FromStr
 };
 use tokio::{
