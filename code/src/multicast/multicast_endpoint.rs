@@ -67,6 +67,17 @@ impl MulticastEndpoint
         if !config.m_addr6.is_empty() && config.m_addr6 != "0"
         {
             endpoint.setup_ipv6()?;
+            if let Some(socket) = &endpoint.socket_v6
+            {
+                if let Ok(link_local_addr) = socket.local_addr()
+                {
+                    if let IpAddr::V6(addr) = link_local_addr.ip()
+                    {
+                        endpoint.config.ip_addr6 = Some(addr);
+                        info!("set ipv6 address: {}", addr)
+                    }
+                }
+            }
         }
 
         if endpoint.socket_v4.is_none() && endpoint.socket_v6.is_none()

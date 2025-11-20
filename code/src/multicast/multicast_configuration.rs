@@ -6,7 +6,7 @@ use log::debug;
 use log::info;
 use std::num::NonZeroU64;
 use serde::Deserialize;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use anyhow::Context;
 use crate::protocol::serial_number::SerialNumberGenerator;
 
@@ -33,7 +33,7 @@ pub struct MulticastConfiguration
     #[serde(skip)]
     pub ip_addr4: Option<Ipv4Addr>,
     #[serde(skip)]
-    pub ip_addr6: Option<IpAddr>,
+    pub ip_addr6: Option<Ipv6Addr>,
     #[serde(skip)]
     pub username: String,
     #[serde(skip)]
@@ -112,22 +112,18 @@ impl MulticastConfiguration
             .unwrap_or_else(|_| "unknown".to_string());
 
         // grab local IPv4 address
-        if let Ok(ip) = local_ip_address::local_ip()
+        if let Ok(IpAddr::V4(ip)) = local_ip_address::local_ip()
         {
             info!("ipv4: {}", ip);
-            match ip
-            {
-                IpAddr::V4(addr) => self.ip_addr4 = Some(addr),
-                IpAddr::V6(_addr) => self.ip_addr6 = Some(ip),
-            }
+            self.ip_addr4 = Some(ip);
         }
 
         // grab link-local IPv6 address
         let local_ipv6_result = local_ip_address::local_ipv6();
-        if let Ok(ip) = &local_ipv6_result
+        if let Ok(IpAddr::V6(ip)) = local_ipv6_result
         {
             info!("ipv6: {}", ip);
-            self.ip_addr6 = Some(*ip);
+            self.ip_addr6 = Some(ip);
         }
         else {
             return Err(anyhow!(local_ipv6_result?))
