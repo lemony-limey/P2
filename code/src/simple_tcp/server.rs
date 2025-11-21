@@ -1,10 +1,9 @@
 //! Simple non-blocking TCP server using IPv6 link-local addresses
 //! (based on Saleem's Java version)
 
-use tokio::io::{BufReader, BufWriter};
+use tokio::io::{BufReader};
 use tokio::fs::File;
 use crate::{
-    constants::{BUFFER_SIZE},
     simple_tcp::{anyhow, self},
 };
 use std::{
@@ -12,7 +11,6 @@ use std::{
 };
 use std::path::PathBuf;
 use log::{info, error};
-use tokio::fs;
 use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -23,12 +21,10 @@ pub async fn run_server(
 ) -> anyhow::Result<u64>
 {
     info!("Starting TCP server");
-    println!("Starting TCP server");
     tokio::io::stdout().flush().await?;
 
     let Some(port) = simple_tcp::get_uid_port() else { return Err(anyhow!("oh no")) };
     info!("Using port: {}", port);
-    println!("Using port: {}", port);
     tokio::io::stdout().flush().await?;
 
     // For link-local binding, we need to bind to the unspecified address
@@ -36,7 +32,6 @@ pub async fn run_server(
     let bind_addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), port.get());
     
     info!("Binding to: {}", bind_addr);
-    println!("Binding to: {}", bind_addr);
     tokio::io::stdout().flush().await?;
     let listener = TcpListener::bind(bind_addr).await?;
 
@@ -45,13 +40,10 @@ pub async fn run_server(
     {
         info!("Link-local IPv6 available: {} on interface {}", ipv6_addr, interface);
         info!("Clients should connect to: [{}%{}]:{}", ipv6_addr, interface, port);
-        println!("Link-local IPv6 available: {} on interface {}", ipv6_addr, interface);
-        println!("Clients should connect to: [{}%{}]:{}", ipv6_addr, interface, port);
         tokio::io::stdout().flush().await?;
     }
     
     info!("Waiting for connection...");
-    println!("Waiting for connection...");
     tokio::io::stdout().flush().await?;
 
     let new_file = File::create_new(&file_requested_from_client).await?;
@@ -63,7 +55,6 @@ pub async fn run_server(
         {
             Ok((stream, addr)) => {
                 info!("New connection from: {}", addr);
-                println!("New connection from: {}", addr);
                 tokio::io::stdout().flush().await?;
                 break stream;
             }
@@ -72,7 +63,6 @@ pub async fn run_server(
             }
             Err(e) => {
                 error!("Error accepting connection: {}", e);
-                println!("Error accepting connection: {}", e);
                 tokio::io::stdout().flush().await?;
                 return Err(e.into());
             }
@@ -82,7 +72,6 @@ pub async fn run_server(
     // No longer need to accept connections
     drop(listener);
     info!("listener dropped");
-    println!("listener dropped");
     tokio::io::stdout().flush().await?;
 
     // Read the contents of the stream into the file.
@@ -93,7 +82,6 @@ pub async fn run_server(
     tokio::fs::write(file_requested_from_client, buffer).await?;
 
     info!("<Closing connection>");
-    println!("<Closing connection>");
     tokio::io::stdout().flush().await?;
     Ok(bytes_received as u64)
 }

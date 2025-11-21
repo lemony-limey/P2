@@ -10,7 +10,6 @@ use code::process_incoming_messages;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::fs;
-use tokio::task::{spawn_blocking, JoinSet};
 use code::protocol::services::{DownloadAvailability, SearchAvailability};
 
 #[tokio::main]
