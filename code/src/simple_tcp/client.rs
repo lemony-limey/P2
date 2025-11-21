@@ -47,10 +47,11 @@ pub async fn run_client(
     let mut total_bytes_sent = 0;
     while total_bytes_sent < file_size
     {
-        let result = writer.write(&mut contents).await;
+        let result = writer.write(&mut contents).await?;
         writer.flush().await?;
         println!("write_result: {:#?}", &result);
         tokio::io::stdout().flush().await?;
+        total_bytes_sent += result as u64;
     }
 
     // loop
