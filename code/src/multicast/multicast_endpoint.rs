@@ -251,7 +251,7 @@ impl MulticastEndpoint
                 return match result?
                 {
                     (PacketType::Ipv6, Some(socket_addr)) => {
-                        let parsed_message = parse_message(&buffer_1)?;
+                        let parsed_message = parse_message(&buffer_2)?;
                         return Ok((PacketType::Ipv4, Some((socket_addr, parsed_message))))
                     },
                     _ => Ok((PacketType::None, None)),
