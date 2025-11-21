@@ -301,8 +301,10 @@ impl MulticastEndpoint
         if let Some(socket) = &self.socket_v6
         {
             socket.readable().await?;
+            let result = socket.recv_from(buffer).await;
+            info!("{:#?}", result);
 
-            match socket.recv_from(buffer).await
+            match result
             {
                 Ok((len, socket_addr)) => {
                     debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
@@ -310,7 +312,7 @@ impl MulticastEndpoint
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     error!("IPv6 receive error: {}", e);
-                    // mo data available
+                    // no data available
                 }
                 Err(e) => {
                     error!("IPv6 receive error: {}", e);
