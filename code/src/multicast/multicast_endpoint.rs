@@ -289,6 +289,7 @@ impl MulticastEndpoint
                     return Ok(PacketType::Ipv6);
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    error!("IPv6 receive error: {}", e);
                     // mo data available
                 }
                 Err(e) => {
@@ -318,7 +319,7 @@ impl MulticastEndpoint
         match pkt_type
         {
             PacketType::Ipv4 => {
-                if let (Some(socket), Some(addr)) = (&self.socket_v4, self.mcast_addr_v4)
+                if let (Some(socket), Some(addr)) = (self.socket_v4.clone(), self.mcast_addr_v4)
                 {
                     socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv4", data.len());
@@ -330,7 +331,7 @@ impl MulticastEndpoint
                 }
             }
             PacketType::Ipv6 => {
-                if let (Some(socket), Some(addr)) = (&self.socket_v6, self.mcast_addr_v6)
+                if let (Some(socket), Some(addr)) = (self.socket_v6.clone(), self.mcast_addr_v6)
                 {
                     socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv6", data.len());
