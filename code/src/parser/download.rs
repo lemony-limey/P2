@@ -52,12 +52,8 @@ pub(crate) fn parse_download_request_message(input: &str) -> IResult<&str, Downl
 
 pub(crate) fn parse_download_result_message(input: &str) -> IResult<&str, DownloadMessage>
 {
-    // Get the response ID and consume the delimiter after it
-    let (remaining_input, response_id) = parse_response_id(input)?;
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
-
     // Get the file string and consume the following delimiter.
-    let (remaining_input, file_path) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
+    let (remaining_input, file_path) = take_until1(PROTOCOL_DELIMITER_STR).parse(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     // Get the size of the file, but don't consume the following delimiter
@@ -66,7 +62,6 @@ pub(crate) fn parse_download_result_message(input: &str) -> IResult<&str, Downlo
     Ok((
         remaining_input,
         DownloadMessage::Result {
-            response_id,
             logical_file_path: LogicalFilePath::new(file_path),
             file_size,
         },

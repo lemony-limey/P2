@@ -266,13 +266,13 @@ pub async fn process_incoming_messages(
             // A host is indicating to us that another host has successfully received a
             // download.
             // Incoming file string will be treated as a logical path.
-            Payload::Download(DownloadMessage::Result { response_id, logical_file_path, file_size }) => {
+            Payload::Download(DownloadMessage::Result { logical_file_path, file_size }) => {
                 // Add file to the node, if it exists
                 let soft_state_handle = soft_state.write().await;
                 let mut nodes_handle = soft_state_handle.nodes.write().await;
 
                 // Get a mutable handle to the node
-                let Some(node) = nodes_handle.get_mut(response_id.identifier()) else {
+                let Some(node) = nodes_handle.get_mut(&header.identifier) else {
                     info!("search result dropped: unknown node");
                     continue;
                 };

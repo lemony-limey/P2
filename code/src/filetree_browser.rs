@@ -470,11 +470,10 @@ async fn download(
         }
     }
 
-    // Construct the search request message
     let message = Message::new(
         Header::new(
-            user_identifier,
-            serial_number,
+            user_identifier.clone(),
+            serial_number.clone(),
             Timestamp::now()?,
         ),
         Payload::Download(
@@ -485,7 +484,7 @@ async fn download(
         ),
     );
 
-    // Send download message
+    // Send download request message
     {
         ftb.read().await.socket.tx_message(message).await?;
     }
@@ -500,8 +499,26 @@ async fn download(
 
     info!("download of {} succeeded!", &target_file);
 
-    // TODO: On download success, sent a download result message out
+    // On download success, sent a download result message out
+    let file_size: u64;
+    {
+        file_size = ftb.read().await.get_file_size(&target_file).await?;
+    }
+    let download_result = Message::new(
+        Header::new(
+            user_identifier,
+            serial_number,
+            Timestamp::now()?,
+        ),
+        Payload::Download(
+            DownloadMessage::Result {
+                logical_file_path: target_file.clone(),
+                file_size,
+            }
+        ),
+    );
 
+    ftb.read().await.socket.tx_message(download_result).await?;
 
     Ok(())
 }

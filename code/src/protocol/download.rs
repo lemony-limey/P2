@@ -14,7 +14,6 @@ pub enum DownloadMessage
     },
     Result
     {
-        response_id: ResponseID,
         logical_file_path: LogicalFilePath,
         file_size: u64,
     },
@@ -31,8 +30,8 @@ impl fmt::Display for DownloadMessage
             DownloadMessage::Request { identifier, logical_file_path } => {
                 write!(f, "request:{}:{}", identifier, logical_file_path)
             }
-            DownloadMessage::Result { response_id, logical_file_path, file_size } => {
-                write!(f, "result:{}:{}:{}", response_id, logical_file_path, file_size)
+            DownloadMessage::Result { logical_file_path, file_size } => {
+                write!(f, "result:{}:{}", logical_file_path, file_size)
             }
         }
     }

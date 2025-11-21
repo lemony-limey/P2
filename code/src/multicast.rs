@@ -4,6 +4,7 @@
 pub mod multicast_configuration;
 pub mod multicast_endpoint;
 
+use log::trace;
 use std::net::SocketAddr;
 use std::net::IpAddr;
 use anyhow::anyhow;
@@ -64,24 +65,24 @@ pub async fn beacon(
             )
         );
 
-        info!("created default stuff");
+        debug!("created defaults");
     }
 
     // The beacon will send an advertisement message once every [interval] milliseconds.
     let mut interval = tokio::time::interval(beacon_interval);
-    info!("tokio interval of {:#?} milliseconds", beacon_interval);
+    debug!("tokio interval of {:#?} milliseconds", beacon_interval);
     loop
     {
         // Pause to avoid excess traffic.
         interval.tick().await;
-        info!("interval tick registered");
+        trace!("interval tick registered");
 
-        info!("entered beacon loop");
+        trace!("entered beacon loop");
 
         // Get the next serial number from the configuration.
         let next_serial_number: NonZeroU64;
         next_serial_number = socket.endpoint_mut().config.get_next_serial_number();
-        info!("got serial number");
+        trace!("got serial number");
 
         // Header must be different each iteration because timestamp is constantly changing.
         let message = Message::new(
@@ -92,7 +93,7 @@ pub async fn beacon(
             ),
             payload.clone()
         );
-        info!("created message");
+        trace!("created message");
 
         // Send the beacon message.
         socket.tx_message(message).await?;

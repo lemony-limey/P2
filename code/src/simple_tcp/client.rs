@@ -27,13 +27,11 @@ pub async fn run_client(
     let target_file = File::open(&requested_file).await?;
 
     info!("connecting to {}...", server_addr);
-
-    let mut contents = tokio::fs::read(&requested_file).await?;
-
-    info!("contents size: {}", contents.len());
     let stream = TcpStream::connect(server_addr).await?;
 
-    info!("starting file tranfer");
+    info!("starting file transfer");
+    let mut contents = tokio::fs::read(&requested_file).await?;
+    info!("requested file: {:#?}; size: {} bytes", &requested_file, contents.len());
 
     // Write the file contents to the TCP stream
     let mut writer = BufWriter::new(stream);

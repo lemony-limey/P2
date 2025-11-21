@@ -27,6 +27,7 @@ mod tests
     };
     use std::num::{NonZeroU16, NonZeroU64};
     use crate::parser::message::parse_message;
+    use crate::protocol::download::DownloadMessage;
 
     fn generate_header(timestamp: &Timestamp) -> Header
     {
@@ -111,4 +112,23 @@ mod tests
             message,
         );
     }
+
+    // #[test]
+    // fn test_download_result()
+    // {
+    //     let timestamp = Timestamp::now().unwrap();
+    //     let message = Message::new(
+    //         Header::new(
+    //             user_identifier.clone(),
+    //             serial_number.clone(),
+    //             Timestamp::now()?,
+    //         ),
+    //         Payload::Download(
+    //             DownloadMessage::Request {
+    //                 identifier: target_identifier,
+    //                 logical_file_path: target_file.clone(),
+    //             },
+    //         ),
+    //     );
+    // }
 }

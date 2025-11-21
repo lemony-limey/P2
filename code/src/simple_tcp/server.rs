@@ -46,7 +46,8 @@ pub async fn run_server(
     info!("Waiting for connection...");
     tokio::io::stdout().flush().await?;
 
-    let new_file = File::create_new(&file_requested_from_client).await?;
+    // Create the file that data will be written to.
+    let _new_file = File::create_new(&file_requested_from_client).await?;
 
     // Wait for a connection
     let stream = loop
