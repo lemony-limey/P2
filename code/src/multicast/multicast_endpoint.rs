@@ -337,7 +337,7 @@ impl MulticastEndpoint
         match pkt_type
         {
             PacketType::Ipv4 => {
-                if let (Some(ref socket), Some(addr)) = (self.socket_v4, self.mcast_addr_v4)
+                if let (Some(socket), Some(addr)) = (&self.socket_v4, self.mcast_addr_v4)
                 {
                     socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv4, addr: {}", data.len(), addr);
@@ -350,7 +350,7 @@ impl MulticastEndpoint
                 }
             }
             PacketType::Ipv6 => {
-                if let (Some(ref socket), Some(addr)) = (self.socket_v6, self.mcast_addr_v6)
+                if let (Some(socket), Some(addr)) = (&self.socket_v6, self.mcast_addr_v6)
                 {
                     socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv6, addr: {}", data.len(), addr);
