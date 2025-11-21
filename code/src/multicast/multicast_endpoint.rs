@@ -324,6 +324,7 @@ impl MulticastEndpoint
                 {
                     socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv4, addr: {}", data.len(), addr);
+                    debug!("socket local addr: {:#?}", socket.local_addr());
                     Ok(true)
                 }
                 else
@@ -336,6 +337,7 @@ impl MulticastEndpoint
                 {
                     socket.send_to(data, addr).await?;
                     debug!("Sent {} bytes on IPv6, addr: {}", data.len(), addr);
+                    debug!("socket local addr: {:#?}", socket.local_addr());
                     Ok(true)
                 }
                 else
