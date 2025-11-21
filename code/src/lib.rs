@@ -3,7 +3,7 @@ use log::warn;
 use chrono::DateTime;
 use crate::protocol::identifier::Identifier;
 use chrono::{TimeDelta, Utc};
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, SocketAddr, SocketAddrV6};
 use std::ops::Add;
 use log::debug;
 use std::path::PathBuf;
@@ -11,7 +11,7 @@ use crate::soft_state::{FileMetadata, Node};
 use crate::protocol::message::{Message, Payload, ResponseID, Timestamp};
 use crate::protocol::message::Header;
 use crate::message_socket::MessageSocket;
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow};
 use std::sync::Arc;
 use std::time::Duration;
 use log::info;
@@ -77,15 +77,10 @@ pub async fn process_incoming_messages(
         {
             // If advertisement, put into storage
             Payload::Advertisement(advertisement_message) => {
-                let address = SocketAddr::new(
-                    IpAddr::V6(advertisement_message.ipv6_link_local_addr),
-                    advertisement_message.server_port.get(),
-                );
-
                 // Attempt to make the node, drop the packet if it fails.
                 let Ok(node) = Node::new(
                     header.identifier,
-                    address,
+                    advertisement_message.ipv6_link_local_addr,
                     advertisement_message.services,
                 ) else { continue; };
 
@@ -227,7 +222,7 @@ pub async fn process_incoming_messages(
 
                 // Get the address of the host requesting the file transfer.
                 let path_to_file: PathBuf;
-                let target_addr: SocketAddr;
+                let target_addr: SocketAddrV6;
                 // Lock the soft state cache.
                 {
                     let soft_state_handle = soft_state.read().await;

@@ -86,7 +86,7 @@ impl MulticastEndpoint
             {
                 if let Ok(link_local_addr) = socket.local_addr()
                 {
-                    if let IpAddr::V6(addr) = link_local_addr.ip()
+                    if let SocketAddr::V6(addr) = link_local_addr
                     {
                         endpoint.config.ip_addr6 = Some(addr);
                         info!("set ipv6 address: {}", addr)
@@ -223,21 +223,15 @@ impl MulticastEndpoint
 
         // Whichever packet is received first will be returned
         tokio::select! {
-            // packet_type = self.rx_ipv4(&mut buffer_1) => {
-            //     info!("rx_ipv4 returned");
-            //     info!("buffer contents: {:#?}", str::from_utf8(&buffer_1));
-            //     Ok((
-            //         packet_type.with_context(|| "")?,
-            //         parse_message(&buffer_1).with_context(|| "")?
-            //     ))
-            // },
+            packet_type = self.rx_ipv4(&mut buffer_1) => {
+                info!("rx_ipv4 returned");
+                info!("buffer contents: {:#?}", str::from_utf8(&buffer_1));
+                Ok((packet_type?, parse_message(&buffer_1)?))
+            },
             packet_type = self.rx_ipv6(&mut buffer_2) => {
                 info!("rx_ipv6 returned");
                 info!("buffer contents: {:#?}", str::from_utf8(&buffer_2));
-                Ok((
-                    packet_type.with_context(|| "")?,
-                    parse_message(&buffer_2).with_context(|| "")?,
-                ))
+                Ok((packet_type?, parse_message(&buffer_2)?))
             },
         }
     }

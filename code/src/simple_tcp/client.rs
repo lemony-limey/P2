@@ -1,6 +1,7 @@
 //! Simple IPv6 link-local client
 //! (based on Saleem's Java version)
 
+use std::net::SocketAddrV6;
 use log::info;
 use std::{
     net::{SocketAddr},
@@ -19,7 +20,7 @@ use tokio::io::BufReader;
 /// The client is the node which contains a file which has been requested for download by another
 /// node. The client will send the data to the server.
 pub async fn run_client(
-    server_addr: SocketAddr,
+    server_addr: SocketAddrV6,
     requested_file: PathBuf,
 ) -> anyhow::Result<()>
 {
@@ -32,11 +33,10 @@ pub async fn run_client(
 
     info!("starting file transfer");
     info!("requested file: {:#?}; size: {} bytes", &requested_file, target_file.metadata().await?.len());
+
+    // Copy the contents of the file to the TcpStream
     let mut file_reader = BufReader::new(target_file);
-
-    // Write the file contents to the TCP stream
     let mut writer = BufWriter::new(stream);
-
     let result = tokio::io::copy(&mut file_reader, &mut writer).await?;
     writer.flush().await?;
 

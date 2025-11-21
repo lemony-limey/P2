@@ -1,4 +1,5 @@
-use std::net::Ipv6Addr;
+use std::str::FromStr;
+use std::net::{Ipv6Addr, SocketAddrV6};
 use crate::{
     constants::PROTOCOL_DELIMITER_STR,
     parser::message::parse_delimiter,
@@ -16,20 +17,13 @@ use nom::{
     Parser,
 };
 use std::num::NonZeroU16;
-use crate::constants::{CLOSING_BRACKET_CHAR, OPENING_BRACKET_CHAR};
+use crate::constants::{CLOSING_SQUARE_BRACKET_CHAR, OPENING_SQUARE_BRACKET_CHAR};
 
 /// Parser for the Requirement 1 messages.
 pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, AdvertisementMessage>
 {
     // Get the IPv6 link local address
-    let (remaining_input, ipv6_addr) = parse_ipv6_addr(input)?;
-    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
-
-    // Get the server port number
-    let (remaining_input, server_port) = map_res(
-        digit1,
-        str::parse::<NonZeroU16>
-    ).parse(remaining_input)?;
+    let (remaining_input, (ipv6_addr, server_port)) = parse_ipv6_addr_and_port(input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     // Parse the services
@@ -37,28 +31,46 @@ pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, Advertis
 
     Ok((
         remaining_input,
-        AdvertisementMessage::new(ipv6_addr, server_port, services)
+        AdvertisementMessage::new(
+            ipv6_addr,
+            server_port,
+            services,
+        )
     ))
 }
 
-pub(crate) fn parse_ipv6_addr(input: &str) -> IResult<&str, Ipv6Addr>
+pub(crate) fn parse_ipv6_addr_and_port(input: &str) -> IResult<&str, (SocketAddrV6, NonZeroU16)>
 {
     // Parse the opening bracket
-    let (remaining_input, _opening_bracket) = char(OPENING_BRACKET_CHAR).parse(input)?;
+    let (remaining_input, _opening_bracket) = char(OPENING_SQUARE_BRACKET_CHAR).parse(input)?;
 
     // Parse the IP address in the middle up to the closing bracket (the closing bracket itself
-    // is not consumed).
+    // is not consumed yet).
     let (remaining_input, ipv6_addr) = map_res(
-        take_until1(")"),
+        take_until1("]"),
         str::parse::<Ipv6Addr>,
     ).parse(remaining_input)?;
 
-    // Parse the closing bracket
-    let (remaining_input, _opening_bracket) = char(CLOSING_BRACKET_CHAR).parse(remaining_input)?;
+    // Parse the closing bracket and following delimiter
+    let (remaining_input, _opening_bracket) = char(CLOSING_SQUARE_BRACKET_CHAR).parse(remaining_input)?;
+    let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
+
+    // Get the server port number and parse the delimiter
+    let (remaining_input, server_port) = map_res(
+        digit1,
+        str::parse::<NonZeroU16>
+    ).parse(remaining_input)?;
+
+    // Create a SocketAddrV6 from the IP and port number
+    let Ok(socket_addr_v6) = SocketAddrV6::from_str(
+        &format!("[{}]:{}", ipv6_addr, server_port)
+    ) else {
+        return Err(nom::Err::Failure(nom::error::Error { input, code: ErrorKind::Fail }));
+    };
 
     Ok((
         remaining_input,
-        ipv6_addr,
+        (socket_addr_v6, server_port),
     ))
 }
 

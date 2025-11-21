@@ -46,10 +46,6 @@ pub async fn run_server(
     info!("Waiting for connection...");
     tokio::io::stdout().flush().await?;
 
-    // Create the file that data will be written to.
-    let new_file = File::create_new(&file_requested_from_client).await?;
-    let mut file_writer = BufWriter::new(new_file);
-
     // Wait for a connection
     let stream = loop
     {
@@ -76,11 +72,15 @@ pub async fn run_server(
     info!("listener dropped");
     tokio::io::stdout().flush().await?;
 
-    // Read the contents of the stream into the file.
-    let mut stream_reader = BufReader::new(stream);
 
+    // Create the file that data will be written to.
+    let new_file = File::create_new(&file_requested_from_client).await?;
+
+    // Copy the contents of the TcpStream into the file.
+    let mut stream_reader = BufReader::new(stream);
+    let mut file_writer = BufWriter::new(new_file);
     let bytes_received = tokio::io::copy(&mut stream_reader, &mut file_writer).await?;
-    stream_reader.flush().await?;
+    file_writer.flush().await?;
 
     info!("<Closing connection>");
     tokio::io::stdout().flush().await?;

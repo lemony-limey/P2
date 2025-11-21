@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
-use std::net::SocketAddr;
+use std::net::{SocketAddr, SocketAddrV6};
 use std::ops::Add;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -156,7 +156,7 @@ impl FTBSoftState
 pub struct Node
 {
     pub identifier: Identifier,
-    pub address: SocketAddr,
+    pub address: SocketAddrV6,
     pub services: Services,
     pub files: HashMap<LogicalFilePath, FileMetadata>,
     pub ttl: DateTime<Utc>,
@@ -193,7 +193,7 @@ impl Node
 {
     pub fn new(
         identifier: Identifier,
-        address: SocketAddr,
+        address: SocketAddrV6,
         services: Services,
     ) -> anyhow::Result<Self>
     {

@@ -4,12 +4,12 @@ use std::{
     num::NonZeroU16,
 };
 use std::marker::PhantomData;
-use std::net::Ipv6Addr;
+use std::net::{Ipv6Addr, SocketAddrV6};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AdvertisementMessage
 {
-    pub ipv6_link_local_addr: Ipv6Addr,
+    pub ipv6_link_local_addr: SocketAddrV6,
     pub server_port: NonZeroU16,
     pub services:    Services,
     // Force the new() constructor to be used.
@@ -20,7 +20,7 @@ pub struct AdvertisementMessage
 impl AdvertisementMessage
 {
     pub fn new(
-        ipv6_link_local_addr: Ipv6Addr,
+        ipv6_link_local_addr: SocketAddrV6,
         server_port: NonZeroU16,
         services: Services
     ) -> Self
@@ -41,7 +41,8 @@ impl fmt::Display for AdvertisementMessage
     {
         write!(
             f,
-            "advertisement:({}):{}:{}",
+            "advertisement:[{}%{}]:{}:{}",
+            self.ipv6_link_local_addr.to_string(),
             self.ipv6_link_local_addr,
             self.server_port,
             self.services,

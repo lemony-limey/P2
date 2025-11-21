@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::num::NonZeroU16;
 use anyhow;
@@ -42,11 +43,11 @@ pub async fn main() -> anyhow::Result<()>
     // build SocketAddr taking into account IPv6 link-local scope ids
     let addr = match parse_ipv6_with_scope(&server, port)
     {
-        Ok(a) => a,
-        Err(e) => {
-            eprintln!("Could not resolve address: {}", e);
+        Ok(SocketAddr::V6(a)) => a,
+        _ => {
+            eprintln!("Could not resolve address");
             std::process::exit(1);
-        }
+        },
     };
 
     let result = run_client(addr, PathBuf::from(file_name)).await;

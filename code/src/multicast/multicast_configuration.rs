@@ -6,7 +6,7 @@ use log::debug;
 use log::info;
 use std::num::NonZeroU64;
 use serde::Deserialize;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV6};
 use anyhow::Context;
 use crate::protocol::serial_number::SerialNumberGenerator;
 
@@ -33,7 +33,7 @@ pub struct MulticastConfiguration
     #[serde(skip)]
     pub ip_addr4: Option<Ipv4Addr>,
     #[serde(skip)]
-    pub ip_addr6: Option<Ipv6Addr>,
+    pub ip_addr6: Option<SocketAddrV6>,
     #[serde(skip)]
     pub username: String,
     #[serde(skip)]
