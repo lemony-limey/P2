@@ -26,6 +26,7 @@ mod tests
         },
     };
     use std::num::{NonZeroU16, NonZeroU64};
+    use crate::logical_file_path::LogicalFilePath;
     use crate::parser::message::parse_message;
     use crate::protocol::download::DownloadMessage;
 
@@ -113,22 +114,40 @@ mod tests
         );
     }
 
-    // #[test]
-    // fn test_download_result()
-    // {
-    //     let timestamp = Timestamp::now().unwrap();
-    //     let message = Message::new(
-    //         Header::new(
-    //             user_identifier.clone(),
-    //             serial_number.clone(),
-    //             Timestamp::now()?,
-    //         ),
-    //         Payload::Download(
-    //             DownloadMessage::Request {
-    //                 identifier: target_identifier,
-    //                 logical_file_path: target_file.clone(),
-    //             },
-    //         ),
-    //     );
-    // }
+    #[test]
+    fn test_download_result()
+    {
+        let timestamp = Timestamp::now().unwrap();
+        let message = Message::new(
+            generate_header(&timestamp),
+            Payload::Download(
+                DownloadMessage::Request {
+                    identifier: Identifier::new(
+                        UID("uid2".to_string()),
+                        FQDN("cs.st-andrews.ac.uk".to_string())
+                    ),
+                    logical_file_path: LogicalFilePath::new("/dir1/text1-1.txt".to_string()),
+                },
+            ),
+        );
+
+        // Test conversion from message object to string
+        let message_string = format!(
+            ":uid@cs.st-andrews.ac.uk:1:{}:download:request:uid2@cs.st-andrews.ac.uk:/dir1/text1-1.txt:",
+            timestamp
+        );
+        assert_eq!(
+            message.to_string(),
+            message_string,
+        );
+
+        let message_bytes = BytesMut::from(message_string.as_str());
+        let parsed_message = parse_message(&message_bytes).expect("parsing failed");
+
+        // Test conversion from string to message object
+        assert_eq!(
+            parsed_message,
+            message,
+        );
+    }
 }
