@@ -123,7 +123,7 @@ impl MulticastEndpoint
 
         info!("IPv4 mcast addr v4 configured: {:#?}", self.mcast_addr_v6);
 
-        socket.set_nonblocking(true)?;
+        // socket.set_nonblocking(true)?;
 
         // Convert to a tokio::net::UdpSocket
         let socket: std::net::UdpSocket = socket.into();
@@ -153,11 +153,11 @@ impl MulticastEndpoint
 
         info!("IPv6 mcast addr v6 configured: {:#?}", self.mcast_addr_v6);
 
-        socket.set_nonblocking(true)?;
+        // socket.set_nonblocking(true)?;
 
         // Convert to a tokio::net::UdpSocket
-        let socket: std::net::UdpSocket = socket.into();
-        self.socket_v6 = Some(Arc::new(UdpSocket::from_std(socket)?));
+        // let socket: std::net::UdpSocket = socket.into();
+        self.socket_v6 = Some(Arc::new(UdpSocket::from_std(socket.into())?));
 
         debug!("IPv6 socket configured: {}", self.config.m_addr6);
         Ok(())
