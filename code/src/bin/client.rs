@@ -48,5 +48,9 @@ pub async fn main() -> anyhow::Result<()>
         }
     };
 
-    run_client(addr, PathBuf::from(file_name)).await
+    let result = run_client(addr, PathBuf::from(file_name)).await;
+
+    println!("result: {:#?}", result);
+
+    Ok(())
 }
