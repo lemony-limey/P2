@@ -202,20 +202,21 @@ impl MulticastEndpoint
 
     pub async fn rx(&self) -> anyhow::Result<(PacketType, Message)>
     {
+        info!("rx called");
         let mut buffer_1 = BytesMut::with_capacity(self.config.msg_size);
         let mut buffer_2 = BytesMut::with_capacity(self.config.msg_size);
 
         // Whichever packet is received first will be returned
-        Ok(
-            tokio::select! {
-                packet_type = self.rx_ipv4(&mut buffer_1) => {
-                    (packet_type?, parse_message(&buffer_1)?)
-                },
-                packet_type = self.rx_ipv6(&mut buffer_2) => {
-                    (packet_type?, parse_message(&buffer_2)?)
-                },
-            }
-        )
+        tokio::select! {
+            packet_type = self.rx_ipv4(&mut buffer_1) => {
+                info!("rx_ipv4 returned");
+                Ok((packet_type?, parse_message(&buffer_1)?))
+            },
+            packet_type = self.rx_ipv6(&mut buffer_2) => {
+                info!("rx_ipv6 returned");
+                Ok((packet_type?, parse_message(&buffer_2)?))
+            },
+        }
     }
 
     /// Receives a multicast packet.
@@ -227,6 +228,8 @@ impl MulticastEndpoint
     /// the type of packet received (IPv4, IPv6, or None)
     async fn rx_ipv4(&self, buffer: &mut BytesMut) -> anyhow::Result<PacketType>
     {
+        info!("rx_ipv4 called");
+
         // try IPv4
         if let Some(socket) = &self.socket_v4
         {
@@ -251,6 +254,8 @@ impl MulticastEndpoint
 
     async fn rx_ipv6(&self, buffer: &mut BytesMut) -> anyhow::Result<PacketType>
     {
+        info!("rx_ipv6 called");
+
         // try IPv6
         if let Some(socket) = &self.socket_v6
         {
