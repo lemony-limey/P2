@@ -12,7 +12,7 @@ use std::{
 use std::path::PathBuf;
 use log::{info, error};
 use tokio::net::TcpListener;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncWriteExt};
 
 /// The server is the node requesting the download of the file from another node.
 /// It will receive the file from the client.
@@ -47,7 +47,7 @@ pub async fn run_server(
     tokio::io::stdout().flush().await?;
 
     // Create the file that data will be written to.
-    let mut new_file = File::create_new(&file_requested_from_client).await?;
+    let new_file = File::create_new(&file_requested_from_client).await?;
     let mut file_writer = BufWriter::new(new_file);
 
     // Wait for a connection
@@ -78,12 +78,9 @@ pub async fn run_server(
 
     // Read the contents of the stream into the file.
     let mut stream_reader = BufReader::new(stream);
-    // let mut buffer = Vec::new();
 
     let bytes_received = tokio::io::copy(&mut stream_reader, &mut file_writer).await?;
-    // let bytes_received = reader.read_to_end(&mut buffer).await?;
     stream_reader.flush().await?;
-    // tokio::fs::write(file_requested_from_client, buffer).await?;
 
     info!("<Closing connection>");
     tokio::io::stdout().flush().await?;
