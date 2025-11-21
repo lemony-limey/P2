@@ -45,8 +45,11 @@ pub async fn run_client(
 
     // read response
 
-    let result = writer.write(&mut contents).await?;
+    let result = writer.write(&mut contents).await;
     writer.flush().await?;
+    println!("write_result: {:#?}", &result);
+    tokio::io::stdout().flush().await?;
+
     // loop
     // {
     //     let mut buffer = Vec::new();

@@ -90,11 +90,16 @@ pub async fn run_server(
     // Read the contents of the stream into the file.
     let mut reader = BufReader::new(stream);
     let mut buffer = Vec::new();
-    let bytes_received = reader.read_to_end(&mut buffer).await?;
-    tokio::fs::write(file_requested_from_client, buffer).await?;
+    let bytes_received = reader.read_to_end(&mut buffer).await;
+    println!("bytes_received: {:#?}", &bytes_received);
+    tokio::io::stdout().flush().await?;
+
+    let write_result = tokio::fs::write(file_requested_from_client, buffer).await;
+    println!("write_result: {:#?}", &write_result);
+    tokio::io::stdout().flush().await?;
 
     // info!("<Closing connection>");
     println!("<Closing connection>");
     tokio::io::stdout().flush().await?;
-    Ok(bytes_received as u64)
+    Ok(bytes_received? as u64)
 }
