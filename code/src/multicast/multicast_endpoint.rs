@@ -233,7 +233,7 @@ impl MulticastEndpoint
         tokio::select! {
             result = self.rx_ipv4(&mut buffer_1) => {
                 info!("rx_ipv4 returned");
-                info!("buffer contents: {:#?}", str::from_utf8(&buffer_1));
+                info!("buffer size: {}", &buffer_1.len());
 
                 return match result?
                 {
@@ -246,7 +246,7 @@ impl MulticastEndpoint
             },
             result = self.rx_ipv6(&mut buffer_2) => {
                 info!("rx_ipv6 returned");
-                info!("buffer contents: {:#?}", str::from_utf8(&buffer_2));
+                info!("buffer contents: {}", &buffer_2.len());
 
                 return match result?
                 {
