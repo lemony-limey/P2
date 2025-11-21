@@ -19,12 +19,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 /// It will receive the file from the client.
 pub async fn run_server(
     file_requested_from_client: PathBuf,
-) -> anyhow::Result<()>
+) -> anyhow::Result<u64>
 {
-    // env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-    //     .format_timestamp_millis()
-    //     .init();
-    
     info!("Starting TCP server");
 
     let Some(port) = simple_tcp::get_uid_port() else { return Err(anyhow!("oh no")) };
@@ -48,7 +44,7 @@ pub async fn run_server(
 
     let new_file = File::create_new(file_requested_from_client).await?;
     let mut file_writer = BufWriter::new(new_file);
-    let mut total_bytes_received = 0;
+    let mut total_bytes_received: u64 = 0;
 
     // Wait for a connection
     let stream = loop
@@ -86,7 +82,7 @@ pub async fn run_server(
             }
             Ok(bytes_read) => {
                 let received = String::from_utf8_lossy(&buffer[..bytes_read]);
-                total_bytes_received += bytes_read;
+                total_bytes_received += bytes_read as u64;
                 info!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
 
                 // Write to file
@@ -99,11 +95,12 @@ pub async fn run_server(
             }
             Err(e) => {
                 error!("Error reading from client: {}", e);
-                break;
+                info!("<Closing connection>");
+                return Err(anyhow!(e));
             }
         }
     }
     
     info!("<Closing connection>");
-    Ok(())
+    Ok(total_bytes_received)
 }

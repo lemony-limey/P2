@@ -4,7 +4,7 @@ use std::fmt::{self, Formatter};
 use crate::logical_file_path::LogicalFilePath;
 
 // R3 - Download
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum DownloadMessage
 {
     Request

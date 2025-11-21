@@ -3,7 +3,7 @@ use std::fmt::{self, Formatter};
 use crate::logical_file_path::LogicalFilePath;
 
 // R2 - Search
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SearchMessage
 {
     Request

@@ -5,7 +5,7 @@ use anyhow::Context;
 use std::num::{NonZeroU64, ParseIntError};
 use std::str::FromStr;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SerialNumber(pub NonZeroU64);
 
 impl fmt::Display for SerialNumber

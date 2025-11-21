@@ -6,12 +6,14 @@ use std::{
 use std::marker::PhantomData;
 use std::net::Ipv6Addr;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AdvertisementMessage
 {
     pub ipv6_link_local_addr: Ipv6Addr,
     pub server_port: NonZeroU16,
     pub services:    Services,
+    // Force the new() constructor to be used.
+    // https://rust-unofficial.github.io/too-many-lists/index.html
     _boo: PhantomData<usize>
 }
 

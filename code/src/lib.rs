@@ -1,3 +1,4 @@
+use log::error;
 use log::warn;
 use chrono::DateTime;
 use crate::protocol::identifier::Identifier;
@@ -10,7 +11,7 @@ use crate::soft_state::{FileMetadata, Node};
 use crate::protocol::message::{Message, Payload, ResponseID, Timestamp};
 use crate::protocol::message::Header;
 use crate::message_socket::MessageSocket;
-use anyhow::{anyhow};
+use anyhow::{anyhow, Context};
 use std::sync::Arc;
 use std::time::Duration;
 use log::info;
@@ -108,47 +109,57 @@ pub async fn process_incoming_messages(
 
                 // If there are no matches, ignore the request
                 // Else, send a search response out for every match found.
-                // TODO: Perhaps introduce rate limiting?
                 for file_match in matches
                 {
-                    let serial_number: SerialNumber;
-                    let uid: UID;
-                    let fqdn: FQDN;
-                    let file_size: u64;
-                    // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
-                    {
-                        let mut ftb_handle = ftb.write().await;
-                        serial_number = SerialNumber(ftb_handle.config.next_search_serial_number());
-                    }
-                    {
-                        let ftb_handle = ftb.read().await;
-                        uid = UID(ftb_handle.config.uid.to_string());
-                        fqdn = FQDN(ftb_handle.config.fqdn.to_string());
-                        file_size = ftb_handle.get_file_size(&file_match).await?;
-                    }
+                    let ftb = ftb.clone();
+                    let header_identifier = header.identifier.clone();
+                    let header_serial_number = header.serial_number.clone();
+                    let socket = socket.clone();
 
-                    let search_response = Message::new(
-                        Header::new(
-                            Identifier::new(
-                                uid,
-                                fqdn,
-                            ),
-                            serial_number,
-                            Timestamp::now()?,
-                        ),
-                        Payload::Search(
-                            SearchMessage::Result {
-                                response_id: ResponseID::new(
-                                    header.identifier.clone(),
-                                    header.serial_number.clone(),
+                    // Spawn a new task for responding so that tokio::time::sleep does not stop
+                    // the whole listener thread.
+                    tokio::spawn(async move {
+                        let serial_number: SerialNumber;
+                        let uid: UID;
+                        let fqdn: FQDN;
+                        let file_size: u64;
+                        // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
+                        {
+                            let mut ftb_handle = ftb.write().await;
+                            serial_number = SerialNumber(ftb_handle.config.next_search_serial_number());
+                        }
+                        {
+                            let ftb_handle = ftb.read().await;
+                            uid = UID(ftb_handle.config.uid.to_string());
+                            fqdn = FQDN(ftb_handle.config.fqdn.to_string());
+                            file_size = ftb_handle.get_file_size(&file_match).await?;
+                        }
+
+                        let search_response = Message::new(
+                            Header::new(
+                                Identifier::new(
+                                    uid,
+                                    fqdn,
                                 ),
-                                file_path: file_match,
-                                file_size,
-                            },
-                        ),
-                    );
+                                serial_number,
+                                Timestamp::now()?,
+                            ),
+                            Payload::Search(
+                                SearchMessage::Result {
+                                    response_id: ResponseID::new(
+                                        header_identifier,
+                                        header_serial_number,
+                                    ),
+                                    file_path: file_match,
+                                    file_size,
+                                },
+                            ),
+                        );
 
-                    socket.tx_message(search_response).await?;
+                        // As per Multicast DNS (RFC 6762), Section 6.3
+                        tokio::time::sleep(Duration::from_millis(rand::random_range(20..=120))).await;
+                        socket.tx_message(search_response).await
+                    });
                 }
             },
             // If this is a response to a search message initiated by the current user, add the
@@ -245,11 +256,14 @@ pub async fn process_incoming_messages(
                 // Start TCP client connection and attempt transfer.
                 info!("starting TCP connection");
 
-                // TODO: If download fails, remove the server node from the cache.
-                run_client(
+                if let Err(e) = run_client(
                     target_addr,
                     path_to_file,
-                ).await?
+                ).await
+                {
+                    error!("download error: {}", e);
+                    continue;
+                }
             },
             // A host is indicating to us that another host has successfully received a
             // download.

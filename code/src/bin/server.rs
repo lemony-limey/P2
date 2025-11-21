@@ -18,5 +18,7 @@ async fn main() -> anyhow::Result<()>
         }
     };
 
-    run_server(PathBuf::from(file_name)).await
+    let _ = run_server(PathBuf::from(file_name)).await;
+
+    Ok(())
 }

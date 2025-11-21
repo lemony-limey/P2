@@ -20,12 +20,13 @@ use std::{
 };
 
 /// General Message Format
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Message
 {
     pub header:  Header,
     pub payload: Payload,
     // Force the new() constructor to be used.
+    // https://rust-unofficial.github.io/too-many-lists/index.html
     _boo: PhantomData<usize>,
 }
 
@@ -51,13 +52,14 @@ impl fmt::Display for Message
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Header
 {
     pub identifier:    Identifier,
     pub serial_number: SerialNumber,
     pub timestamp:     Timestamp,
     // Force the new() constructor to be used.
+    // https://rust-unofficial.github.io/too-many-lists/index.html
     _boo: PhantomData<usize>,
 }
 
@@ -88,7 +90,7 @@ impl fmt::Display for Header
 }
 
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Timestamp
 {
     pub year:         FourDigitNumber,
@@ -162,7 +164,7 @@ impl fmt::Display for Timestamp
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Payload
 {
     Advertisement(AdvertisementMessage),
@@ -194,7 +196,7 @@ impl fmt::Display for Payload
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResponseID
 {
     identifier:    Identifier,

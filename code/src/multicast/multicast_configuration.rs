@@ -118,6 +118,9 @@ impl MulticastConfiguration
             self.ip_addr4 = Some(ip);
         }
 
+        // N.B, the local_ip_address::local_ipv6() function did not appear to
+        // work on the linux lab machines during testing, so the IPv6 address
+        // is set using the local value of the UDP socket for multicast instead.
         // grab link-local IPv6 address
         // let local_ipv6_result = local_ip_address::local_ipv6();
         // if let Ok(IpAddr::V6(ip)) = local_ipv6_result

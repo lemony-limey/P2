@@ -4,7 +4,7 @@ use std::{
 };
 
 /// This makes it harder to put the boolean values in the wrong way round.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct SearchAvailability(pub bool);
 
 impl fmt::Display for SearchAvailability
@@ -15,7 +15,7 @@ impl fmt::Display for SearchAvailability
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct DownloadAvailability(pub bool);
 
 impl fmt::Display for DownloadAvailability
@@ -26,12 +26,13 @@ impl fmt::Display for DownloadAvailability
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Services
 {
     pub search:   SearchAvailability,
     pub download: DownloadAvailability,
-    // Force the use of the new() constructor.
+    // Force the new() constructor to be used.
+    // https://rust-unofficial.github.io/too-many-lists/index.html
     _boo: PhantomData<usize>,
 }
 
