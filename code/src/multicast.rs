@@ -55,7 +55,7 @@ pub async fn beacon(
         );
         payload = Payload::Advertisement(
             AdvertisementMessage::new(
-                *ipv6_addr,
+                ipv6_addr.clone(),
                 NonZeroU16::new(socket.endpoint().config.m_port)
                     .with_context(|| "beacon(): invalid port number")?,
                 Services::new(
@@ -96,7 +96,7 @@ pub async fn beacon(
         trace!("created message");
 
         // Send the beacon message.
-        socket.tx_message(message).await?;
-        info!("sent beacon {}", next_serial_number);
+        socket.tx_message(message.clone()).await?;
+        info!("sent beacon {}; {}", next_serial_number, message);
     }
 }
