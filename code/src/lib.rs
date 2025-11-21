@@ -55,7 +55,10 @@ pub async fn process_incoming_messages(
         match result
         {
             // Await next packet
-            (PacketType::None, None) => { continue },
+            (PacketType::None, None) => {
+                info!("None, None");
+                continue;
+            },
             (PacketType::Ipv4, Some(received_message)) => {
                 info!("->rx4 {}", &received_message);
                 (header, payload) = (received_message.header, received_message.payload);

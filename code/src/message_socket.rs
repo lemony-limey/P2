@@ -53,6 +53,8 @@ impl MessageSocket
             }
         }
 
+        info!("packet type: {}; message: {:#?}", packet_type, message);
+
         Ok((packet_type, message))
     }
 

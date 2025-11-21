@@ -1,6 +1,7 @@
 //! Multicast networking functionality wrapper using socket2
 //! Rust version based on saleem's original Java
 
+use std::fmt;
 use crate::{
     protocol::message::{Message},
     parser::message::parse_message,
@@ -14,6 +15,7 @@ use std::{
     sync::Arc,
     time::Duration
 };
+use std::fmt::Formatter;
 use bytes::BytesMut;
 use tokio::{
     net::UdpSocket,
@@ -26,6 +28,19 @@ pub enum PacketType
     None,
     Ipv4,
     Ipv6,
+}
+
+impl fmt::Display for PacketType
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        match self
+        {
+            PacketType::None => write!(f, "None"),
+            PacketType::Ipv4 => write!(f, "IPv4"),
+            PacketType::Ipv6 => write!(f, "IPv6"),
+        }
+    }
 }
 
 /// dual-stack multicast communication endpoint wrapper
