@@ -20,15 +20,14 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 /// It will receive the file from the client.
 pub async fn run_server(
     file_requested_from_client: PathBuf,
-    file_size: u64,
 ) -> anyhow::Result<u64>
 {
-    // info!("Starting TCP server");
+    info!("Starting TCP server");
     println!("Starting TCP server");
     tokio::io::stdout().flush().await?;
 
     let Some(port) = simple_tcp::get_uid_port() else { return Err(anyhow!("oh no")) };
-    // info!("Using port: {}", port);
+    info!("Using port: {}", port);
     println!("Using port: {}", port);
     tokio::io::stdout().flush().await?;
 
@@ -36,7 +35,7 @@ pub async fn run_server(
     // The system will handle the interface selection
     let bind_addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), port.get());
     
-    // info!("Binding to: {}", bind_addr);
+    info!("Binding to: {}", bind_addr);
     println!("Binding to: {}", bind_addr);
     tokio::io::stdout().flush().await?;
     let listener = TcpListener::bind(bind_addr).await?;
@@ -44,14 +43,14 @@ pub async fn run_server(
     // Log the actual link-local address for reference
     if let Ok((ipv6_addr, interface)) = simple_tcp::get_link_local_ipv6() 
     {
-        // info!("Link-local IPv6 available: {} on interface {}", ipv6_addr, interface);
-        // info!("Clients should connect to: [{}%{}]:{}", ipv6_addr, interface, port);
+        info!("Link-local IPv6 available: {} on interface {}", ipv6_addr, interface);
+        info!("Clients should connect to: [{}%{}]:{}", ipv6_addr, interface, port);
         println!("Link-local IPv6 available: {} on interface {}", ipv6_addr, interface);
         println!("Clients should connect to: [{}%{}]:{}", ipv6_addr, interface, port);
         tokio::io::stdout().flush().await?;
     }
     
-    // info!("Waiting for connection...");
+    info!("Waiting for connection...");
     println!("Waiting for connection...");
     tokio::io::stdout().flush().await?;
 
@@ -63,7 +62,7 @@ pub async fn run_server(
         match listener.accept().await
         {
             Ok((stream, addr)) => {
-                // info!("New connection from: {}", addr);
+                info!("New connection from: {}", addr);
                 println!("New connection from: {}", addr);
                 tokio::io::stdout().flush().await?;
                 break stream;
@@ -72,7 +71,7 @@ pub async fn run_server(
                 // No incoming connection, keep trying
             }
             Err(e) => {
-                // error!("Error accepting connection: {}", e);
+                error!("Error accepting connection: {}", e);
                 println!("Error accepting connection: {}", e);
                 tokio::io::stdout().flush().await?;
                 return Err(e.into());
@@ -82,32 +81,19 @@ pub async fn run_server(
 
     // No longer need to accept connections
     drop(listener);
-    // info!("listener dropped");
+    info!("listener dropped");
     println!("listener dropped");
     tokio::io::stdout().flush().await?;
-
-    let mut total_bytes_received = 0;
 
     // Read the contents of the stream into the file.
     let mut reader = BufReader::new(stream);
     let mut buffer = Vec::new();
+    let bytes_received = reader.read_to_end(&mut buffer).await?;
+    reader.flush().await?;
+    tokio::fs::write(file_requested_from_client, buffer).await?;
 
-    while total_bytes_received < file_size
-    {
-        let bytes_received = reader.read_to_end(&mut buffer).await?;
-        reader.flush().await?;
-        println!("bytes_received: {:#?}", &bytes_received);
-        tokio::io::stdout().flush().await?;
-
-        total_bytes_received += bytes_received as u64
-    }
-
-    let write_result = tokio::fs::write(file_requested_from_client, buffer).await;
-    println!("write_result: {:#?}", &write_result);
-    tokio::io::stdout().flush().await?;
-
-    // info!("<Closing connection>");
+    info!("<Closing connection>");
     println!("<Closing connection>");
     tokio::io::stdout().flush().await?;
-    Ok(total_bytes_received)
+    Ok(bytes_received as u64)
 }

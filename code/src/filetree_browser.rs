@@ -491,7 +491,7 @@ async fn download(
     }
 
     // Start server and report what happens
-    if let Err(e) = run_server(target_file_absolute_path, 1).await
+    if let Err(e) = run_server(target_file_absolute_path).await
     {
         error!("download of {} failed", &target_file);
         error!("error: {}", &e);

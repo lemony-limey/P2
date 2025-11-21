@@ -50,7 +50,6 @@ pub async fn main() -> anyhow::Result<()>
     };
 
     let result = run_client(addr, PathBuf::from(file_name)).await;
-
     println!("result: {:#?}", result);
     tokio::io::stdout().flush().await?;
 
