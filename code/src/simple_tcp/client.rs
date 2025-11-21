@@ -33,6 +33,9 @@ pub async fn run_client(
 
     println!("connecting to {}...", server_addr);
 
+    let mut contents = tokio::fs::read(&requested_file).await?;
+
+    println!("contents size: {}", contents.len());
     let stream = TcpStream::connect(server_addr).await?;
     let mut total_bytes_sent: usize = 0;
 
@@ -41,7 +44,7 @@ pub async fn run_client(
     let mut writer = BufWriter::new(stream);
 
     // read response
-    let mut contents = tokio::fs::read(&requested_file).await?;
+
     let result = writer.write(&mut contents).await?;
     writer.flush().await?;
     // loop
