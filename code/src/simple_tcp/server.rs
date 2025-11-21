@@ -22,15 +22,18 @@ pub async fn run_server(
 ) -> anyhow::Result<u64>
 {
     info!("Starting TCP server");
+    println!("Starting TCP server");
 
     let Some(port) = simple_tcp::get_uid_port() else { return Err(anyhow!("oh no")) };
     info!("Using port: {}", port);
-    
+    println!("Using port: {}", port);
+
     // For link-local binding, we need to bind to the unspecified address
     // The system will handle the interface selection
     let bind_addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), port.get());
     
     info!("Binding to: {}", bind_addr);
+    println!("Binding to: {}", bind_addr);
     let listener = TcpListener::bind(bind_addr).await?;
 
     // Log the actual link-local address for reference
@@ -38,9 +41,12 @@ pub async fn run_server(
     {
         info!("Link-local IPv6 available: {} on interface {}", ipv6_addr, interface);
         info!("Clients should connect to: [{}%{}]:{}", ipv6_addr, interface, port);
+        println!("Link-local IPv6 available: {} on interface {}", ipv6_addr, interface);
+        println!("Clients should connect to: [{}%{}]:{}", ipv6_addr, interface, port);
     }
     
     info!("Waiting for connection...");
+    println!("Waiting for connection...");
 
     let new_file = File::create_new(file_requested_from_client).await?;
     let mut file_writer = BufWriter::new(new_file);
@@ -53,6 +59,7 @@ pub async fn run_server(
         {
             Ok((stream, addr)) => {
                 info!("New connection from: {}", addr);
+                println!("New connection from: {}", addr);
                 break stream;
             }
             Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -60,6 +67,7 @@ pub async fn run_server(
             }
             Err(e) => {
                 error!("Error accepting connection: {}", e);
+                println!("Error accepting connection: {}", e);
                 return Err(e.into());
             }
         }
@@ -67,6 +75,8 @@ pub async fn run_server(
 
     // No longer need to accept connections
     drop(listener);
+    info!("listener dropped");
+    println!("listener dropped");
 
     let mut reader = BufReader::new(stream);
 
@@ -78,12 +88,14 @@ pub async fn run_server(
         {
             Ok(0) => {
                 info!("<Connection closed by client>");
+                println!("<Connection closed by client>");
                 break;
             }
             Ok(bytes_read) => {
                 let received = String::from_utf8_lossy(&buffer[..bytes_read]);
                 total_bytes_received += bytes_read as u64;
                 info!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
+                println!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
 
                 // Write to file
                 file_writer.write(&mut buffer).await?;
@@ -96,11 +108,14 @@ pub async fn run_server(
             Err(e) => {
                 error!("Error reading from client: {}", e);
                 info!("<Closing connection>");
+                println!("Error reading from client: {}", e);
+                println!("<Closing connection>");
                 return Err(anyhow!(e));
             }
         }
     }
     
     info!("<Closing connection>");
+    println!("<Closing connection>");
     Ok(total_bytes_received)
 }
