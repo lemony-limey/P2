@@ -42,8 +42,8 @@ impl fmt::Display for AdvertisementMessage
         write!(
             f,
             "advertisement:[{}%{}]:{}:{}",
-            self.ipv6_link_local_addr.to_string(),
-            self.ipv6_link_local_addr,
+            self.ipv6_link_local_addr.ip(),
+            self.ipv6_link_local_addr.scope_id(),
             self.server_port,
             self.services,
         )
