@@ -37,14 +37,12 @@ pub async fn run_client(
 
     println!("contents size: {}", contents.len());
     let stream = TcpStream::connect(server_addr).await?;
-    let mut total_bytes_sent: usize = 0;
 
     println!("connected! sending hello...\n");
 
+
+    // Write the file contents to the TCP stream
     let mut writer = BufWriter::new(stream);
-
-    // read response
-
     let result = writer.write(&mut contents).await;
     writer.flush().await?;
     println!("write_result: {:#?}", &result);

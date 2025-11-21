@@ -20,6 +20,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 /// It will receive the file from the client.
 pub async fn run_server(
     file_requested_from_client: PathBuf,
+    file_size: u64,
 ) -> anyhow::Result<u64>
 {
     // info!("Starting TCP server");
@@ -55,8 +56,6 @@ pub async fn run_server(
     tokio::io::stdout().flush().await?;
 
     let new_file = File::create_new(&file_requested_from_client).await?;
-    let mut file_writer = BufWriter::new(new_file);
-    let mut total_bytes_received: u64 = 0;
 
     // Wait for a connection
     let stream = loop
@@ -87,13 +86,21 @@ pub async fn run_server(
     println!("listener dropped");
     tokio::io::stdout().flush().await?;
 
+    let mut total_bytes_received = 0;
+
     // Read the contents of the stream into the file.
     let mut reader = BufReader::new(stream);
     let mut buffer = Vec::new();
-    let bytes_received = reader.read_to_end(&mut buffer).await;
-    reader.flush().await?;
-    println!("bytes_received: {:#?}", &bytes_received);
-    tokio::io::stdout().flush().await?;
+
+    while total_bytes_received < file_size
+    {
+        let bytes_received = reader.read_to_end(&mut buffer).await?;
+        reader.flush().await?;
+        println!("bytes_received: {:#?}", &bytes_received);
+        tokio::io::stdout().flush().await?;
+
+        total_bytes_received += bytes_received as u64
+    }
 
     let write_result = tokio::fs::write(file_requested_from_client, buffer).await;
     println!("write_result: {:#?}", &write_result);
@@ -102,5 +109,5 @@ pub async fn run_server(
     // info!("<Closing connection>");
     println!("<Closing connection>");
     tokio::io::stdout().flush().await?;
-    Ok(bytes_received? as u64)
+    Ok(total_bytes_received)
 }
