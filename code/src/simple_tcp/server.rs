@@ -91,6 +91,7 @@ pub async fn run_server(
     let mut reader = BufReader::new(stream);
     let mut buffer = Vec::new();
     let bytes_received = reader.read_to_end(&mut buffer).await;
+    reader.flush().await?;
     println!("bytes_received: {:#?}", &bytes_received);
     tokio::io::stdout().flush().await?;
 
