@@ -30,6 +30,7 @@ pub async fn run_client(
     // We assume this requested file is an absolute path with "root_dir" as a prefix.
     // This is specified in the FileTreeBrowser instance.
     let target_file = File::open(&requested_file).await?;
+    let file_size = target_file.metadata().await?.len();
 
     println!("connecting to {}...", server_addr);
 
@@ -43,10 +44,14 @@ pub async fn run_client(
 
     // Write the file contents to the TCP stream
     let mut writer = BufWriter::new(stream);
-    let result = writer.write(&mut contents).await;
-    writer.flush().await?;
-    println!("write_result: {:#?}", &result);
-    tokio::io::stdout().flush().await?;
+    let mut total_bytes_sent = 0;
+    while total_bytes_sent < file_size
+    {
+        let result = writer.write(&mut contents).await;
+        writer.flush().await?;
+        println!("write_result: {:#?}", &result);
+        tokio::io::stdout().flush().await?;
+    }
 
     // loop
     // {
