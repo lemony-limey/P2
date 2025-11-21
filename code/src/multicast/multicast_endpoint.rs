@@ -300,7 +300,9 @@ impl MulticastEndpoint
         // try IPv6
         if let Some(socket) = &self.socket_v6
         {
-            match socket.recv_from(buffer).await
+            socket.readable().await?;
+
+            match socket.try_recv_from(buffer)
             {
                 Ok((len, socket_addr)) => {
                     debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
