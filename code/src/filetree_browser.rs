@@ -23,6 +23,7 @@ use std::{
     time::Duration,
 };
 use std::io::BufRead;
+use std::num::NonZeroU64;
 use anyhow::Context;
 use configuration::FiletreeBrowserConfiguration;
 use log::{debug, info, warn};
@@ -498,6 +499,28 @@ async fn download(
     Ok(())
 }
 
+async fn leave(
+    ftb: Arc<RwLock<FileTreeBrowser>>,
+) -> anyhow::Result<()>
+{
+    let Some(serial_number) = NonZeroU64::new(1) else
+    {
+        return Err(anyhow!("failed to create serial number for leaving message"));
+    };
+
+    let ftb_handle = ftb.read().await;
+    let message = Message::new(
+        Header::new(
+            ftb_handle.get_current_identifier(),
+            SerialNumber(serial_number),
+            Timestamp::now()?,
+        ),
+        Payload::Leaving,
+    );
+
+    Ok(ftb_handle.socket.tx_message(message).await?)
+}
+
 async fn read_line() -> anyhow::Result<String>
 {
     let result = tokio::task::spawn_blocking(move || {
@@ -619,8 +642,8 @@ pub async fn run_ftb_ui(
         }
     }
 
-    // TODO: Send a leaving message to indicate that this node has left the group.
-
     info!("FileTreeBrowser terminated");
-    Ok(())
+
+    // Send a leaving message to indicate that this node has left the group.
+    leave(ftb).await
 }
