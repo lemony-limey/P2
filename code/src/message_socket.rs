@@ -65,15 +65,15 @@ impl MessageSocket
         message: Message,
     ) -> anyhow::Result<()>
     {
-        // send IPv4 beacon if configured
-        // let mut endpoint = self.endpoint.lock().await;
-        if !self.endpoint.config().m_addr4.is_empty()
-        {
-            if self.endpoint.tx(PacketType::Ipv4, &message.to_string().as_bytes()).await?
-            {
-                info!("tx4-> {}", &message);
-            }
-        }
+        // // send IPv4 beacon if configured
+        // // let mut endpoint = self.endpoint.lock().await;
+        // if !self.endpoint.config().m_addr4.is_empty()
+        // {
+        //     if self.endpoint.tx(PacketType::Ipv4, &message.to_string().as_bytes()).await?
+        //     {
+        //         info!("tx4-> {}", &message);
+        //     }
+        // }
 
         // send IPv6 beacon if configured
         if !self.endpoint.config().m_addr6.is_empty()
