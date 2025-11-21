@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::num::NonZeroU16;
 use anyhow;
 use std::env;
+use tokio::io::AsyncWriteExt;
 use code::simple_tcp::parse_ipv6_with_scope;
 use code::simple_tcp::client::run_client;
 
@@ -51,6 +52,7 @@ pub async fn main() -> anyhow::Result<()>
     let result = run_client(addr, PathBuf::from(file_name)).await;
 
     println!("result: {:#?}", result);
+    tokio::io::stdout().flush().await?;
 
     Ok(())
 }
