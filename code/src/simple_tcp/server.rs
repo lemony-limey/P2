@@ -12,6 +12,7 @@ use std::{
 };
 use std::path::PathBuf;
 use log::{info, error};
+use tokio::fs;
 use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -53,7 +54,7 @@ pub async fn run_server(
     println!("Waiting for connection...");
     tokio::io::stdout().flush().await?;
 
-    let new_file = File::create_new(file_requested_from_client).await?;
+    let new_file = File::create_new(&file_requested_from_client).await?;
     let mut file_writer = BufWriter::new(new_file);
     let mut total_bytes_received: u64 = 0;
 
@@ -86,48 +87,52 @@ pub async fn run_server(
     println!("listener dropped");
     tokio::io::stdout().flush().await?;
 
+    // Read the contents of the stream into the file.
     let mut reader = BufReader::new(stream);
+    let mut buffer = Vec::new();
+    let bytes_received = reader.read_to_end(&mut buffer).await?;
+    tokio::fs::write(file_requested_from_client, buffer).await?;
 
     // Echo server loop
-    loop
-    {
-        let mut buffer = vec![0u8; BUFFER_SIZE];
-        match reader.read(&mut buffer).await
-        {
-            Ok(0) => {
-                // info!("<Connection closed by client>");
-                println!("<Connection closed by client>");
-                tokio::io::stdout().flush().await?;
-                break;
-            }
-            Ok(bytes_read) => {
-                let received = String::from_utf8_lossy(&buffer[..bytes_read]);
-                total_bytes_received += bytes_read as u64;
-                // info!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
-                println!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
-                tokio::io::stdout().flush().await?;
+    // loop
+    // {
+    //     let mut buffer = vec![0u8; BUFFER_SIZE];
+    //     match reader.read(&mut buffer).await
+    //     {
+    //         Ok(0) => {
+    //             // info!("<Connection closed by client>");
+    //             println!("<Connection closed by client>");
+    //             tokio::io::stdout().flush().await?;
+    //             break;
+    //         }
+    //         Ok(bytes_read) => {
+    //             let received = String::from_utf8_lossy(&buffer[..bytes_read]);
+    //             total_bytes_received += bytes_read as u64;
+    //             // info!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
+    //             println!("Received {} bytes --> {}; total bytes received: {}", bytes_read, received.trim(), total_bytes_received);
+    //             tokio::io::stdout().flush().await?;
+    //
+    //             // Write to file
+    //             file_writer.write(&mut buffer).await?;
+    //             file_writer.flush().await?;
+    //         }
+    //         Err(e) if e.kind() == std::io::ErrorKind::WouldBlock
+    //                || e.kind() == std::io::ErrorKind::TimedOut => {
+    //             // No data available, continue waiting
+    //         }
+    //         Err(e) => {
+    //             // error!("Error reading from client: {}", e);
+    //             // info!("<Closing connection>");
+    //             println!("Error reading from client: {}", e);
+    //             println!("<Closing connection>");
+    //             tokio::io::stdout().flush().await?;
+    //             return Err(anyhow!(e));
+    //         }
+    //     }
+    // }
 
-                // Write to file
-                file_writer.write(&mut buffer).await?;
-                file_writer.flush().await?;
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock 
-                   || e.kind() == std::io::ErrorKind::TimedOut => {
-                // No data available, continue waiting
-            }
-            Err(e) => {
-                // error!("Error reading from client: {}", e);
-                // info!("<Closing connection>");
-                println!("Error reading from client: {}", e);
-                println!("<Closing connection>");
-                tokio::io::stdout().flush().await?;
-                return Err(anyhow!(e));
-            }
-        }
-    }
-    
     // info!("<Closing connection>");
     println!("<Closing connection>");
     tokio::io::stdout().flush().await?;
-    Ok(total_bytes_received)
+    Ok(bytes_received as u64)
 }

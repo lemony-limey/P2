@@ -29,7 +29,7 @@ pub async fn run_client(
 {
     // We assume this requested file is an absolute path with "root_dir" as a prefix.
     // This is specified in the FileTreeBrowser instance.
-    let target_file = File::open(requested_file).await?;
+    let target_file = File::open(&requested_file).await?;
 
     println!("connecting to {}...", server_addr);
 
@@ -38,36 +38,41 @@ pub async fn run_client(
 
     println!("connected! sending hello...\n");
 
-    let mut file_reader = BufReader::new(target_file);
     let mut writer = BufWriter::new(stream);
 
     // read response
-    loop
-    {
-        let mut buffer = [0u8; BUFFER_SIZE];
-        file_reader.read(&mut buffer).await?;
-
-        let result = writer.write(&mut buffer).await;
-        writer.flush().await?;
-
-        match result
-        {
-            Ok(n) if n > 0 => {
-                println!("received ({} bytes):\n{}", n, String::from_utf8_lossy(&buffer[..n]));
-                total_bytes_sent += n;
-                info!("total bytes sent: {}", total_bytes_sent);
-            }
-            Ok(_) => {
-                println!("connection closed");
-                return Ok(())
-            },
-            Err(e) if e.kind() == io::ErrorKind::Interrupted => {
-                println!("interrupted, retrying")
-            }
-            Err(e) => {
-                eprintln!("read error: {}", e);
-                return Err(anyhow!(e));
-            },
-        }
-    }
+    let mut contents = tokio::fs::read(&requested_file).await?;
+    let result = writer.write(&mut contents).await?;
+    writer.flush().await?;
+    // loop
+    // {
+    //     let mut buffer = Vec::new();
+    //     file_reader.read_to_end(&mut buffer).await?;
+    //
+    //     let result = writer.write(&mut buffer).await;
+    //     writer.flush().await?;
+    //
+    //     println!("{:#?}", &result);
+    //
+    //     match result
+    //     {
+    //         Ok(n) if n > 0 => {
+    //             println!("received ({} bytes):\n{}", n, String::from_utf8_lossy(&buffer[..n]));
+    //             total_bytes_sent += n;
+    //             info!("total bytes sent: {}", total_bytes_sent);
+    //         }
+    //         Ok(_) => {
+    //             println!("connection closed");
+    //             return Ok(())
+    //         },
+    //         Err(e) if e.kind() == io::ErrorKind::Interrupted => {
+    //             println!("interrupted, retrying")
+    //         }
+    //         Err(e) => {
+    //             eprintln!("read error: {}", e);
+    //             return Err(anyhow!(e));
+    //         },
+    //     }
+    // }
+    Ok(())
 }
