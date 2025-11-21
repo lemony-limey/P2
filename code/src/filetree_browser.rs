@@ -619,7 +619,7 @@ pub async fn run_ftb_ui(
         }
     }
 
-    // Send a message to indicate that this node has left the group.
+    // TODO: Send a leaving message to indicate that this node has left the group.
 
     info!("FileTreeBrowser terminated");
     Ok(())
