@@ -50,25 +50,23 @@ pub async fn process_incoming_messages(
     {
         let result = socket.rx_message().await?;
 
-        let (header, payload): (Header, Payload);
+        let (header, payload, rx_addr): (Header, Payload, SocketAddr);
+
         match result
         {
             // Await next packet
-            (PacketType::None, None) => {
-                info!("None, None");
+            Some((PacketType::Ipv4, received_from_addr, received_message)) => {
+                info!("->rx4 from:{}, {}", &received_from_addr, &received_message);
+                (header, payload, rx_addr) = (received_message.header, received_message.payload, received_from_addr);
+            },
+            Some((PacketType::Ipv6, received_from_addr, received_message)) => {
+                info!("->rx6 from:{}, {}", &received_from_addr, &received_message);
+                (header, payload, rx_addr) = (received_message.header, received_message.payload, received_from_addr);
+            },
+            Some(_) | None => {
+                info!("packet dropped");
                 continue;
             },
-            (PacketType::Ipv4, Some(received_message)) => {
-                info!("->rx4 {}", &received_message);
-                (header, payload) = (received_message.header, received_message.payload);
-            },
-            (PacketType::Ipv6, Some(received_message)) => {
-                info!("->rx6 {}", &received_message);
-                (header, payload) = (received_message.header, received_message.payload);
-            },
-            (_, _) => {
-                return Err(anyhow!("rx_message(): an error occurred when receiving a message"))
-            }
         }
 
         // Match the type of the message to determine how to process it
@@ -79,7 +77,7 @@ pub async fn process_incoming_messages(
                 // Attempt to make the node, drop the packet if it fails.
                 let Ok(node) = Node::new(
                     header.identifier,
-                    advertisement_message.ipv6_link_local_addr,
+                    rx_addr,
                     advertisement_message.services,
                 ) else { continue; };
 
@@ -221,7 +219,7 @@ pub async fn process_incoming_messages(
 
                 // Get the address of the host requesting the file transfer.
                 let path_to_file: PathBuf;
-                let target_addr: SocketAddrV6;
+                let target_addr: SocketAddr;
                 // Lock the soft state cache.
                 {
                     let soft_state_handle = soft_state.read().await;
@@ -250,6 +248,11 @@ pub async fn process_incoming_messages(
 
                 // Start TCP client connection and attempt transfer.
                 info!("starting TCP connection");
+
+                let SocketAddr::V6(target_addr) = target_addr else {
+                    error!("download request dropped: download must be over ipv6");
+                    continue;
+                };
 
                 if let Err(e) = run_client(
                     target_addr,

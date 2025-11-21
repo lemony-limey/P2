@@ -41,11 +41,6 @@ pub async fn beacon(
     let identifier: Identifier;
     let payload: Payload;
     {
-        let Some(ipv6_addr) = &socket.endpoint().config.ip_addr6 else {
-            error!("config.ip_addr6 is None");
-            return Err(anyhow!("config.ip_addr6 is None"));
-        };
-        debug!("ipv6_addr: {}", ipv6_addr);
         beacon_interval = Duration::from_millis(socket.endpoint().config.beacon_interval);
         identifier = Identifier::new(
             UID(socket.endpoint().config.username.clone()),
@@ -53,7 +48,6 @@ pub async fn beacon(
         );
         payload = Payload::Advertisement(
             AdvertisementMessage::new(
-                ipv6_addr.clone(),
                 NonZeroU16::new(socket.endpoint().config.m_port)
                     .with_context(|| "beacon(): invalid port number")?,
                 Services::new(

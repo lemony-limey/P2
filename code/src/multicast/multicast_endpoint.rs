@@ -86,11 +86,8 @@ impl MulticastEndpoint
             {
                 if let Ok(link_local_addr) = socket.local_addr()
                 {
-                    if let SocketAddr::V6(mut addr) = link_local_addr
+                    if let SocketAddr::V6(addr) = link_local_addr
                     {
-                        // addr.set_scope_id();
-                        // let
-                        // addr.
                         endpoint.config.ip_addr6 = Some(addr);
                         info!("set ipv6 address: {}", addr)
                     }
@@ -119,8 +116,12 @@ impl MulticastEndpoint
         let bind_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), self.config.m_port);
         socket.bind(&SockAddr::from(bind_addr))?;
 
+        info!("IPv4 socket configured: {}", self.config.m_addr6);
+
         let mcast_addr: Ipv4Addr = self.config.m_addr4.parse()?;
         self.mcast_addr_v4 = Some(SocketAddr::new(IpAddr::V4(mcast_addr), self.config.m_port));
+
+        info!("IPv4 mcast addr v4 configured: {:#?}", self.mcast_addr_v6);
 
         socket.set_nonblocking(true)?;
 
@@ -222,7 +223,7 @@ impl MulticastEndpoint
         Ok(())
     }
 
-    pub async fn rx(&self) -> anyhow::Result<(PacketType, Message)>
+    pub async fn rx(&self) -> anyhow::Result<(PacketType, Option<(SocketAddr, Message)>)>
     {
         info!("rx called");
         let mut buffer_1 = BytesMut::with_capacity(self.config.msg_size);
@@ -230,15 +231,31 @@ impl MulticastEndpoint
 
         // Whichever packet is received first will be returned
         tokio::select! {
-            packet_type = self.rx_ipv4(&mut buffer_1) => {
+            result = self.rx_ipv4(&mut buffer_1) => {
                 info!("rx_ipv4 returned");
                 info!("buffer contents: {:#?}", str::from_utf8(&buffer_1));
-                Ok((packet_type?, parse_message(&buffer_1)?))
+
+                return match result?
+                {
+                    (PacketType::Ipv4, Some(socket_addr)) => {
+                        let parsed_message = parse_message(&buffer_1)?;
+                        Ok((PacketType::Ipv4, Some((socket_addr, parsed_message))))
+                    },
+                    _ => Ok((PacketType::None, None)),
+                }
             },
-            packet_type = self.rx_ipv6(&mut buffer_2) => {
+            result = self.rx_ipv6(&mut buffer_2) => {
                 info!("rx_ipv6 returned");
                 info!("buffer contents: {:#?}", str::from_utf8(&buffer_2));
-                Ok((packet_type?, parse_message(&buffer_2)?))
+
+                return match result?
+                {
+                    (PacketType::Ipv6, Some(socket_addr)) => {
+                        let parsed_message = parse_message(&buffer_1)?;
+                        return Ok((PacketType::Ipv4, Some((socket_addr, parsed_message))))
+                    },
+                    _ => Ok((PacketType::None, None)),
+                }
             },
         }
     }
@@ -250,18 +267,18 @@ impl MulticastEndpoint
     ///
     /// # Returns
     /// the type of packet received (IPv4, IPv6, or None)
-    async fn rx_ipv4(&self, buffer: &mut BytesMut) -> anyhow::Result<PacketType>
+    async fn rx_ipv4(&self, buffer: &mut BytesMut) -> anyhow::Result<(PacketType, Option<SocketAddr>)>
     {
         info!("rx_ipv4 called");
 
         // try IPv4
         if let Some(socket) = &self.socket_v4
         {
-            match socket.recv(buffer).await
+            match socket.recv_from(buffer).await
             {
-                Ok(len) if len > 0 => {
+                Ok((len, socket_addr)) if len > 0 => {
                     debug!("Received {} bytes on IPv4", len);
-                    return Ok(PacketType::Ipv4);
+                    return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     // no data available, continue to IPv6
@@ -273,21 +290,21 @@ impl MulticastEndpoint
             }
         }
 
-        Ok(PacketType::None)
+        Ok((PacketType::None, None))
     }
 
-    async fn rx_ipv6(&self, buffer: &mut BytesMut) -> anyhow::Result<PacketType>
+    async fn rx_ipv6(&self, buffer: &mut BytesMut) -> anyhow::Result<(PacketType, Option<SocketAddr>)>
     {
         info!("rx_ipv6 called");
 
         // try IPv6
         if let Some(socket) = &self.socket_v6
         {
-            match socket.recv(buffer).await
+            match socket.recv_from(buffer).await
             {
-                Ok(len) if len > 0 => {
+                Ok((len, socket_addr)) if len > 0 => {
                     debug!("Received {} bytes on IPv6", len);
-                    return Ok(PacketType::Ipv6);
+                    return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     error!("IPv6 receive error: {}", e);
@@ -300,7 +317,7 @@ impl MulticastEndpoint
             }
         }
 
-        Ok(PacketType::None)
+        Ok((PacketType::None, None))
     }
 
     /// transmits a multicast packet.

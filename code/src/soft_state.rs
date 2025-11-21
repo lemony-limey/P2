@@ -1,3 +1,4 @@
+use std::net::SocketAddrV6;
 use crate::logical_file_path::LogicalFilePath;
 use crate::protocol::{
     identifier::Identifier,
@@ -10,7 +11,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
-use std::net::{SocketAddr, SocketAddrV6};
+use std::net::SocketAddr;
 use std::ops::Add;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -156,7 +157,7 @@ impl FTBSoftState
 pub struct Node
 {
     pub identifier: Identifier,
-    pub address: SocketAddrV6,
+    pub address: SocketAddr,
     pub services: Services,
     pub files: HashMap<LogicalFilePath, FileMetadata>,
     pub ttl: DateTime<Utc>,
@@ -193,7 +194,7 @@ impl Node
 {
     pub fn new(
         identifier: Identifier,
-        address: SocketAddrV6,
+        address: SocketAddr,
         services: Services,
     ) -> anyhow::Result<Self>
     {

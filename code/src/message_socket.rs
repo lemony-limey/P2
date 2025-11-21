@@ -1,6 +1,8 @@
+use std::net::SocketAddr;
 use std::time::Duration;
 use log::debug;
 use log::info;
+use socket2::SockAddr;
 use crate::multicast::multicast_endpoint::{MulticastEndpoint, PacketType};
 use crate::protocol::message::Message;
 
@@ -38,24 +40,20 @@ impl MessageSocket
     /// Will attempt to parse the message and perform the appropriate action.
     pub async fn rx_message(
         &self,
-    ) -> anyhow::Result<(PacketType, Option<Message>)>
+    ) -> anyhow::Result<Option<(PacketType, SocketAddr, Message)>>
     {
-        let (packet_type, message): (PacketType, Option<Message>);
+        match self.endpoint.rx().await?
         {
-            if let Ok((received_packet_type, received_message)) = self.endpoint.rx().await {
-                packet_type = received_packet_type;
-                message = Some(received_message);
-            }
-            else
-            {
-                packet_type = PacketType::None;
-                message = None;
-            }
+            (PacketType::Ipv4, Some((socket_addr, message))) => {
+                info!("packet type: IPv4; message: {:#?}", message);
+                Ok(Some((PacketType::Ipv4, socket_addr, message)))
+            },
+            (PacketType::Ipv6, Some((socket_addr, message))) => {
+                info!("packet type: IPv6; message: {:#?}", message);
+                Ok(Some((PacketType::Ipv6, socket_addr, message)))
+            },
+            _ => Ok(None),
         }
-
-        info!("packet type: {}; message: {:#?}", packet_type, message);
-
-        Ok((packet_type, message))
     }
 
     /// Transmits a single UDP datagram over multicast, via IPv4 AND IPv6 (meaning at most two packets

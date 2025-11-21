@@ -50,12 +50,10 @@ mod tests
         let timestamp = Timestamp::now().unwrap();
         let server_port_number = NonZeroU16::new(23756)
             .expect("invalid server port number");
-        let ipv6_addr = "::1".parse::<SocketAddrV6>().unwrap();
         let message = Message::new(
             generate_header(&timestamp),
             Payload::Advertisement(
                 AdvertisementMessage::new(
-                    ipv6_addr,
                     server_port_number,
                     Services::new(
                         SearchAvailability(true),
@@ -67,7 +65,7 @@ mod tests
 
         // Test conversion from message object to string
         let message_string = format!(
-            ":uid@cs.st-andrews.ac.uk:1:{}:advertisement:[::1]:23756:search=true,download=false:",
+            ":uid@cs.st-andrews.ac.uk:1:{}:advertisement:23756:search=true,download=false:",
             timestamp
         );
         assert_eq!(
