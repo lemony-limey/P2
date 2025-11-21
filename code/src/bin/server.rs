@@ -18,8 +18,9 @@ async fn main() -> anyhow::Result<()>
         }
     };
 
-    println!("{:#?}", PathBuf::from(file_name));
-    // let _ = run_server(PathBuf::from(file_name)).await;
+    let path_buf = PathBuf::from(file_name);
+    println!("{:#?}", path_buf);
+    let _ = run_server(PathBuf::from(path_buf)).await;
 
     Ok(())
 }
