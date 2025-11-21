@@ -424,6 +424,12 @@ async fn download(
         target_file_absolute_path = ftb.read().await.logical_path_to_absolute_path(&target_file).await?;
     }
 
+    // If the file already exists in the local logical directory, abandon the request
+    let Ok(false) = target_file_absolute_path.try_exists() else {
+        info!("download request abandoned: file already exists locally at the same path: \"{}\"", &target_file);
+        return Ok(())
+    };
+
     // Get the identifier of the node we wish to download the file from.
     println!("Enter the identifier of the node you wish to request this file from:");
     let mut target_identifier = String::new();
@@ -495,7 +501,7 @@ async fn download(
     info!("download of {} succeeded!", &target_file);
 
     // TODO: On download success, sent a download result message out
-    
+
 
     Ok(())
 }

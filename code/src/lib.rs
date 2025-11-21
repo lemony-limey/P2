@@ -37,7 +37,6 @@ pub mod parser;
 pub mod protocol;
 pub mod simple_tcp;
 pub mod soft_state;
-pub mod ui;
 
 pub async fn process_incoming_messages(
     socket: MessageSocket,
@@ -107,47 +106,46 @@ pub async fn process_incoming_messages(
                     matches = ftb.read().await.search_for_substring(&search_string).await?;
                 }
 
-                // If there are no matches, ignore the request
-                // Else, send a search response out for every match found.
-                for file_match in matches
-                {
-                    let ftb = ftb.clone();
+                // Spawn a new task for responding so that tokio::time::sleep does not stop
+                // the whole listener thread.
+                let ftb = ftb.clone();
+                let socket = socket.clone();
+                tokio::spawn(async move {
                     let header_identifier = header.identifier.clone();
                     let header_serial_number = header.serial_number.clone();
-                    let socket = socket.clone();
 
-                    // Spawn a new task for responding so that tokio::time::sleep does not stop
-                    // the whole listener thread.
-                    tokio::spawn(async move {
+                    // If there are no matches, ignore the request
+                    // Else, send a search response out for every match found.
+                    for file_match in matches
+                    {
                         let serial_number: SerialNumber;
-                        let uid: UID;
-                        let fqdn: FQDN;
+                        let identifier: Identifier;
                         let file_size: u64;
-                        // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
                         {
                             let mut ftb_handle = ftb.write().await;
                             serial_number = SerialNumber(ftb_handle.config.next_search_serial_number());
-                        }
-                        {
-                            let ftb_handle = ftb.read().await;
-                            uid = UID(ftb_handle.config.uid.to_string());
-                            fqdn = FQDN(ftb_handle.config.fqdn.to_string());
-                            file_size = ftb_handle.get_file_size(&file_match).await?;
+                            identifier = ftb_handle.get_current_identifier();
+                            if let Ok(match_file_size) = ftb_handle.get_file_size(&file_match).await
+                            {
+                                file_size = match_file_size;
+                            }
+                            else
+                            {
+                                error!("could not get file size of \"{}\"", &file_match);
+                                continue;
+                            }
                         }
 
                         let search_response = Message::new(
                             Header::new(
-                                Identifier::new(
-                                    uid,
-                                    fqdn,
-                                ),
+                                identifier.clone(),
                                 serial_number,
-                                Timestamp::now()?,
+                                Timestamp::now().expect("could not get current timestamp"),
                             ),
                             Payload::Search(
                                 SearchMessage::Result {
                                     response_id: ResponseID::new(
-                                        header_identifier,
+                                        header_identifier.clone(),
                                         header_serial_number,
                                     ),
                                     file_path: file_match,
@@ -158,9 +156,9 @@ pub async fn process_incoming_messages(
 
                         // As per Multicast DNS (RFC 6762), Section 6.3
                         tokio::time::sleep(Duration::from_millis(rand::random_range(20..=120))).await;
-                        socket.tx_message(search_response).await
-                    });
-                }
+                        let _ = socket.tx_message(search_response).await;
+                    }
+                });  // End of tokio::spawn block
             },
             // If this is a response to a search message initiated by the current user, add the
             // file name and size to the database for the node sending the response.
@@ -295,6 +293,8 @@ pub async fn process_incoming_messages(
             // Remove specified entry from the cache
             Payload::Leaving => {
                 let soft_state_handle_clone = soft_state.clone();
+
+                // Spawn deletion in a separate thread to avoid blocking the listener.
                 tokio::spawn(async move {
                     let soft_state_handle = soft_state_handle_clone.write().await;
                     let mut nodes_handle = soft_state_handle.nodes.write().await;
