@@ -1,7 +1,7 @@
 //! Simple non-blocking TCP server using IPv6 link-local addresses
 //! (based on Saleem's Java version)
 
-use tokio::io::{BufReader};
+use tokio::io::{BufReader, BufWriter};
 use tokio::fs::File;
 use crate::{
     simple_tcp::{anyhow, self},
@@ -47,7 +47,8 @@ pub async fn run_server(
     tokio::io::stdout().flush().await?;
 
     // Create the file that data will be written to.
-    let _new_file = File::create_new(&file_requested_from_client).await?;
+    let mut new_file = File::create_new(&file_requested_from_client).await?;
+    let mut file_writer = BufWriter::new(new_file);
 
     // Wait for a connection
     let stream = loop
@@ -76,13 +77,15 @@ pub async fn run_server(
     tokio::io::stdout().flush().await?;
 
     // Read the contents of the stream into the file.
-    let mut reader = BufReader::new(stream);
-    let mut buffer = Vec::new();
-    let bytes_received = reader.read_to_end(&mut buffer).await?;
-    reader.flush().await?;
-    tokio::fs::write(file_requested_from_client, buffer).await?;
+    let mut stream_reader = BufReader::new(stream);
+    // let mut buffer = Vec::new();
+
+    let bytes_received = tokio::io::copy(&mut stream_reader, &mut file_writer).await?;
+    // let bytes_received = reader.read_to_end(&mut buffer).await?;
+    stream_reader.flush().await?;
+    // tokio::fs::write(file_requested_from_client, buffer).await?;
 
     info!("<Closing connection>");
     tokio::io::stdout().flush().await?;
-    Ok(bytes_received as u64)
+    Ok(bytes_received)
 }

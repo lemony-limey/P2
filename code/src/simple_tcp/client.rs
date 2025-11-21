@@ -14,6 +14,7 @@ use tokio::{
     net::TcpStream
 };
 use std::path::PathBuf;
+use tokio::io::BufReader;
 
 /// The client is the node which contains a file which has been requested for download by another
 /// node. The client will send the data to the server.
@@ -30,13 +31,17 @@ pub async fn run_client(
     let stream = TcpStream::connect(server_addr).await?;
 
     info!("starting file transfer");
-    let mut contents = tokio::fs::read(&requested_file).await?;
-    info!("requested file: {:#?}; size: {} bytes", &requested_file, contents.len());
+    // let mut contents = tokio::fs::read(&requested_file).await?;
+    let mut file_reader = BufReader::new(target_file);
+    // info!("requested file: {:#?}; size: {} bytes", &requested_file, contents.len());
 
     // Write the file contents to the TCP stream
     let mut writer = BufWriter::new(stream);
-    let result = writer.write(&mut contents).await?;
+
+    let result = tokio::io::copy(&mut file_reader, &mut writer).await?;
     writer.flush().await?;
+
+    // let result = writer.write(&mut contents).await?;
     info!("bytes sent: {:#?}", &result);
     tokio::io::stdout().flush().await?;
 
