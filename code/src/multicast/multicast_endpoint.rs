@@ -302,7 +302,7 @@ impl MulticastEndpoint
         {
             match socket.recv_from(buffer).await
             {
-                Ok((len, socket_addr)) if len > 0 => {
+                Ok((len, socket_addr)) => {
                     debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
                     return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
