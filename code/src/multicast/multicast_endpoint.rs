@@ -20,6 +20,7 @@ use bytes::BytesMut;
 use tokio::{
     net::UdpSocket,
 };
+use crate::constants::BUFFER_SIZE;
 
 /// type of packet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -123,11 +124,11 @@ impl MulticastEndpoint
 
         info!("IPv4 mcast addr v4 configured: {:#?}", self.mcast_addr_v6);
 
-        // socket.set_nonblocking(true)?;
+        socket.set_nonblocking(true)?;
 
         // Convert to a tokio::net::UdpSocket
-        let socket: std::net::UdpSocket = socket.into();
-        self.socket_v4 = Some(Arc::new(UdpSocket::from_std(socket)?));
+        // let socket: std::net::UdpSocket = socket.into();
+        self.socket_v4 = Some(Arc::new(UdpSocket::from_std(socket.into())?));
 
         debug!("IPv4 socket configured: {}", self.config.m_addr4);
         Ok(())
@@ -153,7 +154,7 @@ impl MulticastEndpoint
 
         info!("IPv6 mcast addr v6 configured: {:#?}", self.mcast_addr_v6);
 
-        // socket.set_nonblocking(true)?;
+        socket.set_nonblocking(true)?;
 
         // Convert to a tokio::net::UdpSocket
         // let socket: std::net::UdpSocket = socket.into();
@@ -252,7 +253,7 @@ impl MulticastEndpoint
         {
             (PacketType::Ipv6, Some(socket_addr)) => {
                 let parsed_message = parse_message(&buffer_2)?;
-                return Ok((PacketType::Ipv4, Some((socket_addr, parsed_message))))
+                Ok((PacketType::Ipv4, Some((socket_addr, parsed_message))))
             },
             _ => Ok((PacketType::None, None)),
         }
@@ -302,7 +303,9 @@ impl MulticastEndpoint
         {
             loop
             {
-                let result = socket.recv_from(buffer).await;
+                socket.readable().await?;
+
+                let result = socket.try_recv_from(buffer);
                 info!("{:#?}", result);
 
                 match result
