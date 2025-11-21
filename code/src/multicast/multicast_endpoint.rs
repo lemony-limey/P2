@@ -7,7 +7,7 @@ use crate::{
     parser::message::parse_message,
     multicast::multicast_configuration::MulticastConfiguration,
 };
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow};
 use log::{debug, error, info};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::{
@@ -49,8 +49,8 @@ pub struct MulticastEndpoint
 {
     socket_v4: Option<Arc<UdpSocket>>,
     socket_v6: Option<Arc<UdpSocket>>,
-    mcast_addr_v4: Option<SocketAddr>,
-    mcast_addr_v6: Option<SocketAddr>,
+    pub mcast_addr_v4: Option<SocketAddr>,
+    pub mcast_addr_v6: Option<SocketAddr>,
     pub(crate) config: MulticastConfiguration,
 }
 
@@ -86,8 +86,11 @@ impl MulticastEndpoint
             {
                 if let Ok(link_local_addr) = socket.local_addr()
                 {
-                    if let SocketAddr::V6(addr) = link_local_addr
+                    if let SocketAddr::V6(mut addr) = link_local_addr
                     {
+                        // addr.set_scope_id();
+                        // let
+                        // addr.
                         endpoint.config.ip_addr6 = Some(addr);
                         info!("set ipv6 address: {}", addr)
                     }
@@ -142,8 +145,12 @@ impl MulticastEndpoint
         let bind_addr = SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), self.config.m_port);
         socket.bind(&SockAddr::from(bind_addr))?;
 
+        info!("IPv6 socket configured: {}", self.config.m_addr6);
+
         let mcast_addr: Ipv6Addr = self.config.m_addr6.parse()?;
         self.mcast_addr_v6 = Some(SocketAddr::new(IpAddr::V6(mcast_addr), self.config.m_port));
+
+        info!("IPv6 mcast addr v6 configured: {:#?}", self.mcast_addr_v6);
 
         socket.set_nonblocking(true)?;
 
@@ -316,7 +323,7 @@ impl MulticastEndpoint
                 if let (Some(socket), Some(addr)) = (self.socket_v4.clone(), self.mcast_addr_v4)
                 {
                     socket.send_to(data, addr).await?;
-                    debug!("Sent {} bytes on IPv4", data.len());
+                    debug!("Sent {} bytes on IPv4, addr: {}", data.len(), addr);
                     Ok(true)
                 }
                 else
@@ -328,7 +335,7 @@ impl MulticastEndpoint
                 if let (Some(socket), Some(addr)) = (self.socket_v6.clone(), self.mcast_addr_v6)
                 {
                     socket.send_to(data, addr).await?;
-                    debug!("Sent {} bytes on IPv6", data.len());
+                    debug!("Sent {} bytes on IPv6, addr: {}", data.len(), addr);
                     Ok(true)
                 }
                 else

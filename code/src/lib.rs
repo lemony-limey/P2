@@ -21,7 +21,6 @@ use crate::filetree_browser::FileTreeBrowser;
 use crate::logical_file_path::LogicalFilePath;
 use crate::multicast::multicast_endpoint::PacketType;
 use crate::protocol::download::DownloadMessage;
-use crate::protocol::identifier::{FQDN, UID};
 use crate::protocol::search::SearchMessage;
 use crate::protocol::serial_number::SerialNumber;
 use crate::simple_tcp::client::run_client;
