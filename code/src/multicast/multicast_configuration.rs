@@ -6,7 +6,7 @@ use log::debug;
 use log::info;
 use std::num::NonZeroU64;
 use serde::Deserialize;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV6};
+use std::net::{IpAddr, Ipv4Addr, SocketAddrV6};
 use anyhow::Context;
 use crate::protocol::serial_number::SerialNumberGenerator;
 
@@ -33,7 +33,7 @@ pub struct MulticastConfiguration
     #[serde(skip)]
     pub ip_addr4: Option<Ipv4Addr>,
     #[serde(skip)]
-    pub ip_addr6: Option<Ipv6Addr>,
+    pub ip_addr6: Option<SocketAddrV6>,
     #[serde(skip)]
     pub username: String,
     #[serde(skip)]
@@ -49,13 +49,13 @@ impl Default for MulticastConfiguration
             log_file: "beacon.log".to_string(),
             m_addr4: "239.0.98.76".to_string(),
             m_addr6: "ff02::2:3756".to_string(),
-            m_port: 9876,
+            m_port: 23756,
             m_ttl: 2,
             loopback: false,
             reuse_addr: true,
             so_timeout: 1,
             msg_size: 128,
-            beacon_interval: 10000,
+            beacon_interval: 5000,  // 5s
             beacon: 10,
             host_name: String::new(),
             ip_addr4: None,
@@ -122,15 +122,15 @@ impl MulticastConfiguration
         // work on the linux lab machines during testing, so the IPv6 address
         // is set using the local value of the UDP socket for multicast instead.
         // grab link-local IPv6 address
-        let local_ipv6_result = local_ip_address::local_ipv6();
-        if let Ok(IpAddr::V6(ip)) = local_ipv6_result
-        {
-            info!("ipv6: {}", ip);
-            self.ip_addr6 = Some(ip);
-        }
-        else {
-            return Err(anyhow!(local_ipv6_result?))
-        }
+        // let local_ipv6_result = local_ip_address::local_ipv6();
+        // if let Ok(IpAddr::V6(ip)) = local_ipv6_result
+        // {
+        //     info!("ipv6: {}", ip);
+        //     self.ip_addr6 = Some(ip);
+        // }
+        // else {
+        //     return Err(anyhow!(local_ipv6_result?))
+        // }
 
         Ok(())
     }
