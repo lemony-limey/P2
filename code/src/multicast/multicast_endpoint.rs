@@ -82,17 +82,17 @@ impl MulticastEndpoint
         if !config.m_addr6.is_empty() && config.m_addr6 != "0"
         {
             endpoint.setup_ipv6()?;
-            if let Some(socket) = &endpoint.socket_v6
-            {
-                if let Ok(link_local_addr) = socket.local_addr()
-                {
-                    if let SocketAddr::V6(addr) = link_local_addr
-                    {
-                        endpoint.config.ip_addr6 = Some(addr);
-                        info!("set ipv6 address: {}", addr)
-                    }
-                }
-            }
+            // if let Some(socket) = &endpoint.socket_v6
+            // {
+            //     if let Ok(link_local_addr) = socket.local_addr()
+            //     {
+            //         if let SocketAddr::V6(addr) = link_local_addr
+            //         {
+            //             endpoint.config.ip_addr6 = Some(addr);
+            //             info!("set ipv6 address: {}", addr)
+            //         }
+            //     }
+            // }
         }
 
         if endpoint.socket_v4.is_none() && endpoint.socket_v6.is_none()
@@ -300,24 +300,27 @@ impl MulticastEndpoint
         // try IPv6
         if let Some(socket) = &self.socket_v6
         {
-            socket.readable().await?;
-            let result = socket.recv_from(buffer).await;
-            info!("{:#?}", result);
-
-            match result
+            loop
             {
-                Ok((len, socket_addr)) => {
-                    debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
-                    return Ok((PacketType::Ipv4, Some(socket_addr)));
+                let result = socket.recv_from(buffer).await;
+                info!("{:#?}", result);
+
+                match result
+                {
+                    Ok((len, socket_addr)) if len > 0 => {
+                        debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
+                        return Ok((PacketType::Ipv4, Some(socket_addr)));
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        error!("IPv6 receive error: {}", e);
+                        // no data available
+                        continue;
+                    }
+                    Err(e) => {
+                        error!("IPv6 receive error: {}", e);
+                    }
+                    _ => {}
                 }
-                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                    error!("IPv6 receive error: {}", e);
-                    // no data available
-                }
-                Err(e) => {
-                    error!("IPv6 receive error: {}", e);
-                }
-                _ => {}
             }
         }
 

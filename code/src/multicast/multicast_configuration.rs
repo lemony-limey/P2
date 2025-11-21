@@ -33,7 +33,7 @@ pub struct MulticastConfiguration
     #[serde(skip)]
     pub ip_addr4: Option<Ipv4Addr>,
     #[serde(skip)]
-    pub ip_addr6: Option<SocketAddrV6>,
+    pub ip_addr6: Option<Ipv6Addr>,
     #[serde(skip)]
     pub username: String,
     #[serde(skip)]
@@ -122,15 +122,15 @@ impl MulticastConfiguration
         // work on the linux lab machines during testing, so the IPv6 address
         // is set using the local value of the UDP socket for multicast instead.
         // grab link-local IPv6 address
-        // let local_ipv6_result = local_ip_address::local_ipv6();
-        // if let Ok(IpAddr::V6(ip)) = local_ipv6_result
-        // {
-        //     info!("ipv6: {}", ip);
-        //     self.ip_addr6 = Some(ip);
-        // }
-        // else {
-        //     return Err(anyhow!(local_ipv6_result?))
-        // }
+        let local_ipv6_result = local_ip_address::local_ipv6();
+        if let Ok(IpAddr::V6(ip)) = local_ipv6_result
+        {
+            info!("ipv6: {}", ip);
+            self.ip_addr6 = Some(ip);
+        }
+        else {
+            return Err(anyhow!(local_ipv6_result?))
+        }
 
         Ok(())
     }
