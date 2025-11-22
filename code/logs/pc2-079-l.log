@@ -1,0 +1,463 @@
+
+tree root_dir
+root_dir
+├── dir1
+│   ├── text1-1.txt
+│   ├── text1-2.txt
+│   └── text1-3.txt
+├── dir2
+│   ├── text2-1.txt
+│   └── text2-2.txt
+├── dir3
+│   ├── dir3-1
+│   │   ├── text3-1-1.txt
+│   │   └── text3-1-2.txt
+│   ├── text3-1.txt
+│   └── text3-2.txt
+├── non-text
+│   ├── images
+│   │   ├── crawdad.jpg
+│   │   ├── gorilla.jpg
+│   │   ├── ninja.jpg
+│   │   ├── psion.jpg
+│   │   └── totem.jpg
+│   └── video
+│       ├── all_the_twitters-web.mp4
+│       ├── good_and_strong-web.mp4
+│       └── no_charge-web.mp4
+└── test
+    ├── hello3.txt
+    └── hello.txt
+
+8 directories, 19 files
+tgh1@pc2-079-l:~/.../CS4105/Coursework/P2-omg/code $ cargo r
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.01s
+     Running `target/debug/code`
+[2025-11-22T14:53:20.618Z INFO  code::multicast::multicast_configuration] ipv4: 138.251.28.81
+[2025-11-22T14:53:20.618Z INFO  code::multicast::multicast_configuration] Configuration loaded from multicast.toml
+[2025-11-22T14:53:20.619Z INFO  code::multicast::multicast_configuration] Detected: "pc2-079-l" "239.255.4.105" "ff02::2:3756"
+[2025-11-22T14:53:20.619Z INFO  code::multicast::multicast_configuration] Detected: "pc2-079-l" Some(
+        138.251.28.81,
+    ) None
+[2025-11-22T14:53:20.619Z INFO  code::multicast::multicast_endpoint] multicast config: MulticastConfiguration {
+        log_file: "beacon.log",
+        m_addr4: "239.255.4.105",
+        m_addr6: "ff02::2:3756",
+        m_port: 23756,
+        m_ttl: 2,
+        loopback: false,
+        reuse_addr: true,
+        so_timeout: 100,
+        msg_size: 256,
+        beacon_interval: 5000,
+        beacon: 100,
+        host_name: "pc2-079-l",
+        ip_addr4: Some(
+            138.251.28.81,
+        ),
+        ip_addr6: None,
+        username: "tgh1",
+        serial_number_generator: SerialNumberGenerator {
+            next_serial_number: 1,
+        },
+    }
+[2025-11-22T14:53:20.620Z INFO  code::multicast::multicast_endpoint] IPv4 socket configured: ff02::2:3756
+[2025-11-22T14:53:20.620Z INFO  code::multicast::multicast_endpoint] IPv4 mcast addr v4 configured: None
+[2025-11-22T14:53:20.620Z INFO  code::multicast::multicast_endpoint] IPv6 socket configured: ff02::2:3756
+[2025-11-22T14:53:20.620Z INFO  code::multicast::multicast_endpoint] IPv6 mcast addr v6 configured: Some(
+        [ff02::2:3756]:23756,
+    )
+[2025-11-22T14:53:20.620Z INFO  code::multicast::multicast_endpoint] set ipv6 address: [::]:23756
+[2025-11-22T14:53:20.620Z INFO  code::multicast::multicast_endpoint] Joined IPv4 multicast group 239.255.4.105:23756
+[2025-11-22T14:53:20.620Z INFO  code::multicast::multicast_endpoint] Joined IPv6 multicast group [ff02::2:3756]:23756
+[2025-11-22T14:53:20.620Z INFO  code] MulticastEndpoint {
+        socket_v4: Some(
+            PollEvented {
+                io: Some(
+                    UdpSocket {
+                        addr: 0.0.0.0:23756,
+                        fd: 9,
+                    },
+                ),
+            },
+        ),
+        socket_v6: Some(
+            PollEvented {
+                io: Some(
+                    UdpSocket {
+                        addr: [::]:23756,
+                        fd: 10,
+                    },
+                ),
+            },
+        ),
+        mcast_addr_v4: Some(
+            239.255.4.105:23756,
+        ),
+        mcast_addr_v6: Some(
+            [ff02::2:3756]:23756,
+        ),
+        config: MulticastConfiguration {
+            log_file: "beacon.log",
+            m_addr4: "239.255.4.105",
+            m_addr6: "ff02::2:3756",
+            m_port: 23756,
+            m_ttl: 2,
+            loopback: false,
+            reuse_addr: true,
+            so_timeout: 100,
+            msg_size: 256,
+            beacon_interval: 5000,
+            beacon: 100,
+            host_name: "pc2-079-l",
+            ip_addr4: Some(
+                138.251.28.81,
+            ),
+            ip_addr6: Some(
+                [::]:23756,
+            ),
+            username: "tgh1",
+            serial_number_generator: SerialNumberGenerator {
+                next_serial_number: 1,
+            },
+        },
+    }
+[2025-11-22T14:53:20.624Z INFO  code::filetree_browser::configuration] hostname: pc2-079-l, username: tgh1
+[2025-11-22T14:53:20.627Z INFO  code::multicast] started beacon
+[2025-11-22T14:53:20.627Z INFO  code] starting listener
+[2025-11-22T14:53:20.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:1:20251122-145320.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:20.630Z INFO  code::filetree_browser::configuration] hostname: pc2-079-l, username: tgh1
+port: 23756, ipv6 addr: ff02::2:3756
+[2025-11-22T14:53:20.630Z INFO  code::filetree_browser] Starting FileTreeBrowser
+[2025-11-22T14:53:20.631Z INFO  code::filetree_browser] Configuration loaded: id=tgh1, root_dir=root_dir
+
++++  id: tgh1
++++ pwd: /
++++	filename:
+0	dir1/
+1	test/
+2	dir2/
+3	non-text/
+4	dir3/
++++
+
+[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] 
+[2025-11-22T14:53:22.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:6:20251122-145322.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:23.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:5:20251122-145323.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:25.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:2:20251122-145325.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:27.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:7:20251122-145327.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:28.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:6:20251122-145328.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:30.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:3:20251122-145330.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:32.881Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:8:20251122-145332.880:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:33.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:7:20251122-145333.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:35.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:4:20251122-145335.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:37.025Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:1:20251122-145337.025:search:request:text:
+[2025-11-22T14:53:37.111Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:1:20251122-145337.055:search:result:tgh1@pc2-080-l:1:/dir3/text3-1.txt:36:
+[2025-11-22T14:53:37.113Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:1:20251122-145337.045:search:result:tgh1@pc2-080-l:1:/dir1/text1-1.txt:6:
+[2025-11-22T14:53:37.159Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:2:20251122-145337.114:search:result:tgh1@pc2-080-l:1:/dir1/text1-2.txt:12:
+[2025-11-22T14:53:37.203Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:2:20251122-145337.112:search:result:tgh1@pc2-080-l:1:/dir3/text3-2.txt:42:
+[2025-11-22T14:53:37.247Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:3:20251122-145337.159:search:result:tgh1@pc2-080-l:1:/dir1/text1-3.txt:18:
+[2025-11-22T14:53:37.319Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:4:20251122-145337.248:search:result:tgh1@pc2-080-l:1:/dir2/text2-2.txt:30:
+[2025-11-22T14:53:37.320Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:3:20251122-145337.204:search:result:tgh1@pc2-080-l:1:/dir2/text2-2.txt:30:
+[2025-11-22T14:53:37.375Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:4:20251122-145337.320:search:result:tgh1@pc2-080-l:1:/dir2/text2-1.txt:24:
+[2025-11-22T14:53:37.432Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:5:20251122-145337.320:search:result:tgh1@pc2-080-l:1:/dir2/text2-1.txt:24:
+[2025-11-22T14:53:37.465Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:5:20251122-145337.375:search:result:tgh1@pc2-080-l:1:/dir1/text1-1.txt:6:
+[2025-11-22T14:53:37.536Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:6:20251122-145337.434:search:result:tgh1@pc2-080-l:1:/dir3/text3-1.txt:36:
+[2025-11-22T14:53:37.562Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:6:20251122-145337.465:search:result:tgh1@pc2-080-l:1:/dir1/text1-2.txt:12:
+[2025-11-22T14:53:37.632Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:7:20251122-145337.562:search:result:tgh1@pc2-080-l:1:/dir1/text1-3.txt:18:
+[2025-11-22T14:53:37.643Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:7:20251122-145337.537:search:result:tgh1@pc2-080-l:1:/dir3/text3-2.txt:42:
+[2025-11-22T14:53:37.673Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:8:20251122-145337.644:search:result:tgh1@pc2-080-l:1:/non-text/video/no_charge-web.mp4:488596:
+[2025-11-22T14:53:37.716Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:8:20251122-145337.632:search:result:tgh1@pc2-080-l:1:/dir3/dir3-1/text3-1-1.txt:48:
+[2025-11-22T14:53:37.754Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:9:20251122-145337.716:search:result:tgh1@pc2-080-l:1:/dir3/dir3-1/text3-1-2.txt:54:
+[2025-11-22T14:53:37.767Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:9:20251122-145337.675:search:result:tgh1@pc2-080-l:1:/non-text/video/good_and_strong-web.mp4:319863:
+[2025-11-22T14:53:37.836Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:10:20251122-145337.768:search:result:tgh1@pc2-080-l:1:/non-text/video/all_the_twitters-web.mp4:275429:
+[2025-11-22T14:53:37.858Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:10:20251122-145337.754:search:result:tgh1@pc2-080-l:1:/non-text/images/ninja.jpg:66151:
+[2025-11-22T14:53:37.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:9:20251122-145337.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:37.953Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:11:20251122-145337.837:search:result:tgh1@pc2-080-l:1:/non-text/images/ninja.jpg:66151:
+[2025-11-22T14:53:37.977Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:11:20251122-145337.859:search:result:tgh1@pc2-080-l:1:/non-text/images/psion.jpg:69333:
+[2025-11-22T14:53:38.039Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:12:20251122-145337.978:search:result:tgh1@pc2-080-l:1:/non-text/images/totem.jpg:56120:
+[2025-11-22T14:53:38.063Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:12:20251122-145337.954:search:result:tgh1@pc2-080-l:1:/non-text/images/psion.jpg:69333:
+[2025-11-22T14:53:38.113Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:13:20251122-145338.064:search:result:tgh1@pc2-080-l:1:/non-text/images/gorilla.jpg:50243:
+[2025-11-22T14:53:38.118Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:13:20251122-145338.039:search:result:tgh1@pc2-080-l:1:/non-text/images/gorilla.jpg:50243:
+[2025-11-22T14:53:38.131Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:8:20251122-145338.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:38.195Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:14:20251122-145338.114:search:result:tgh1@pc2-080-l:1:/non-text/images/crawdad.jpg:54979:
+[2025-11-22T14:53:38.199Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:14:20251122-145338.119:search:result:tgh1@pc2-080-l:1:/non-text/images/crawdad.jpg:54979:
+[2025-11-22T14:53:38.260Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:15:20251122-145338.199:search:result:tgh1@pc2-080-l:1:/non-text/video/all_the_twitters-web.mp4:275429:
+[2025-11-22T14:53:38.305Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:15:20251122-145338.196:search:result:tgh1@pc2-080-l:1:/non-text/images/totem.jpg:56120:
+[2025-11-22T14:53:38.321Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:16:20251122-145338.260:search:result:tgh1@pc2-080-l:1:/non-text/video/good_and_strong-web.mp4:319863:
+[2025-11-22T14:53:38.337Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:16:20251122-145338.306:search:result:tgh1@pc2-080-l:1:/dir3/dir3-1/text3-1-2.txt:54:
+[2025-11-22T14:53:38.366Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:17:20251122-145338.338:search:result:tgh1@pc2-080-l:1:/dir3/dir3-1/text3-1-1.txt:48:
+[2025-11-22T14:53:38.366Z INFO  code] file transfer finished!
+[2025-11-22T14:53:38.415Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:17:20251122-145338.322:search:result:tgh1@pc2-080-l:1:/non-text/video/no_charge-web.mp4:488596:
+[2025-11-22T14:53:38.481Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:18:20251122-145338.415:search:result:tgh1@pc2-080-l:1:/non-text/video/no_charge-web2.mp4:488596:
+[2025-11-22T14:53:40.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:5:20251122-145340.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:42.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:10:20251122-145342.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:43.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:9:20251122-145343.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:45.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:6:20251122-145345.629:advertisement:23756:search=true,download=true:
+:files
+----- Files from remote nodes -----
+Files owned by node: tgh1@pc2-080-l
+-----
+Files owned by node: tgh1@pc2-053-l
+	/dir1/text1-1.txt | 6
+	/dir1/text1-2.txt | 12
+	/dir1/text1-3.txt | 18
+	/dir2/text2-1.txt | 24
+	/dir2/text2-2.txt | 30
+	/dir3/dir3-1/text3-1-1.txt | 48
+	/dir3/dir3-1/text3-1-2.txt | 54
+	/dir3/text3-1.txt | 36
+	/dir3/text3-2.txt | 42
+	/non-text/images/crawdad.jpg | 54979
+	/non-text/images/gorilla.jpg | 50243
+	/non-text/images/ninja.jpg | 66151
+	/non-text/images/psion.jpg | 69333
+	/non-text/images/totem.jpg | 56120
+	/non-text/video/all_the_twitters-web.mp4 | 275429
+	/non-text/video/good_and_strong-web.mp4 | 319863
+	/non-text/video/no_charge-web.mp4 | 488596
+	/non-text/video/no_charge-web2.mp4 | 488596
+-----
+
+[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] 
+[2025-11-22T14:53:47.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:11:20251122-145347.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:48.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:10:20251122-145348.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:50.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:7:20251122-145350.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:52.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:12:20251122-145352.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:53.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:11:20251122-145353.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:55.640Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:8:20251122-145355.640:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:57.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:13:20251122-145357.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:53:58.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:12:20251122-145358.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:00.633Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:9:20251122-145400.633:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:02.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:14:20251122-145402.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:03.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:13:20251122-145403.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:05.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:10:20251122-145405.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:07.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:15:20251122-145407.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:08.131Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:14:20251122-145408.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:10.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:11:20251122-145410.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:12.876Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:16:20251122-145412.876:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:13.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:15:20251122-145413.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:15.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:12:20251122-145415.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:17.209Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:2:20251122-145417.209:download:request:tgh1@pc2-053-l:/non-text/video/no_charge-web2.mp4:
+[2025-11-22T14:54:17.209Z INFO  code] download request dropped: not intended for this node
+[2025-11-22T14:54:17.234Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:2:20251122-145417.233:download:result:/non-text/video/no_charge-web2.mp4:488596:
+[2025-11-22T14:54:17.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:17:20251122-145417.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:18.133Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:16:20251122-145418.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:20.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:13:20251122-145420.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:22.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:18:20251122-145422.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:23.131Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:17:20251122-145423.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:25.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:14:20251122-145425.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:27.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:19:20251122-145427.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:28.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:18:20251122-145428.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:30.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:15:20251122-145430.630:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:32.168Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:19:20251122-145432.168:search:request:charge:
+[2025-11-22T14:54:32.299Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:18:20251122-145432.270:search:result:tgh1@pc2-053-l:19:/non-text/video/no_charge-web.mp4:488596:
+[2025-11-22T14:54:32.359Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:3:20251122-145432.289:search:result:tgh1@pc2-053-l:19:/non-text/video/no_charge-web.mp4:488596:
+[2025-11-22T14:54:32.402Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:19:20251122-145432.300:search:result:tgh1@pc2-053-l:19:/non-text/video/no_charge-web2.mp4:488596:
+[2025-11-22T14:54:32.402Z INFO  code] file transfer finished!
+[2025-11-22T14:54:32.455Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:4:20251122-145432.359:search:result:tgh1@pc2-053-l:19:/non-text/video/no_charge-web2.mp4:488596:
+[2025-11-22T14:54:32.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:20:20251122-145432.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:33.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:19:20251122-145433.131:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:35.635Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:16:20251122-145435.635:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:37.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:21:20251122-145437.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:38.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:20:20251122-145438.132:advertisement:23756:search=true,download=true:
+:search
+Enter the name of the file you wish to find: 
+te[2025-11-22T14:54:40.632Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:17:20251122-145440.632:advertisement:23756:search=true,download=true:
+xt
+[2025-11-22T14:54:41.048Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:20:20251122-145441.048:search:request:text:
+[2025-11-22T14:54:41.100Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:20:20251122-145441.075:search:result:tgh1@pc2-079-l:20:/dir3/text3-1.txt:36:
+[2025-11-22T14:54:41.103Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:5:20251122-145441.061:search:result:tgh1@pc2-079-l:20:/dir1/text1-1.txt:6:
+[2025-11-22T14:54:41.131Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:21:20251122-145441.100:search:result:tgh1@pc2-079-l:20:/dir3/text3-2.txt:42:
+[2025-11-22T14:54:41.143Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:6:20251122-145441.104:search:result:tgh1@pc2-079-l:20:/dir1/text1-2.txt:12:
+[2025-11-22T14:54:41.235Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:22:20251122-145441.131:search:result:tgh1@pc2-079-l:20:/dir2/text2-2.txt:30:
+[2025-11-22T14:54:41.244Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:7:20251122-145441.143:search:result:tgh1@pc2-079-l:20:/dir1/text1-3.txt:18:
+[2025-11-22T14:54:41.286Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:23:20251122-145441.235:search:result:tgh1@pc2-079-l:20:/dir2/text2-1.txt:24:
+[2025-11-22T14:54:41.347Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:8:20251122-145441.244:search:result:tgh1@pc2-079-l:20:/dir2/text2-2.txt:30:
+[2025-11-22T14:54:41.373Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:24:20251122-145441.287:search:result:tgh1@pc2-079-l:20:/dir1/text1-1.txt:6:
+[2025-11-22T14:54:41.437Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:9:20251122-145441.347:search:result:tgh1@pc2-079-l:20:/dir2/text2-1.txt:24:
+[2025-11-22T14:54:41.456Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:25:20251122-145441.374:search:result:tgh1@pc2-079-l:20:/dir1/text1-2.txt:12:
+[2025-11-22T14:54:41.520Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:26:20251122-145441.456:search:result:tgh1@pc2-079-l:20:/dir1/text1-3.txt:18:
+[2025-11-22T14:54:41.543Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:10:20251122-145441.437:search:result:tgh1@pc2-079-l:20:/dir3/text3-1.txt:36:
+[2025-11-22T14:54:41.606Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:11:20251122-145441.544:search:result:tgh1@pc2-079-l:20:/dir3/text3-2.txt:42:
+[2025-11-22T14:54:41.632Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:27:20251122-145441.520:search:result:tgh1@pc2-079-l:20:/dir3/dir3-1/text3-1-1.txt:48:
+[2025-11-22T14:54:41.714Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:12:20251122-145441.606:search:result:tgh1@pc2-079-l:20:/non-text/video/no_charge-web.mp4:488596:
+[2025-11-22T14:54:41.733Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:28:20251122-145441.632:search:result:tgh1@pc2-079-l:20:/dir3/dir3-1/text3-1-2.txt:54:
+[2025-11-22T14:54:41.798Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:13:20251122-145441.714:search:result:tgh1@pc2-079-l:20:/non-text/video/no_charge-web2.mp4:488596:
+[2025-11-22T14:54:41.854Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:29:20251122-145441.733:search:result:tgh1@pc2-079-l:20:/non-text/images/ninja.jpg:66151:
+[2025-11-22T14:54:41.912Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:14:20251122-145441.798:search:result:tgh1@pc2-079-l:20:/non-text/video/good_and_strong-web.mp4:319863:
+[2025-11-22T14:54:41.953Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:30:20251122-145441.855:search:result:tgh1@pc2-079-l:20:/non-text/images/psion.jpg:69333:
+[2025-11-22T14:54:41.977Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:15:20251122-145441.912:search:result:tgh1@pc2-079-l:20:/non-text/video/all_the_twitters-web.mp4:275429:
+[2025-11-22T14:54:41.994Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:31:20251122-145441.953:search:result:tgh1@pc2-079-l:20:/non-text/images/totem.jpg:56120:
+[2025-11-22T14:54:42.045Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:16:20251122-145441.977:search:result:tgh1@pc2-079-l:20:/non-text/images/ninja.jpg:66151:
+30 matches for the string exist for "text" currently
+/dir3/text3-2.txt | tgh1@pc2-053-l
+/dir1/text1-2.txt | tgh1@pc2-053-l
+/dir1/text1-3.txt | tgh1@pc2-080-l
+/dir1/text1-1.txt | tgh1@pc2-053-l
+/non-text/images/ninja.jpg | tgh1@pc2-080-l
+/non-text/video/no_charge-web.mp4 | tgh1@pc2-053-l
+/non-text/video/good_and_strong-web.mp4 | tgh1@pc2-053-l
+/non-text/video/all_the_twitters-web.mp4 | tgh1@pc2-080-l
+/non-text/images/psion.jpg | tgh1@pc2-053-l
+/non-text/images/ninja.jpg | tgh1@pc2-053-l
+/dir2/text2-2.txt | tgh1@pc2-053-l
+/non-text/images/totem.jpg | tgh1@pc2-053-l
+/dir1/text1-1.txt | tgh1@pc2-080-l
+/non-text/video/all_the_twitters-web.mp4 | tgh1@pc2-053-l
+/non-text/video/no_charge-web2.mp4 | tgh1@pc2-080-l
+/dir3/text3-1.txt | tgh1@pc2-053-l
+/dir3/text3-2.txt | tgh1@pc2-080-l
+/non-text/video/good_and_strong-web.mp4 | tgh1@pc2-080-l
+/dir1/text1-2.txt | tgh1@pc2-080-l
+/dir2/text2-1.txt | tgh1@pc2-053-l
+/dir3/dir3-1/text3-1-2.txt | tgh1@pc2-053-l
+/dir2/text2-2.txt | tgh1@pc2-080-l
+/dir2/text2-1.txt | tgh1@pc2-080-l
+/non-text/video/no_charge-web.mp4 | tgh1@pc2-080-l
+/non-text/images/crawdad.jpg | tgh1@pc2-053-l
+/non-text/images/gorilla.jpg | tgh1@pc2-053-l
+/dir3/dir3-1/text3-1-1.txt | tgh1@pc2-053-l
+/non-text/video/no_charge-web2.mp4 | tgh1@pc2-053-l
+/dir1/text1-3.txt | tgh1@pc2-053-l
+/dir3/text3-1.txt | tgh1@pc2-080-l
+
+[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] 
+[2025-11-22T14:54:42.096Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:17:20251122-145442.045:search:result:tgh1@pc2-079-l:20:/non-text/images/psion.jpg:69333:
+[2025-11-22T14:54:42.107Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:32:20251122-145441.994:search:result:tgh1@pc2-079-l:20:/non-text/images/gorilla.jpg:50243:
+[2025-11-22T14:54:42.192Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:18:20251122-145442.096:search:result:tgh1@pc2-079-l:20:/non-text/images/gorilla.jpg:50243:
+[2025-11-22T14:54:42.213Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:33:20251122-145442.107:search:result:tgh1@pc2-079-l:20:/non-text/images/crawdad.jpg:54979:
+[2025-11-22T14:54:42.251Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:19:20251122-145442.192:search:result:tgh1@pc2-079-l:20:/non-text/images/crawdad.jpg:54979:
+[2025-11-22T14:54:42.291Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:34:20251122-145442.213:search:result:tgh1@pc2-079-l:20:/non-text/video/all_the_twitters-web.mp4:275429:
+[2025-11-22T14:54:42.299Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:20:20251122-145442.252:search:result:tgh1@pc2-079-l:20:/non-text/images/totem.jpg:56120:
+[2025-11-22T14:54:42.391Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:21:20251122-145442.299:search:result:tgh1@pc2-079-l:20:/dir3/dir3-1/text3-1-2.txt:54:
+[2025-11-22T14:54:42.409Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:35:20251122-145442.291:search:result:tgh1@pc2-079-l:20:/non-text/video/good_and_strong-web.mp4:319863:
+[2025-11-22T14:54:42.461Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:22:20251122-145442.392:search:result:tgh1@pc2-079-l:20:/dir3/dir3-1/text3-1-1.txt:48:
+[2025-11-22T14:54:42.510Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:36:20251122-145442.408:search:result:tgh1@pc2-079-l:20:/non-text/video/no_charge-web.mp4:488596:
+[2025-11-22T14:54:42.612Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:37:20251122-145442.511:search:result:tgh1@pc2-079-l:20:/non-text/video/no_charge-web2.mp4:488596:
+[2025-11-22T14:54:42.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:22:20251122-145442.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:43.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:21:20251122-145443.132:advertisement:23756:search=true,download=true:
+:files
+----- Files from remote nodes -----
+Files owned by node: tgh1@pc2-080-l
+	/dir1/text1-1.txt | 6
+	/dir1/text1-2.txt | 12
+	/dir1/text1-3.txt | 18
+	/dir2/text2-1.txt | 24
+	/dir2/text2-2.txt | 30
+	/dir3/dir3-1/text3-1-1.txt | 48
+	/dir3/dir3-1/text3-1-2.txt | 54
+	/dir3/text3-1.txt | 36
+	/dir3/text3-2.txt | 42
+	/non-text/images/crawdad.jpg | 54979
+	/non-text/images/gorilla.jpg | 50243
+	/non-text/images/ninja.jpg | 66151
+	/non-text/images/psion.jpg | 69333
+	/non-text/images/totem.jpg | 56120
+	/non-text/video/all_the_twitters-web.mp4 | 275429
+	/non-text/video/good_and_strong-web.mp4 | 319863
+	/non-text/video/no_charge-web.mp4 | 488596
+	/non-text/video/no_charge-web2.mp4 | 488596
+-----
+Files owned by node: tgh1@pc2-053-l
+	/dir1/text1-1.txt | 6
+	/dir1/text1-2.txt | 12
+	/dir1/text1-3.txt | 18
+	/dir2/text2-1.txt | 24
+	/dir2/text2-2.txt | 30
+	/dir3/dir3-1/text3-1-1.txt | 48
+	/dir3/dir3-1/text3-1-2.txt | 54
+	/dir3/text3-1.txt | 36
+	/dir3/text3-2.txt | 42
+	/non-text/images/crawdad.jpg | 54979
+	/non-text/images/gorilla.jpg | 50243
+	/non-text/images/ninja.jpg | 66151
+	/non-text/images/psion.jpg | 69333
+	/non-text/images/totem.jpg | 56120
+	/non-text/video/all_the_twitters-web.mp4 | 275429
+	/non-text/video/good_and_strong-web.mp4 | 319863
+	/non-text/video/no_charge-web.mp4 | 488596
+	/non-text/video/no_charge-web2.mp4 | 488596
+-----
+
+[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] 
+[2025-11-22T14:54:45.628Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:18:20251122-145445.629:advertisement:23756:search=true,download=true:
+:nodes
+tgh1@pc2-080-l|[fe80::26fb:e3ff:fe44:4d9d%2]:23756
+tgh1@pc2-053-l|[fe80::26fb:e3ff:fe44:4ce5%2]:23756
+
+[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] 
+[2025-11-22T14:54:47.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:23:20251122-145447.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:48.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:22:20251122-145448.132:advertisement:23756:search=true,download=true:
+.
+
++++  id: tgh1
++++ pwd: /
++++	filename:
+0	dir1/
+1	test/
+2	dir2/
+3	non-text/
+4	dir3/
++++
+
+[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] 
+[2025-11-22T14:54:50.628Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:19:20251122-145450.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:52.872Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:24:20251122-145452.871:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:53.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:23:20251122-145453.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:55.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:20:20251122-145455.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:57.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:25:20251122-145457.868:advertisement:23756:search=true,download=true:
+[2025-11-22T14:54:58.133Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:24:20251122-145458.133:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:00.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:21:20251122-145500.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:02.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:26:20251122-145502.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:03.133Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:25:20251122-145503.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:05.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:22:20251122-145505.630:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:07.870Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:27:20251122-145507.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:08.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:26:20251122-145508.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:10.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:23:20251122-145510.629:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:12.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:28:20251122-145512.869:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:13.133Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:27:20251122-145513.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:15.630Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:24:20251122-145515.631:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:17.869Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:29:20251122-145517.868:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:18.133Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:28:20251122-145518.132:advertisement:23756:search=true,download=true:
+[2025-11-22T14:55:20.457Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4d9d%2]:23756, :tgh1@pc2-080-l:1:20251122-145520.457:leaving:
+[2025-11-22T14:55:20.628Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:25:20251122-145520.629:advertisement:23756:search=true,download=true:
+:[2025-11-22T14:55:23.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:29:20251122-145523.132:advertisement:23756:search=true,download=true:
+files
+----- Files from remote nodes -----
+Files owned by node: tgh1@pc2-053-l
+	/dir1/text1-1.txt | 6
+	/dir1/text1-2.txt | 12
+	/dir1/text1-3.txt | 18
+	/dir2/text2-1.txt | 24
+	/dir2/text2-2.txt | 30
+	/dir3/dir3-1/text3-1-1.txt | 48
+	/dir3/dir3-1/text3-1-2.txt | 54
+	/dir3/text3-1.txt | 36
+	/dir3/text3-2.txt | 42
+	/non-text/images/crawdad.jpg | 54979
+	/non-text/images/gorilla.jpg | 50243
+	/non-text/images/ninja.jpg | 66151
+	/non-text/images/psion.jpg | 69333
+	/non-text/images/totem.jpg | 56120
+	/non-text/video/all_the_twitters-web.mp4 | 275429
+	/non-text/video/good_and_strong-web.mp4 | 319863
+	/non-text/video/no_charge-web.mp4 | 488596
+	/non-text/video/no_charge-web2.mp4 | 488596
+-----
+
+[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] 
+:[2025-11-22T14:55:25.629Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:26:20251122-145525.629:advertisement:23756:search=true,download=true:
+nodes
+tgh1@pc2-053-l|[fe80::26fb:e3ff:fe44:4ce5%2]:23756
+
+[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] 
+[2025-11-22T14:55:28.132Z INFO  code] ->rx6 from:[fe80::26fb:e3ff:fe44:4ce5%2]:23756, :tgh1@pc2-053-l:30:20251122-145528.131:advertisement:23756:search=true,download=true:
+:quit
+[2025-11-22T14:55:30.368Z INFO  code::filetree_browser] Quitting application
+[2025-11-22T14:55:30.369Z INFO  code::filetree_browser] FileTreeBrowser terminated
+[2025-11-22T14:55:30.369Z INFO  code::message_socket] tx6-> :tgh1@pc2-079-l:1:20251122-145530.369:leaving:
+[2025-11-22T14:55:30.369Z INFO  code] ui returned
+Ok(())
+[2025-11-22T14:55:30.369Z INFO  code::multicast::multicast_endpoint] Left IPv4 multicast group
+[2025-11-22T14:55:30.369Z INFO  code::multicast::multicast_endpoint] Left IPv6 multicast group
