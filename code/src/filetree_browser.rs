@@ -447,6 +447,9 @@ async fn download(
         target_file_absolute_path = ftb.read().await.logical_path_to_absolute_path(&target_file).await?;
     }
 
+    debug!("target file logical path: {}", target_file);
+    debug!("target file absolute path: {}", target_file_absolute_path);
+
     // If the file already exists in the local logical directory, abandon the request
     let Ok(false) = target_file_absolute_path.try_exists() else {
         println!("Cannot download requested file, it already exists locally!");
@@ -480,6 +483,7 @@ async fn download(
     // Check that the node in question contains the file we are looking for. Otherwise, abandon.
     {
         let ftb_handle = ftb.read().await;
+        // let logical_file_path = ftb.read().await.absolute_path_to_logical_path(target_file_absolute_path)
         let soft_state_handle = ftb_handle.soft_state.read().await;
         let Some(target_node) = soft_state_handle.get_node(&target_identifier).await else {
             info!("download abandoned: requested node \"{}\" does not exist", &target_identifier);
@@ -659,7 +663,13 @@ pub async fn run_ftb_ui(
 
             ":files" => files(ftb.clone()).await?,
 
-            ":download" => download(ftb.clone()).await?,
+            ":download" => {
+                let result = download(ftb.clone()).await;
+                if let Err(e) = result
+                {
+                    println!("{}", e);
+                }
+            },
 
             // The user has not entered any of the above commands, so assume they are requesting the
             // metadata for a specific file in the current working directory.

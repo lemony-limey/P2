@@ -98,6 +98,7 @@ impl FTBSoftState
     pub async fn get_node(&self, identifier: &Identifier) -> Option<Arc<RwLock<Node>>>
     {
         let mut nodes_handle = self.nodes.write().await;
+        debug!("nodes: {:#?}", nodes_handle);
         let Some(node) = nodes_handle.get(identifier) else {
             debug!("node {} does not exist", identifier);
             return None;
