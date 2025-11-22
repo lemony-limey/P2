@@ -168,11 +168,12 @@ pub async fn process_incoming_messages(
 
                 debug!(
                     "received SEARCH RESULT; id: {}; logical_file_path: {}; file_size: {}",
-                    response_id,
+                    response_id.identifier(),
                     logical_file_path,
                     file_size,
                 );
 
+                debug!("current state of soft state: {:#?}", soft_state_handle);
                 let Some(node) = nodes_handle.get(response_id.identifier()) else {
                     debug!("search result dropped: unknown node {}", response_id.identifier());
                     continue;
