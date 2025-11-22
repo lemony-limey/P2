@@ -1,4 +1,4 @@
-use log::info;
+use log::trace;
 use std::fmt;
 use std::fmt::Formatter;
 use anyhow::Context;
@@ -46,9 +46,9 @@ impl SerialNumberGenerator
     pub fn get_next_serial_number(&mut self) -> NonZeroU64
     {
         let serial_number = self.next_serial_number;
-        info!("current serial number: {}", serial_number);
+        trace!("current serial number: {}", serial_number);
         self.next_serial_number = self.next_serial_number.saturating_add(1u64);
-        info!("next serial number: {}", self.next_serial_number);
+        trace!("next serial number: {}", self.next_serial_number);
 
         serial_number
     }

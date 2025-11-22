@@ -89,6 +89,6 @@ pub async fn beacon(
 
         // Send the beacon message.
         socket.tx_message(message.clone()).await?;
-        info!("sent beacon {}; {}", next_serial_number, message);
+        debug!("sent beacon {}; {}", next_serial_number, message);
     }
 }
