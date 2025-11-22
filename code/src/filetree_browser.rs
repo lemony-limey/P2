@@ -3,6 +3,7 @@
 
 pub mod configuration;
 
+use log::trace;
 use log::error;
 use tokio::fs::{DirEntry};
 use std::collections::VecDeque;
@@ -178,14 +179,14 @@ impl FileTreeBrowser
             // If the entry is a directory, add all of its entries to the queue also.
             if entry.is_dir()
             {
-                debug!("reading dir {:?}", &entry);
+                trace!("reading dir {:?}", &entry);
                 let Ok(mut new_entries) = fs::read_dir(&entry).await else {
                     continue;
                 };
 
                 while let Some(new_entry) = new_entries.next_entry().await?
                 {
-                    debug!("adding entry: {:#?}", new_entry);
+                    trace!("adding entry: {:#?}", new_entry);
                     queue.push_back(new_entry);
                 }
             }
@@ -194,7 +195,7 @@ impl FileTreeBrowser
                 // If the current file contains a substring match, add it to the list of matches
                 if let Some(entry) = entry.to_str()
                 {
-                    debug!("substring: {}; current entry: {}", substring, entry);
+                    trace!("substring: {}; current entry: {}", substring, entry);
                     if entry.contains(substring)
                     {
                         matches.push(self.absolute_path_to_logical_path(Path::new(entry)).await?);
@@ -203,8 +204,8 @@ impl FileTreeBrowser
                 }
             }
 
-            debug!("queue: {:#?}", queue);
-            debug!("matches: {:#?}", matches);
+            trace!("queue: {:#?}", queue);
+            trace!("matches: {:#?}", matches);
         }
 
         debug!("matches: {:#?}", matches);

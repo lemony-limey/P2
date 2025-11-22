@@ -107,55 +107,55 @@ pub async fn process_incoming_messages(
                 // the whole listener thread.
                 let ftb = ftb.clone();
                 let socket = socket.clone();
-                // tokio::spawn(async move {
-                //     let header_identifier = header.identifier.clone();
-                //     let header_serial_number = header.serial_number.clone();
-                //
-                //     // If there are no matches, ignore the request
-                //     // Else, send a search response out for every match found.
-                //     for file_match in matches
-                //     {
-                //         let serial_number: SerialNumber;
-                //         let identifier: Identifier;
-                //         let file_size: u64;
-                //         {
-                //             let mut ftb_handle = ftb.write().await;
-                //             serial_number = SerialNumber(ftb_handle.config.next_search_serial_number());
-                //             identifier = ftb_handle.get_current_identifier();
-                //             if let Ok(match_file_size) = ftb_handle.get_file_size(&file_match).await
-                //             {
-                //                 file_size = match_file_size;
-                //             }
-                //             else
-                //             {
-                //                 error!("could not get file size of \"{}\"", &file_match);
-                //                 continue;
-                //             }
-                //         }
-                //
-                //         let search_response = Message::new(
-                //             Header::new(
-                //                 identifier.clone(),
-                //                 serial_number,
-                //                 Timestamp::now().expect("could not get current timestamp"),
-                //             ),
-                //             Payload::Search(
-                //                 SearchMessage::Result {
-                //                     response_id: ResponseID::new(
-                //                         header_identifier.clone(),
-                //                         header_serial_number,
-                //                     ),
-                //                     logical_file_path: file_match,
-                //                     file_size,
-                //                 },
-                //             ),
-                //         );
-                //
-                //         // As per Multicast DNS (RFC 6762), Section 6.3
-                //         tokio::time::sleep(Duration::from_millis(rand::random_range(20..=120))).await;
-                //         let _ = socket.tx_message(search_response).await;
-                //     }
-                // });  // End of tokio::spawn block
+                tokio::spawn(async move {
+                    let header_identifier = header.identifier.clone();
+                    let header_serial_number = header.serial_number.clone();
+
+                    // If there are no matches, ignore the request
+                    // Else, send a search response out for every match found.
+                    for file_match in matches
+                    {
+                        let serial_number: SerialNumber;
+                        let identifier: Identifier;
+                        let file_size: u64;
+                        {
+                            let mut ftb_handle = ftb.write().await;
+                            serial_number = SerialNumber(ftb_handle.config.next_search_serial_number());
+                            identifier = ftb_handle.get_current_identifier();
+                            if let Ok(match_file_size) = ftb_handle.get_file_size(&file_match).await
+                            {
+                                file_size = match_file_size;
+                            }
+                            else
+                            {
+                                error!("could not get file size of \"{}\"", &file_match);
+                                continue;
+                            }
+                        }
+
+                        let search_response = Message::new(
+                            Header::new(
+                                identifier.clone(),
+                                serial_number,
+                                Timestamp::now().expect("could not get current timestamp"),
+                            ),
+                            Payload::Search(
+                                SearchMessage::Result {
+                                    response_id: ResponseID::new(
+                                        header_identifier.clone(),
+                                        header_serial_number,
+                                    ),
+                                    logical_file_path: file_match,
+                                    file_size,
+                                },
+                            ),
+                        );
+
+                        // As per Multicast DNS (RFC 6762), Section 6.3
+                        tokio::time::sleep(Duration::from_millis(rand::random_range(20..=120))).await;
+                        let _ = socket.tx_message(search_response).await;
+                    }
+                });  // End of tokio::spawn block
             },
             // If this is a response to a search message initiated by the current user, add the
             // file name and size to the database for the node sending the response.
