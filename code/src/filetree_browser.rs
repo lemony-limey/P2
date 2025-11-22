@@ -377,7 +377,7 @@ async fn search(
     else
     {
         println!(
-            "{} nodes are currently known to contain the file {}",
+            "{} matches for the string exist for \"{}\" currently",
             nodes_with_file.len(),
             &search_string,
         );
@@ -534,7 +534,7 @@ async fn download(
         return Err(e);
     }
 
-    info!("download of {} succeeded!", &target_file);
+    println!("download of {} succeeded!", &target_file);
 
     // On download success, sent a download result message out
     let file_size: u64;
