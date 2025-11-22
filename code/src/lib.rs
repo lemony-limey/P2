@@ -3,7 +3,7 @@ use log::warn;
 use chrono::DateTime;
 use crate::protocol::identifier::Identifier;
 use chrono::{TimeDelta, Utc};
-use std::net::{IpAddr, SocketAddr, SocketAddrV6};
+use std::net::SocketAddr;
 use std::ops::Add;
 use log::debug;
 use std::path::PathBuf;

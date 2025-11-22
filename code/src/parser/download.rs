@@ -1,6 +1,6 @@
 use crate::{
     constants::{PROTOCOL_DELIMITER_STR, REQUEST, RESULT},
-    parser::message::{parse_delimiter, parse_response_id},
+    parser::message::parse_delimiter,
     protocol::download::DownloadMessage,
 };
 use nom::{

@@ -1,7 +1,6 @@
 //! Configuration handling for the beacon application.
 //! Rust version based on saleem's original Java version
 
-use anyhow::anyhow;
 use log::debug;
 use log::info;
 use std::num::NonZeroU64;

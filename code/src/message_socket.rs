@@ -1,8 +1,6 @@
 use std::net::SocketAddr;
-use std::time::Duration;
 use log::debug;
 use log::info;
-use socket2::SockAddr;
 use crate::multicast::multicast_endpoint::{MulticastEndpoint, PacketType};
 use crate::protocol::message::Message;
 

@@ -1,5 +1,3 @@
-use log::info;
-use std::net::SocketAddrV6;
 use crate::logical_file_path::LogicalFilePath;
 use crate::protocol::{
     identifier::Identifier,
@@ -7,7 +5,7 @@ use crate::protocol::{
 };
 use anyhow::Context;
 use chrono::{DateTime, TimeDelta, Utc};
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Formatter;
@@ -16,8 +14,6 @@ use std::net::SocketAddr;
 use std::ops::Add;
 use std::sync::Arc;
 use log::debug;
-use tokio::fs;
-use tokio::fs::DirEntry;
 use tokio::sync::RwLock;
 use crate::constants::{TTL_NANOSECONDS, TTL_SECONDS};
 use crate::get_ttl_timestamp;

@@ -1,5 +1,4 @@
 use crate::protocol::identifier::Identifier;
-use crate::protocol::message::ResponseID;
 use std::fmt::{self, Formatter};
 use crate::logical_file_path::LogicalFilePath;
 

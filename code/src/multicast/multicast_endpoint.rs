@@ -22,7 +22,6 @@ use bytes::{BufMut, BytesMut};
 use tokio::{
     net::UdpSocket,
 };
-use crate::constants::BUFFER_SIZE;
 
 /// type of packet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

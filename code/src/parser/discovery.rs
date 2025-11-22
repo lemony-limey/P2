@@ -1,5 +1,3 @@
-use std::str::FromStr;
-use std::net::{Ipv6Addr, SocketAddrV6};
 use crate::{
     constants::PROTOCOL_DELIMITER_STR,
     parser::message::parse_delimiter,
