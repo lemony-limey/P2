@@ -1,6 +1,7 @@
 //! Multicast networking functionality wrapper using socket2
 //! Rust version based on saleem's original Java
 
+use log::trace;
 use std::fmt;
 use crate::{
     protocol::message::{Message},
@@ -277,7 +278,7 @@ impl MulticastEndpoint
     /// the type of packet received (IPv4, IPv6, or None)
     async fn rx_ipv4(&self, buffer: &mut BytesMut) -> anyhow::Result<(PacketType, Option<SocketAddr>)>
     {
-        info!("rx_ipv4 called");
+        debug!("rx_ipv4 called");
         let mut buffer_omg = [0; 1024];
 
         // try IPv4
@@ -286,12 +287,13 @@ impl MulticastEndpoint
             match socket.recv_from(&mut buffer_omg).await
             {
                 Ok((len, socket_addr)) if len > 0 => {
-                    debug!("Received {} bytes on IPv4 from {}", len, socket_addr);
+                    trace!("Received {} bytes on IPv4 from {}", len, socket_addr);
                     buffer.writer().write_all(&mut buffer_omg)?;
                     return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                     // no data available, continue to IPv6
+                    info!("rx_ipv4: wouldblock");
                 }
                 Err(e) => {
                     error!("IPv4 receive error: {}", e);
@@ -305,7 +307,7 @@ impl MulticastEndpoint
 
     async fn rx_ipv6(&self, buffer: &mut BytesMut) -> anyhow::Result<(PacketType, Option<SocketAddr>)>
     {
-        info!("rx_ipv6 called");
+        debug!("rx_ipv6 called");
         let mut buffer_omg = [0; 1024];
 
         // try IPv6
@@ -314,7 +316,7 @@ impl MulticastEndpoint
             match socket.recv_from(&mut buffer_omg).await
             {
                 Ok((len, socket_addr)) if len > 0 => {
-                    debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
+                    trace!("Received {} bytes on IPv6 from {}", len, socket_addr);
                     buffer.writer().write_all(&mut buffer_omg[..len])?;
                     return Ok((PacketType::Ipv6, Some(socket_addr)));
                 }
