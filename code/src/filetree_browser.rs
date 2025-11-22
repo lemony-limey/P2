@@ -194,7 +194,7 @@ impl FileTreeBrowser
                     debug!("substring: {}; current entry: {}", substring, entry);
                     if entry.contains(substring)
                     {
-                        matches.push(LogicalFilePath::new(entry));
+                        matches.push(self.absolute_path_to_logical_path(Path::new(entry)).await?);
                         debug!("search_for_substring: MATCH! substring: {}; string: {}", substring, entry);
                     }
                 }
@@ -362,7 +362,7 @@ async fn search(
 
     if nodes_with_file.is_empty()
     {
-        println!("No nodes are currently known to contain an exact match for \"{}\". Try \":files\" to get similar matches", &search_string);
+        println!("No nodes are currently known to contain an exact match for \"{}\". Run \":files\" to look for partial matches", &search_string);
     }
     else
     {
