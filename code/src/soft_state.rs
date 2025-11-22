@@ -250,7 +250,7 @@ impl Node
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct FileMetadata
 {
     pub size: u64,

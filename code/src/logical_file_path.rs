@@ -8,7 +8,7 @@ use std::fmt::Formatter;
 /// They do not contain the root directory itself.
 /// For example, "/" refers to "/{path_to_root_dir}/", and so "/dir1/hello.txt" refers to
 /// "/{path_to_root_dir}/dir1/hello.txt"
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Ord, PartialOrd)]
 pub struct LogicalFilePath(String);
 
 impl LogicalFilePath

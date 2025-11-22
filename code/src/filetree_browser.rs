@@ -9,7 +9,7 @@ use tokio::fs::{DirEntry};
 use std::collections::VecDeque;
 use crate::anyhow;
 use std::collections::HashSet;
-use crate::soft_state::FTBSoftState;
+use crate::soft_state::{FTBSoftState, FileMetadata};
 use tokio::{
     sync::RwLock,
     fs,
@@ -402,7 +402,11 @@ async fn files(
     {
         println!("Files owned by node: {}", identifier);
 
-        for (file_path, metadata) in node.read().await.files.iter()
+        let node_handle = node.read().await;
+        let mut files = node_handle.files.iter().collect::<Vec<(&LogicalFilePath, &FileMetadata)>>();
+        files.sort();
+
+        for (file_path, metadata) in files
         {
             println!("\t{} | {}", file_path, metadata.size);
         }
@@ -441,6 +445,7 @@ async fn download(
         stdin().lock().read_line(&mut target_file)
             .with_context(|| "search(): could not get search string from stdin")?;
     }
+    target_file = target_file.trim().to_string();
     let target_file = LogicalFilePath::new(target_file);
     let target_file_absolute_path: PathBuf;
     {
