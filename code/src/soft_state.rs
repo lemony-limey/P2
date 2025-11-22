@@ -6,7 +6,7 @@ use crate::protocol::{
 };
 use anyhow::Context;
 use chrono::{DateTime, TimeDelta, Utc};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Formatter;
@@ -14,6 +14,9 @@ use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 use std::ops::Add;
 use std::sync::Arc;
+use log::debug;
+use tokio::fs;
+use tokio::fs::DirEntry;
 use tokio::sync::RwLock;
 use crate::constants::{TTL_NANOSECONDS, TTL_SECONDS};
 use crate::get_ttl_timestamp;
@@ -36,7 +39,7 @@ impl FTBSoftState
 
     /// Return the handle to any node found that contains the specified file.
     /// Exact matches only.
-    pub async fn find_file(&self, target: &LogicalFilePath) -> Option<HashSet<Identifier>>
+    pub async fn find_exact_file(&self, target: &LogicalFilePath) -> Option<HashSet<Identifier>>
     {
         let mut results = HashSet::new();
         let nodes_handle = self.nodes.read().await;
@@ -47,6 +50,33 @@ impl FTBSoftState
             if node.read().await.files.contains_key(target)
             {
                 results.insert(identifier.clone());
+            }
+        }
+
+        if results.is_empty()
+        {
+            None
+        }
+        else
+        {
+            Some(results)
+        }
+    }
+
+    /// Search for substring matches for files from other nodes.
+    pub async fn find_file_substring_match(&self, target: &str) -> Option<HashSet<(LogicalFilePath, Identifier)>>
+    {
+        let mut results: HashSet<(LogicalFilePath, Identifier)> = HashSet::new();
+
+        for (identifier, node) in self.nodes.read().await.iter()
+        {
+            for (logical_file_path, _metadata) in node.read().await.files.iter()
+            {
+                let path_as_str = logical_file_path.to_string();
+                if path_as_str.contains(target)
+                {
+                    results.insert((logical_file_path.clone(), identifier.clone()));
+                }
             }
         }
 

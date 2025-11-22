@@ -279,16 +279,16 @@ impl MulticastEndpoint
     async fn rx_ipv4(&self, buffer: &mut BytesMut) -> anyhow::Result<(PacketType, Option<SocketAddr>)>
     {
         debug!("rx_ipv4 called");
-        let mut buffer_omg = [0; 1024];
+        let mut inner_buffer = [0; 1024];
 
         // try IPv4
         if let Some(socket) = self.socket_v4.clone()
         {
-            match socket.recv_from(&mut buffer_omg).await
+            match socket.recv_from(&mut inner_buffer).await
             {
                 Ok((len, socket_addr)) if len > 0 => {
                     trace!("Received {} bytes on IPv4 from {}", len, socket_addr);
-                    buffer.writer().write_all(&mut buffer_omg)?;
+                    buffer.writer().write_all(&mut inner_buffer)?;
                     return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -308,16 +308,16 @@ impl MulticastEndpoint
     async fn rx_ipv6(&self, buffer: &mut BytesMut) -> anyhow::Result<(PacketType, Option<SocketAddr>)>
     {
         debug!("rx_ipv6 called");
-        let mut buffer_omg = [0; 1024];
+        let mut inner_buffer = [0; 1024];
 
         // try IPv6
         if let Some(socket) = self.socket_v6.clone()
         {
-            match socket.recv_from(&mut buffer_omg).await
+            match socket.recv_from(&mut inner_buffer).await
             {
                 Ok((len, socket_addr)) if len > 0 => {
                     trace!("Received {} bytes on IPv6 from {}", len, socket_addr);
-                    buffer.writer().write_all(&mut buffer_omg[..len])?;
+                    buffer.writer().write_all(&mut inner_buffer[..len])?;
                     return Ok((PacketType::Ipv6, Some(socket_addr)));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {

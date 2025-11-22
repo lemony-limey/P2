@@ -355,14 +355,14 @@ async fn search(
     // Query storage and check to see who has what file.
     let mut nodes_with_file = HashSet::new();
     let target_file = LogicalFilePath::new(&search_string);
-    if let Some(results) = ftb.read().await.soft_state.read().await.find_file(&target_file).await
+    if let Some(results) = ftb.read().await.soft_state.read().await.find_file_substring_match(&target_file.to_string()).await
     {
         nodes_with_file = results;
     }
 
     if nodes_with_file.is_empty()
     {
-        println!("No nodes are currently known to contain the file {}", &search_string);
+        println!("No nodes are currently known to contain an exact match for {}. Try \":files\" to get similar matches", &search_string);
     }
     else
     {
@@ -371,9 +371,30 @@ async fn search(
             nodes_with_file.len(),
             &search_string,
         );
-        for node in nodes_with_file
+        for (logical_file_path, identifier) in nodes_with_file
         {
-            println!("{}", node);
+            println!("{} | {}", logical_file_path, identifier);
+        }
+    }
+
+    Ok(())
+}
+
+async fn files(
+    ftb: Arc<RwLock<FileTreeBrowser>>,
+) -> anyhow::Result<()>
+{
+    let ftb_handle = ftb.read().await;
+    let soft_state_handle = ftb_handle.soft_state.read().await;
+    let nodes_handle = soft_state_handle.nodes.read().await;
+
+    for (identifier, node) in nodes_handle.iter()
+    {
+        println!("Files owned by node: {}", identifier);
+
+        for (file_path, metadata) in node.read().await.files.iter()
+        {
+            println!("\t{} | {}", file_path, metadata.size);
         }
     }
 
@@ -386,8 +407,6 @@ async fn download(
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
-    println!("\n * download: to do :-)");
-
     let serial_number: SerialNumber;
     let user_identifier: Identifier;
     // Split into 2 blocks to minimise the time we hold the exclusive write() handle for.
@@ -418,6 +437,7 @@ async fn download(
 
     // If the file already exists in the local logical directory, abandon the request
     let Ok(false) = target_file_absolute_path.try_exists() else {
+        println!("Cannot download requested file, it already exists locally!");
         info!("download request abandoned: file already exists locally at the same path: \"{}\"", &target_file);
         return Ok(())
     };
@@ -567,7 +587,7 @@ pub async fn run_ftb_ui(
 
     loop
     {
-        println!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':download' | ':quit' | ':help'] ");
+        println!("\n[filename | '.' | '..' | ':services' | ':nodes' | ':search' | ':files' | ':download' | ':quit' | ':help'] ");
         tokio::io::stdout().flush().await?;
 
         let user_cmd = loop
@@ -621,6 +641,8 @@ pub async fn run_ftb_ui(
             ":nodes" => nodes(ftb.clone()).await?,
 
             ":search" => search(ftb.clone()).await?,
+
+            ":files" => files(ftb.clone()).await?,
 
             ":download" => download(ftb.clone()).await?,
 
