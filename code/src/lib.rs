@@ -100,6 +100,7 @@ pub async fn process_incoming_messages(
                 {
                     debug!("searching for substring: {}", &search_string);
                     matches = ftb.read().await.search_for_substring(&search_string).await?;
+                    debug!("matches.len(): {}", matches.len());
                 }
 
                 // Spawn a new task for responding so that tokio::time::sleep does not stop
