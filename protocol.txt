@@ -46,8 +46,6 @@
     #
     # This could, for example, be a monotonically increasing number.
 
-TODO: Only respond on success?
-
   # A <response-id> would be used in a response messages to match requests to
   # responses so that multiple requests can be outstanding to the same server.
   <response-id> := <identifier> ":" <serial-number>
@@ -87,10 +85,10 @@ TODO: Only respond on success?
 
   <discovery-message> := <advertisement-message> / <leaving-message>
 
-  <advertisement-message> := "advertisement" ":" "(" <ipv6_link_local_addr> ")" ":" <server-port> ":" <services>
+  <advertisement-message> := "advertisement" ":" <server-port> ":" <services>
     # Example of a complete advertisement message, with header:
     #
-    #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:(::1):10123:search=true,download=false:
+    #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:[::1]:10123:search=true,download=false:
 
   <server-port> := *DIGIT
     # a non-zero, unsigned, 16-bit decimal number, on which this server
@@ -146,9 +144,9 @@ TODO: Only respond on success?
     # Note that the root, "/", here is the root_dir of the logical filespace
     # exposed via the application, and not the local unix root directory!
     #
-TODO:    # Searches could generate multiple results, and these should be sent
-    #   in separate messages, but using the same response-id so they can be
-    #   matched to the same request.
+    # Searches could generate multiple results, and these should be sent
+    # in separate messages, but using the same response-id so they can be
+    # matched to the same request.
 
 #### ####
 ## R3: Download -- TBD.
@@ -156,12 +154,10 @@ TODO:    # Searches could generate multiple results, and these should be sent
 # your definitions for the items below in your report.
 # You will need to use TCP/IPv6 for the file download.
 
-<download-message> := "download" ":" <download-request> / <download-response>
+  <download-message> := "download" ":" <download-request> / <download-result>
 
-<download-response> := <download-result> / <download-error>
+    # <download-request> := "request" ":" <target-identifier> ":" <logical-file-path>
 
-  # <download-request> := "request" ":" <identifier> ":" <file-name>
-
-  # We only send a download result if download completed successfully.
-  # <download-result> := "result" ":" <response-id> ":" <file-name> ":" <file-size>
+    # We only send a download result if download completed successfully.
+    # <download-result> := "result" ":" <logical-file-path> ":" <file-size>
 
