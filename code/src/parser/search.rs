@@ -48,7 +48,7 @@ pub(crate) fn parse_search_result_message(input: &str) -> IResult<&str, SearchMe
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     // Get the file string and consume the following delimiter.
-    let (remaining_input, file_path) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
+    let (remaining_input, logical_file_path) = take_until1(PROTOCOL_DELIMITER_STR).parse(remaining_input)?;
     let (remaining_input, _delimiter) = parse_delimiter(remaining_input)?;
 
     // Get the size of the file, but don't consume the following delimiter
@@ -58,7 +58,7 @@ pub(crate) fn parse_search_result_message(input: &str) -> IResult<&str, SearchMe
         remaining_input,
         SearchMessage::Result {
             response_id,
-            file_path: LogicalFilePath::new(file_path),
+            logical_file_path: LogicalFilePath::new(logical_file_path),
             file_size,
         }
     ))

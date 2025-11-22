@@ -143,7 +143,7 @@ pub async fn process_incoming_messages(
                                         header_identifier.clone(),
                                         header_serial_number,
                                     ),
-                                    file_path: file_match,
+                                    logical_file_path: file_match,
                                     file_size,
                                 },
                             ),
@@ -159,7 +159,7 @@ pub async fn process_incoming_messages(
             // file name and size to the database for the node sending the response.
             // The other nodes should only ever respond if they do contain a file that matches
             // the pattern provided.
-            Payload::Search(SearchMessage::Result { response_id, file_path: file_string, file_size }) => {
+            Payload::Search(SearchMessage::Result { response_id, logical_file_path, file_size }) => {
                 // Add file to the node, if it exists
                 let soft_state_handle = soft_state.write().await;
                 let mut nodes_handle = soft_state_handle.nodes.write().await;
@@ -179,7 +179,7 @@ pub async fn process_incoming_messages(
 
                 // Convert file_string to logical path and store with ttl
                 node_handle.files.insert(
-                    LogicalFilePath::new(file_string),
+                    LogicalFilePath::new(logical_file_path),
                     FileMetadata::new(
                         file_size,
                         ttl,
@@ -189,7 +189,7 @@ pub async fn process_incoming_messages(
             // If download, check if download is enabled then query storage,
             // then eventually spin up the TCP server.
             // TCP will be done asynchronously.
-            Payload::Download(DownloadMessage::Request { identifier, logical_file_path: file_path }) => {
+            Payload::Download(DownloadMessage::Request { identifier, logical_file_path }) => {
                 // Ensure the download request is actually for this endpoint
                 if ftb.read().await.get_current_identifier() != identifier
                 {
@@ -207,11 +207,11 @@ pub async fn process_incoming_messages(
                 // Check if the requested file is in storage by making a call to FileTreeBrowser,
                 // which handles local files. It will return a PathBuf if found.
                 {
-                    if !ftb.read().await.does_file_exist(&file_path).await?
+                    if !ftb.read().await.does_file_exist(&logical_file_path).await?
                     {
                         info!(
                             "download request dropped: requested file \"{}\" does not exist",
-                            &file_path,
+                            &logical_file_path,
                         );
                         continue;
                     }
@@ -239,7 +239,7 @@ pub async fn process_incoming_messages(
                 // Lock the file tree browser.
                 {
                     let ftb_handle = ftb.read().await;
-                    let Ok(path) = ftb_handle.logical_path_to_absolute_path(&file_path).await else {
+                    let Ok(path) = ftb_handle.logical_path_to_absolute_path(&logical_file_path).await else {
                         warn!("download request dropped: conversion from logical path to absolute path failed");
                         continue;
                     };
