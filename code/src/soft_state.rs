@@ -103,12 +103,14 @@ impl FTBSoftState
     {
         let mut nodes_handle = self.nodes.write().await;
         let Some(node) = nodes_handle.get(identifier) else {
+            debug!("node {} does not exist", identifier);
             return None;
         };
 
         // Check TTL. If expired, remove node.
         if node.read().await.ttl < Utc::now()
         {
+            debug!("node TTL expired");
             nodes_handle.remove(identifier);
             return None;
         }

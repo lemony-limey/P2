@@ -461,6 +461,7 @@ async fn download(
         stdin().lock().read_line(&mut target_identifier)
             .with_context(|| "search(): could not get search string from stdin")?;
     }
+    debug!("target identifier string: {}", &target_identifier);
 
     let mut identifier_components = target_identifier.split('@');
     let Some(uid) = identifier_components.next() else {
@@ -470,9 +471,11 @@ async fn download(
         return Err(anyhow!("Invalid identifier entered"));
     };
     let target_identifier = Identifier::new(
-        UID(uid.to_string()),
-        FQDN(fqdn.to_string()),
+        UID(uid.trim().to_string()),
+        FQDN(fqdn.trim().to_string()),
     );
+
+    debug!("target identifier: {}", &target_identifier);
 
     // Check that the node in question contains the file we are looking for. Otherwise, abandon.
     {
