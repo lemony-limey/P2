@@ -247,7 +247,7 @@ impl MulticastEndpoint
         //         }
         //     },
         let result = self.rx_ipv6(&mut buffer_2).await;
-        info!("rx_ipv6 returned");
+        info!("rx_ipv6 returned, result: {:#?}", result);
         info!("buffer contents: {}", str::from_utf8(&buffer_2[..])?);
         info!("buffer length: {}", &buffer_2.len());
 
