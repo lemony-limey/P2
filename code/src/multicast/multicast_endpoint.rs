@@ -309,7 +309,7 @@ impl MulticastEndpoint
             {
                 Ok((len, socket_addr)) if len > 0 => {
                     debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
-                    buffer.writer().write_all(&mut buffer_omg)?;
+                    buffer.writer().write_all(&mut buffer_omg[..len])?;
                     return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
