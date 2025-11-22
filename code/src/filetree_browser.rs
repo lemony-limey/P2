@@ -204,7 +204,10 @@ impl FileTreeBrowser
             }
 
             debug!("queue: {:#?}", queue);
+            debug!("matches: {:#?}", matches);
         }
+
+        debug!("matches: {:#?}", matches);
 
         Ok(matches)
     }
