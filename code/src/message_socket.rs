@@ -45,11 +45,11 @@ impl MessageSocket
         match self.endpoint.rx().await?
         {
             (PacketType::Ipv4, Some((socket_addr, message))) => {
-                debug!("packet type: IPv4; from: {}; message: {:#?}", socket_addr, message);
+                debug!("packet type: IPv4; from: {}; message: {}", socket_addr, message);
                 Ok(Some((PacketType::Ipv4, socket_addr, message)))
             },
             (PacketType::Ipv6, Some((socket_addr, message))) => {
-                debug!("packet type: IPv6; from: {}; message: {:#?}", socket_addr, message);
+                debug!("packet type: IPv6; from: {}; message: {}", socket_addr, message);
                 Ok(Some((PacketType::Ipv6, socket_addr, message)))
             },
             _ => Ok(None),
