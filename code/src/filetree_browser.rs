@@ -365,14 +365,14 @@ async fn search(
     // Query storage and check to see who has what file.
     let mut nodes_with_file = HashSet::new();
     let target_file = LogicalFilePath::new(&search_string);
-    if let Some(results) = ftb.read().await.soft_state.read().await.find_file_substring_match(&target_file.to_string()).await
+    if let Some(results) = ftb.read().await.soft_state.read().await.find_file_substring_match(&search_string).await
     {
         nodes_with_file = results;
     }
 
     if nodes_with_file.is_empty()
     {
-        println!("No nodes are currently known to contain an exact match for \"{}\". Run \":files\" to look for partial matches", &search_string);
+        println!("No nodes are currently known to contain a match for \"{}\". Run \":files\" to check again for partial matches", &search_string);
     }
     else
     {
@@ -394,6 +394,7 @@ async fn files(
     ftb: Arc<RwLock<FileTreeBrowser>>,
 ) -> anyhow::Result<()>
 {
+    println!("----- Files from remote nodes -----");
     let ftb_handle = ftb.read().await;
     let soft_state_handle = ftb_handle.soft_state.read().await;
     let nodes_handle = soft_state_handle.nodes.read().await;

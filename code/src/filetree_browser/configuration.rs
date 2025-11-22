@@ -57,7 +57,7 @@ impl Default for FiletreeBrowserConfiguration
             loopback: false,
             reuse_addr: false,
             so_timeout: 1,
-            sleep_time: 500,
+            sleep_time: 1000,
             maximum_message_size: 500,
             maximum_advertisement_period: 1000,
             search: false,
