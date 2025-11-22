@@ -75,14 +75,14 @@ impl FiletreeBrowserConfiguration
             .add_source(config::File::with_name(properties_file).required(false))
             .build()?;
 
-        println!("{:#?}", settings);
+        debug!("{:#?}", settings);
 
         let mut config = settings.try_deserialize().unwrap_or_else(|_| {
             log::error!("Using default configuration");
             FiletreeBrowserConfiguration::default()
         });
 
-        println!("{:#?}", config);
+        debug!("{:#?}", config);
 
         // update log file with id if using default
         if config.log_file == "filetreebrowser.log"
