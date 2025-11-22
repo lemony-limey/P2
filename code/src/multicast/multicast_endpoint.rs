@@ -232,40 +232,40 @@ impl MulticastEndpoint
         let mut buffer_2 = BytesMut::with_capacity(self.config.msg_size);
 
         // Whichever packet is received first will be returned
-        // tokio::select! {
-        //     result = self.rx_ipv4(&mut buffer_1) => {
-        //         info!("rx_ipv4 returned");
-        //         info!("buffer size: {}", &buffer_1.len());
-        //
-        //         return match result?
-        //         {
-        //             (PacketType::Ipv4, Some(socket_addr)) => {
-        //                 let parsed_message = parse_message(&buffer_1)?;
-        //                 Ok((PacketType::Ipv4, Some((socket_addr, parsed_message))))
-        //             },
-        //             _ => Ok((PacketType::None, None)),
-        //         }
-        //     },
-        let result = self.rx_ipv6(&mut buffer_2).await;
-        info!("rx_ipv6 returned, result: {:#?}", result);
-        info!("buffer contents: {}", str::from_utf8(&buffer_2[..])?);
-        info!("buffer length: {}", &buffer_2.len());
+        tokio::select! {
+            result = self.rx_ipv4(&mut buffer_1) => {
+                info!("rx_ipv4 returned");
+                info!("buffer size: {}", &buffer_1.len());
 
-        match result?
-        {
-            (PacketType::Ipv6, Some(socket_addr)) => {
-                debug!("return all good");
-                let parsed_message = parse_message(&buffer_2);
-                debug!("parsed message: {:#?}", parsed_message);
-                Ok((PacketType::Ipv6, Some((socket_addr, parsed_message?))))
+                match result?
+                {
+                    (PacketType::Ipv4, Some(socket_addr)) => {
+                        let parsed_message = parse_message(&buffer_1)?;
+                        Ok((PacketType::Ipv4, Some((socket_addr, parsed_message))))
+                    },
+                    _ => Ok((PacketType::None, None)),
+                }
             },
-            _ => {
-                debug!("none returned");
-                Ok((PacketType::None, None))
+            result = self.rx_ipv6(&mut buffer_2) => {
+                info!("rx_ipv6 returned, result: {:#?}", result);
+                info!("buffer contents: {}", str::from_utf8(&buffer_2[..])?);
+                info!("buffer length: {}", &buffer_2.len());
+
+                match result?
+                {
+                    (PacketType::Ipv6, Some(socket_addr)) => {
+                        debug!("return all good");
+                        let parsed_message = parse_message(&buffer_2);
+                        debug!("parsed message: {:#?}", parsed_message);
+                        Ok((PacketType::Ipv6, Some((socket_addr, parsed_message?))))
+                    },
+                    _ => {
+                        debug!("none returned");
+                        Ok((PacketType::None, None))
+                    },
+                }
             },
         }
-            // },
-        // }
     }
 
     /// Receives a multicast packet.
