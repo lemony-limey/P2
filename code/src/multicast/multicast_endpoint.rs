@@ -301,24 +301,20 @@ impl MulticastEndpoint
         // try IPv6
         if let Some(socket) = &self.socket_v6
         {
-            loop
+            match socket.recv_from(buffer).await
             {
-                match socket.recv_from(buffer).await
-                {
-                    Ok((len, socket_addr)) if len > 0 => {
-                        debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
-                        return Ok((PacketType::Ipv4, Some(socket_addr)));
-                    }
-                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        // no data available
-                        info!("rx_ipv6: wouldblock");
-                        continue;
-                    }
-                    Err(e) => {
-                        error!("IPv6 receive error: {}", e);
-                    }
-                    _ => {}
+                Ok((len, socket_addr)) if len > 0 => {
+                    debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
+                    return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    // no data available
+                    info!("rx_ipv6: wouldblock");
+                }
+                Err(e) => {
+                    error!("IPv6 receive error: {}", e);
+                }
+                _ => {}
             }
         }
 
