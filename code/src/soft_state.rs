@@ -1,3 +1,4 @@
+use log::info;
 use std::net::SocketAddrV6;
 use crate::logical_file_path::LogicalFilePath;
 use crate::protocol::{
@@ -66,6 +67,8 @@ impl FTBSoftState
     /// Search for substring matches for files from other nodes.
     pub async fn find_file_substring_match(&self, target: &str) -> Option<HashSet<(LogicalFilePath, Identifier)>>
     {
+        debug!("target file: {}", target);
+
         let mut results: HashSet<(LogicalFilePath, Identifier)> = HashSet::new();
 
         for (identifier, node) in self.nodes.read().await.iter()
@@ -73,6 +76,7 @@ impl FTBSoftState
             for (logical_file_path, _metadata) in node.read().await.files.iter()
             {
                 let path_as_str = logical_file_path.to_string();
+                debug!("path as str: {}", path_as_str);
                 if path_as_str.contains(target)
                 {
                     results.insert((logical_file_path.clone(), identifier.clone()));
@@ -80,6 +84,7 @@ impl FTBSoftState
             }
         }
 
+        debug!("results: {:#?}", results);
         if results.is_empty()
         {
             None

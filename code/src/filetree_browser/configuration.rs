@@ -1,3 +1,4 @@
+use log::info;
 use log::debug;
 use crate::protocol::serial_number::SerialNumberGenerator;
 use serde::Deserialize;
@@ -42,7 +43,7 @@ impl Default for FiletreeBrowserConfiguration
             .or_else(|_| std::env::var("USERNAME"))
             .unwrap_or_else(|_| "user".to_string());
 
-        eprintln!("hostname: {}, username: {}", hostname, username);
+        info!("hostname: {}, username: {}", hostname, username);
 
         Self 
         {
