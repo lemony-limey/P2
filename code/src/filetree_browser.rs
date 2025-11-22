@@ -364,7 +364,6 @@ async fn search(
 
     // Query storage and check to see who has what file.
     let mut nodes_with_file = HashSet::new();
-    let target_file = LogicalFilePath::new(&search_string);
     if let Some(results) = ftb.read().await.soft_state.read().await.find_file_substring_match(&search_string).await
     {
         nodes_with_file = results;
