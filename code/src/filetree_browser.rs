@@ -179,13 +179,14 @@ impl FileTreeBrowser
             if entry.is_dir()
             {
                 debug!("reading dir {:?}", &entry);
-                while let Ok(mut new_entries) = fs::read_dir(&entry).await
+                let Ok(mut new_entries) = fs::read_dir(&entry).await else {
+                    continue;
+                };
+
+                while let Some(new_entry) = new_entries.next_entry().await?
                 {
-                    while let Some(new_entry) = new_entries.next_entry().await?
-                    {
-                        debug!("adding entry: {:#?}", new_entry);
-                        queue.push_back(new_entry);
-                    }
+                    debug!("adding entry: {:#?}", new_entry);
+                    queue.push_back(new_entry);
                 }
             }
             else if entry.is_file()
@@ -201,6 +202,8 @@ impl FileTreeBrowser
                     }
                 }
             }
+
+            debug!("queue: {:#?}", queue);
         }
 
         Ok(matches)
