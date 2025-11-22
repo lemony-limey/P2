@@ -311,6 +311,7 @@ impl MulticastEndpoint
                     }
                     Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                         // no data available
+                        info!("rx_ipv6: wouldblock");
                         continue;
                     }
                     Err(e) => {
