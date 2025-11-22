@@ -21,6 +21,8 @@ use std::num::NonZeroU16;
 /// Parser for the Requirement 1 messages.
 pub(crate) fn parse_advertisement_message(input: &str) -> IResult<&str, AdvertisementMessage>
 {
+
+
     // Parse the server port and the following delimiter
     let (remaining_input, server_port) = map_res(
         digit1,

@@ -255,9 +255,9 @@ impl MulticastEndpoint
         {
             (PacketType::Ipv6, Some(socket_addr)) => {
                 info!("return all good");
-                let parsed_message = parse_message(&buffer_2)?;
-                info!("parsed message: {}", parsed_message);
-                Ok((PacketType::Ipv4, Some((socket_addr, parsed_message))))
+                let parsed_message = parse_message(&buffer_2);
+                info!("parsed message: {:#?}", parsed_message);
+                Ok((PacketType::Ipv4, Some((socket_addr, parsed_message?))))
             },
             _ => {
                 info!("none returned");
