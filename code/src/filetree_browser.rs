@@ -310,8 +310,9 @@ async fn search(
 ) -> anyhow::Result<()>
 {
     // Get the search string from the user.
-    let target_file = read_line().await?;
-    let target_file = LogicalFilePath::new(target_file);
+    print!("Enter the name of the file you wish to find: ");
+    tokio::io::stdout().flush().await?;
+    let search_string = read_line().await?;
 
     let serial_number: SerialNumber;
     let identifier: Identifier;
@@ -328,14 +329,6 @@ async fn search(
             FQDN(ftb_handle.config.fqdn.to_string())
         );
         sleep_time = ftb_handle.config.sleep_time
-    }
-
-    // If storage doesn't have what we need, send out a message
-    println!("Enter the name of the file you wish to find:");
-    let mut search_string = String::new();
-    {
-        stdin().lock().read_line(&mut search_string)
-            .with_context(|| "search(): could not get search string from stdin")?;
     }
 
     // Construct the search request message
@@ -361,6 +354,7 @@ async fn search(
 
     // Query storage and check to see who has what file.
     let mut nodes_with_file = HashSet::new();
+    let target_file = LogicalFilePath::new(&search_string);
     if let Some(results) = ftb.read().await.soft_state.read().await.find_file(&target_file).await
     {
         nodes_with_file = results;
@@ -368,17 +362,15 @@ async fn search(
 
     if nodes_with_file.is_empty()
     {
-        println!("No nodes are currently known to contain the file \"{}\"", &search_string);
+        println!("No nodes are currently known to contain the file {}", &search_string);
     }
     else
     {
         println!(
-            "{} nodes are currently known to contain the file \"{}\"",
+            "{} nodes are currently known to contain the file {}",
             nodes_with_file.len(),
             &search_string,
         );
-
-        // TODO: We don't show the IP address here. Should we?
         for node in nodes_with_file
         {
             println!("{}", node);
