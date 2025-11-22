@@ -348,6 +348,7 @@ async fn search(
         let ftb_handle = ftb.read().await;
         ftb_handle.socket.tx_message(message).await?;
     }
+    debug!("search request sent");
 
     // Wait for received messages
     tokio::time::sleep(Duration::from_millis(sleep_time)).await;

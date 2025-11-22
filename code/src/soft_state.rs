@@ -71,9 +71,11 @@ impl FTBSoftState
 
         let mut results: HashSet<(LogicalFilePath, Identifier)> = HashSet::new();
 
+        // For each node
         for (identifier, node) in self.nodes.read().await.iter()
         {
-            for (logical_file_path, _metadata) in node.read().await.files.iter()
+            // Go through every file the node has
+            for logical_file_path in node.read().await.files.keys()
             {
                 let path_as_str = logical_file_path.to_string();
                 debug!("path as str: {}", path_as_str);

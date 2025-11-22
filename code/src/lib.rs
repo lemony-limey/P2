@@ -164,10 +164,17 @@ pub async fn process_incoming_messages(
             Payload::Search(SearchMessage::Result { response_id, logical_file_path, file_size }) => {
                 // Add file to the node, if it exists
                 let soft_state_handle = soft_state.write().await;
-                let mut nodes_handle = soft_state_handle.nodes.write().await;
+                let nodes_handle = soft_state_handle.nodes.write().await;
 
-                let Some(node) = nodes_handle.get_mut(response_id.identifier()) else {
-                    debug!("search result dropped: unknown node");
+                debug!(
+                    "received SEARCH RESULT; id: {}; logical_file_path: {}; file_size: {}",
+                    response_id,
+                    logical_file_path,
+                    file_size,
+                );
+
+                let Some(node) = nodes_handle.get(response_id.identifier()) else {
+                    debug!("search result dropped: unknown node {}", response_id.identifier());
                     continue;
                 };
 
@@ -181,7 +188,7 @@ pub async fn process_incoming_messages(
 
                 // Convert file_string to logical path and store with ttl
                 node_handle.files.insert(
-                    LogicalFilePath::new(logical_file_path),
+                    logical_file_path,
                     FileMetadata::new(
                         file_size,
                         ttl,
