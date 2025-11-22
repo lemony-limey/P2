@@ -228,15 +228,15 @@ impl MulticastEndpoint
 
     pub async fn rx(&self) -> anyhow::Result<(PacketType, Option<(SocketAddr, Message)>)>
     {
-        info!("rx called");
+        trace!("rx called");
         let mut buffer_1 = BytesMut::with_capacity(self.config.msg_size);
         let mut buffer_2 = BytesMut::with_capacity(self.config.msg_size);
 
         // Whichever packet is received first will be returned
         tokio::select! {
             result = self.rx_ipv4(&mut buffer_1) => {
-                info!("rx_ipv4 returned");
-                info!("buffer size: {}", &buffer_1.len());
+                debug!("rx_ipv4 returned");
+                debug!("buffer size: {}", &buffer_1.len());
 
                 match result?
                 {
@@ -248,9 +248,9 @@ impl MulticastEndpoint
                 }
             },
             result = self.rx_ipv6(&mut buffer_2) => {
-                info!("rx_ipv6 returned, result: {:#?}", result);
-                info!("buffer contents: {}", str::from_utf8(&buffer_2[..])?);
-                info!("buffer length: {}", &buffer_2.len());
+                debug!("rx_ipv6 returned, result: {:#?}", result);
+                debug!("buffer contents: {}", str::from_utf8(&buffer_2[..])?);
+                debug!("buffer length: {}", &buffer_2.len());
 
                 match result?
                 {
