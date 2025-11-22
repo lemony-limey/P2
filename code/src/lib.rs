@@ -173,7 +173,7 @@ pub async fn process_incoming_messages(
                     file_size,
                 );
 
-                debug!("current state of soft state: {:#?}", soft_state_handle);
+                debug!("current state of soft state: {:#?}", nodes_handle);
                 let Some(node) = nodes_handle.get(response_id.identifier()) else {
                     debug!("search result dropped: unknown node {}", response_id.identifier());
                     continue;
