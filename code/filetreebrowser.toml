@@ -48,7 +48,7 @@ maximum_advertisement_period = 5000
 # Switches for application capability
 # Searching in various forms
 # No searching possible
-search = false
+search = true
 # Exact case-insensitive match on exact path
 # search = "path"
 # Exact case-insensitive match on path or filename
