@@ -191,12 +191,13 @@ impl FileTreeBrowser
                 // If the current file contains a substring match, add it to the list of matches
                 if let Some(entry) = entry.to_str()
                 {
+                    debug!("substring: {}; current entry: {}", substring, entry);
                     if entry.contains(substring)
                     {
                         matches.push(LogicalFilePath::new(entry));
+                        debug!("search_for_substring: MATCH! substring: {}; string: {}", substring, entry);
                     }
                 }
-                debug!("search_for_substring: MATCH! substring: {}; string: {}", substring, entry.to_str().unwrap());
             }
         }
 

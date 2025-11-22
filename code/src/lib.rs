@@ -98,6 +98,7 @@ pub async fn process_incoming_messages(
                 // with the search_string.
                 let matches: Vec<LogicalFilePath>;
                 {
+                    debug!("searching for substring: {}", &search_string);
                     matches = ftb.read().await.search_for_substring(&search_string).await?;
                 }
 
