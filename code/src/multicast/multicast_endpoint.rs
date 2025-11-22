@@ -257,7 +257,7 @@ impl MulticastEndpoint
                     (PacketType::Ipv6, Some(socket_addr)) => {
                         debug!("return all good");
                         let parsed_message = parse_message(&buffer_2);
-                        debug!("parsed message: {:#?}", parsed_message);
+                        debug!("parsed message successfully");
                         Ok((PacketType::Ipv6, Some((socket_addr, parsed_message?))))
                     },
                     _ => {
