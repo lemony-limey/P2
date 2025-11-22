@@ -178,15 +178,17 @@ impl FileTreeBrowser
             // If the entry is a directory, add all of its entries to the queue also.
             if entry.is_dir()
             {
+                debug!("reading dir {:?}", &entry);
                 while let Ok(mut new_entries) = fs::read_dir(&entry).await
                 {
                     while let Some(new_entry) = new_entries.next_entry().await?
                     {
+                        debug!("adding entry: {:#?}", new_entry);
                         queue.push_back(new_entry);
                     }
                 }
             }
-            else
+            else if entry.is_file()
             {
                 // If the current file contains a substring match, add it to the list of matches
                 if let Some(entry) = entry.to_str()
