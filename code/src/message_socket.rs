@@ -7,7 +7,6 @@ use crate::protocol::message::Message;
 /// MessageSocket is an abstraction over MulticastEndpoint.
 /// While MulticastEndpoint is responsible for sending and receiving UDP datagrams, it is the job
 /// of MessageSocket to provide an interface over this for sending objects of the Message type.
-/// This means that MulticastEndpoint can be used
 #[derive(Clone, Debug)]
 pub struct MessageSocket
 {
