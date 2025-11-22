@@ -303,19 +303,13 @@ impl MulticastEndpoint
         {
             loop
             {
-                socket.readable().await?;
-
-                let result = socket.try_recv_from(buffer);
-                info!("{:#?}", result);
-
-                match result
+                match socket.recv_from(buffer).await
                 {
                     Ok((len, socket_addr)) if len > 0 => {
                         debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
                         return Ok((PacketType::Ipv4, Some(socket_addr)));
                     }
                     Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        error!("IPv6 receive error: {}", e);
                         // no data available
                         continue;
                     }
