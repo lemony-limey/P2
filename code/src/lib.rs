@@ -156,7 +156,7 @@ pub async fn process_incoming_messages(
                         let _ = socket.tx_message(search_response).await;
                     }
 
-                    error!("file transfer finished!");
+                    info!("file transfer finished!");
                 });  // End of tokio::spawn block
             },
             // If this is a response to a search message initiated by the current user, add the

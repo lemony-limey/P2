@@ -55,4 +55,4 @@ search = true
 # search = "path-filename"
 
 # Download a file, change to "true" when possible
-download = false
+download = true
