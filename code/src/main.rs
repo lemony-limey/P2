@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()>
     let mut endpoint = MulticastEndpoint::new(config)?;
     endpoint.join()?;
     info!("{:#?}", endpoint);
-    let message_socket = MessageSocket::new(endpoint);
+    let message_socket = MessageSocket::new(endpoint.clone());
 
     // Get filetree browser configuration and create the filetree browser.
     let state = Arc::new(RwLock::new(FTBSoftState::new()));
@@ -74,6 +74,8 @@ async fn main() -> anyhow::Result<()>
             println!("{:?}", beacon_result);
         },
     }
+
+    endpoint.leave()?;
 
     // On exit, tokio will stop the beacon and message processing tasks.
     Ok(())

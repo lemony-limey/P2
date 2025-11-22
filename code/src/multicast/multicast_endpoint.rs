@@ -391,12 +391,3 @@ impl MulticastEndpoint
         &mut self.config
     }
 }
-
-/// Leave the multicast group when this endpoint is dropped.
-impl Drop for MulticastEndpoint
-{
-    fn drop(&mut self)
-    {
-        let _ = self.leave();
-    }
-}
