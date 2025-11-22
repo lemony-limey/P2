@@ -310,8 +310,7 @@ async fn search(
 ) -> anyhow::Result<()>
 {
     // Get the search string from the user.
-    print!("Enter the name of the file you wish to find: ");
-    tokio::io::stdout().flush().await?;
+    println!("Enter the name of the file you wish to find: ");
     let search_string = read_line().await?;
 
     let serial_number: SerialNumber;
@@ -362,7 +361,7 @@ async fn search(
 
     if nodes_with_file.is_empty()
     {
-        println!("No nodes are currently known to contain an exact match for {}. Try \":files\" to get similar matches", &search_string);
+        println!("No nodes are currently known to contain an exact match for \"{}\". Try \":files\" to get similar matches", &search_string);
     }
     else
     {
@@ -396,6 +395,8 @@ async fn files(
         {
             println!("\t{} | {}", file_path, metadata.size);
         }
+
+        println!("-----");
     }
 
     Ok(())
