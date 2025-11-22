@@ -16,7 +16,8 @@ use std::{
     time::Duration
 };
 use std::fmt::Formatter;
-use bytes::BytesMut;
+use std::io::Write;
+use bytes::{BufMut, BytesMut};
 use tokio::{
     net::UdpSocket,
 };
@@ -271,14 +272,16 @@ impl MulticastEndpoint
     async fn rx_ipv4(&self, buffer: &mut BytesMut) -> anyhow::Result<(PacketType, Option<SocketAddr>)>
     {
         info!("rx_ipv4 called");
+        let mut buffer_omg = [0; 1024];
 
         // try IPv4
-        if let Some(socket) = &self.socket_v4
+        if let Some(socket) = self.socket_v4.clone()
         {
-            match socket.recv_from(buffer).await
+            match socket.recv_from(&mut buffer_omg).await
             {
                 Ok((len, socket_addr)) if len > 0 => {
                     debug!("Received {} bytes on IPv4 from {}", len, socket_addr);
+                    buffer.writer().write_all(&mut buffer_omg)?;
                     return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -297,14 +300,16 @@ impl MulticastEndpoint
     async fn rx_ipv6(&self, buffer: &mut BytesMut) -> anyhow::Result<(PacketType, Option<SocketAddr>)>
     {
         info!("rx_ipv6 called");
+        let mut buffer_omg = [0; 1024];
 
         // try IPv6
-        if let Some(socket) = &self.socket_v6
+        if let Some(socket) = self.socket_v6.clone()
         {
-            match socket.recv_from(buffer).await
+            match socket.recv_from(&mut buffer_omg).await
             {
                 Ok((len, socket_addr)) if len > 0 => {
                     debug!("Received {} bytes on IPv6 from {}", len, socket_addr);
+                    buffer.writer().write_all(&mut buffer_omg)?;
                     return Ok((PacketType::Ipv4, Some(socket_addr)));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
