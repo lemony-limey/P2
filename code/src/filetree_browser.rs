@@ -448,7 +448,7 @@ async fn download(
     }
 
     debug!("target file logical path: {}", target_file);
-    debug!("target file absolute path: {}", target_file_absolute_path);
+    debug!("target file absolute path: {:#?}", target_file_absolute_path);
 
     // If the file already exists in the local logical directory, abandon the request
     let Ok(false) = target_file_absolute_path.try_exists() else {
