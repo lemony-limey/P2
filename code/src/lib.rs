@@ -82,7 +82,7 @@ pub async fn process_incoming_messages(
                 ) else { continue; };
 
                 // Add the node to the soft state.
-                info!("requesting soft_state write lock");
+                debug!("requesting soft_state write lock");
                 soft_state.write().await.discovery_update(node).await?;
             },
             // If search, query storage then send message if no results have been returned.
