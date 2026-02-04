@@ -1,0 +1,169 @@
+# CS4105 Coursework P2 - Discover and Download
+
+# This specification is not quite(!) in ABNF format, as defined in:
+#   RFC5234(S) https://tools.ietf.org/html/rfc5234
+#
+# I have taken some practical shortcuts for ease of implementation (as you
+# will see). By referring to specific parts of the Java API, and using
+# some informal definitions, the specification can be implemented quicker.
+#
+# This specification describes only the control-plane protocol.
+# There is no real user-plane protocol, only a file transfer.
+#
+# The control-plane protocol MUST be implemented on IPv6 multicast.
+#
+# For the user plane your application will connect on <server-port>
+# (see below).
+#
+# For implementing a download file-transfer, TCP/IPv6 MUST be used.
+
+#### ####
+## General message format
+
+  <message> := ":" <header> ":" <payload> ":"
+
+  <header> := <identifier> ":" <serial-number> ":" <timestamp>
+    # Example of header, with all parts:
+    #
+    # sjm55@my.host1.net:528491:20231011-174242.042
+
+  <identifier> :=  uid "@" fqdn
+    # uid as from Java's System.getProperty.("user.name")
+    # fqdn as from Java's InetAddress.getLocalHost().getCanonicalHostName();
+    # Examples:
+    #
+    #    sjm55@my.host1.net
+    #    my-id@my.host2.net
+
+  <serial-number> := *DIGIT
+    # A non-zero, unsigned decimal number to help the sender identify / demux
+    # responses to messages: this value is used by a server in responses.
+    # Examples:
+    #
+    #  42
+    #  101
+    #  528491
+    #
+    # This could, for example, be a monotonically increasing number.
+
+
+  # A <response-id> would be used in a response messages to match requests to
+  # responses so that multiple requests can be outstanding to the same server.
+  <response-id> := <identifier> ":" <serial-number>
+    # <identifier> and <serial-number> as defined above.
+    # In any responses, a response-id uses the values of identifier and
+    # serial-number from the request. Examples below.
+
+  <timestamp> := <year> <month> <day> "-" <hours> <minutes> <seconds> "." <milliseconds>
+  <year> := 4DIGIT
+  <month> := 2DIGIT
+  <day> := 2DIGIT
+  <hour> := 2DIGIT
+  <minutes> := 2DIGIT
+  <seconds> := 2DIGIT
+  <milliseconds> := 3DIGIT
+    # As from Java's SimpleDateFormat(new String("yyyyMMdd-HHmmss.SSS"))
+    # year         has format yyyy, 4-digits.
+    # month        has format MM, 2-digits with leading zero if required.
+    # hour         has format HH, 2-digits with leading zero if required.
+    # minutes      has format mm, 2-digits with leading zero if required.
+    # seconds      has format ss, 2-digits with leading zero if required.
+    # milliseconds has format SSS, 3-digits with leading zeros if required.
+    #
+    # Examples:
+    #
+    #  20240912-174242.042
+    #  20241101-210000.000
+
+#### ####
+## General payload format
+
+  <payload> := <advertisement-message> / <search-message> / <download-message> 
+
+
+#### ####
+## R1: Discover -- Advertisement message
+
+  <advertisement-message> := "advertisement" ":" <server-port> : <services>
+    # Example of a complete advertisement message, with header:
+    #
+    #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:10123:search=true,download=false:
+
+  <server-port> := *DIGIT
+    # a non-zero, unsigned, 16-bit decimal number, on which this server
+    # listens for incoming connections, an ephemeral port as allocated
+    # by the OS when ServerSocket() is created.
+
+  <services> := <service-name> "=" <service-status> "," <service-name> "=" <service-status>
+    # The offered services and their capabilities.
+    # Example:
+    #
+    #   search=true,download=false
+
+  <service-name> := "search" / "download"
+
+  <service-status> := "true" / "false"
+
+
+#### ####
+## R2: Search
+
+  <search-message> := <search-request> / <search-response>
+
+  <search-response> := <search-result> / <search-error>
+
+  <search-request> := "search-request" ":" <search-string>
+
+  # All searches should be matched using a case-insensitive, sub-string match.
+  # The sub-string matches any part of the full logical path-name of the file.
+
+  <search-string> = file-string
+    # file-string is any group of characters that can be used for a
+    # the substring match of a full logical path-name for a file.
+
+    # Example of a complete search request, with header:
+    #
+    #   :sjm55@my.host1.net:1001:20240912-170101.001:search-request:hello:
+
+  <search-result> := "search-result" : <response-id> : file-string
+    #
+    # file-string is any group of characters that can be is the full
+    # logical filepath for the logical filespace for your application.
+    # The id and serial-number in the response should match that of the
+    # request. For example, if the server srv@my.host3.net has the file:
+    #
+    #   /dir1/dir2/hello_world.txt
+    #
+    # Then a response to the search-request message above would be:
+    #
+    #   :srv@my.host3.net:1111:20240912-170112.123:search-result:sjm55@my.host1.net:1001:/dir1/dir2/hello_world.txt:
+    #
+    # Note that the root, "/", here is the root_dir of the logical filespace
+    # exposed via the application, and not the local unix root directory!
+    #
+    # Searches could generate multiple results, and these should be sent
+    # in separate messages, but using the same response-id so they can be
+    # matched to the same request.
+
+  <search-error> := "search-error" ":" <response-id>
+    # The serial-number in the response should match that of the request.
+    # For example, if the server srv@my.host3.net does not have a match, then
+    # a response to the example request would be:
+    #
+    #   :srv@my.host3.net:1001:20240912-170112.123:search-error:sjm55@my.host1.net:1001:
+
+
+#### ####
+## R3: Download -- TBD.
+# If you attempt this, please include a description of your design and
+# your definitions for the items below in your report.
+# You will need to use TCP/IPv6 for the file download.
+
+<download-message> := <download-request> / <download-response>
+
+<download-response> := <download-result> / <download-error>
+
+  # <download-request> := ...
+  # <download-result> := ...
+  # <download-error> := ...
+
