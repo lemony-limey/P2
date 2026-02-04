@@ -1,3 +1,7 @@
+# This document was originally written by Stephen McQuistin <sjm55@st-andrews.ac.uk>
+# and is therefore not originally my own.
+# However, I have since modified the protocol documented here.
+
 # CS4105 Coursework P2 - Discover and Download
 
 # This specification is not quite(!) in ABNF format, as defined in:
@@ -46,6 +50,7 @@
     #
     # This could, for example, be a monotonically increasing number.
 
+
   # A <response-id> would be used in a response messages to match requests to
   # responses so that multiple requests can be outstanding to the same server.
   <response-id> := <identifier> ":" <serial-number>
@@ -77,18 +82,16 @@
 #### ####
 ## General payload format
 
-  <payload> := <discovery-message> / <search-message> / <download-message>
+  <payload> := <advertisement-message> / <search-message> / <download-message> 
 
 
 #### ####
 ## R1: Discover -- Advertisement message
 
-  <discovery-message> := <advertisement-message> / <leaving-message>
-
-  <advertisement-message> := "advertisement" ":" <server-port> ":" <services>
+  <advertisement-message> := "advertisement" ":" <server-port> : <services>
     # Example of a complete advertisement message, with header:
     #
-    #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:[::1]:10123:search=true,download=false:
+    #   :sjm55@my.host1.net:528491:20231013-174242.042:advertisement:10123:search=true,download=false:
 
   <server-port> := *DIGIT
     # a non-zero, unsigned, 16-bit decimal number, on which this server
@@ -105,17 +108,15 @@
 
   <service-status> := "true" / "false"
 
-  <leaving-message> := "leaving"
-
 
 #### ####
 ## R2: Search
 
-  <search-message> := "search" ":" <search-request> / <search-response>
+  <search-message> := <search-request> / <search-response>
 
-  <search-response> := <search-result>
+  <search-response> := <search-result> / <search-error>
 
-  <search-request> := "request" ":" <search-string>
+  <search-request> := "search-request" ":" <search-string>
 
   # All searches should be matched using a case-insensitive, sub-string match.
   # The sub-string matches any part of the full logical path-name of the file.
@@ -128,7 +129,7 @@
     #
     #   :sjm55@my.host1.net:1001:20240912-170101.001:search-request:hello:
 
-  <search-result> := "result" : <response-id> : <file-string> : <file-size>
+  <search-result> := "search-result" : <response-id> : file-string
     #
     # file-string is any group of characters that can be is the full
     # logical filepath for the logical filespace for your application.
@@ -148,16 +149,25 @@
     # in separate messages, but using the same response-id so they can be
     # matched to the same request.
 
+  <search-error> := "search-error" ":" <response-id>
+    # The serial-number in the response should match that of the request.
+    # For example, if the server srv@my.host3.net does not have a match, then
+    # a response to the example request would be:
+    #
+    #   :srv@my.host3.net:1001:20240912-170112.123:search-error:sjm55@my.host1.net:1001:
+
+
 #### ####
 ## R3: Download -- TBD.
 # If you attempt this, please include a description of your design and
 # your definitions for the items below in your report.
 # You will need to use TCP/IPv6 for the file download.
 
-  <download-message> := "download" ":" <download-request> / <download-result>
+<download-message> := <download-request> / <download-response>
 
-    # <download-request> := "request" ":" <target-identifier> ":" <logical-file-path>
+<download-response> := <download-result> / <download-error>
 
-    # We only send a download result if download completed successfully.
-    # <download-result> := "result" ":" <logical-file-path> ":" <file-size>
+  # <download-request> := ...
+  # <download-result> := ...
+  # <download-error> := ...
 
