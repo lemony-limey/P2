@@ -1,10 +1,3 @@
------ 220019716, CS4105 P2 -----
+# Distributed File Transfer Application
 
-In order to run this program, navigate to the `code` directory
-with:
-
-    $ cd code
-
-and then execute:
-
-    $ cargo run
+P2 is a distributed file transfer application originally submitted as coursework for my degree, and is written in Rust. It uses UDP multicast for exchanging control-plane messages and can initiate TCP unicast file transfer. It also contains a parser for the control-plane protocol defined in `protocol.txt`.
